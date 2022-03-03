@@ -5,7 +5,7 @@ import os
 # print(code_home)
 from c2rcc import C2RCC
 from polymer_lois import POLYMER
-from fub_csiro import FUB_CSIRO
+from fub_csiro_lois import FUB_CSIRO
 
 parser = argparse.ArgumentParser(description="Atmospheric correction launcher")
 
