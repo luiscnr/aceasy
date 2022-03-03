@@ -9,28 +9,21 @@ class FUB_CSIRO:
         if fconfig is None:
             fconfig = 'aceasy_config.ini'
         self.gpt_path = None
-        self.graph_file = None
         if os.path.exists(fconfig):
             options = configparser.ConfigParser()
             options.read(fconfig)
             if options.has_section('FUB_CSIRO'):
                 if options.has_option('FUB_CSIRO', 'gpt_path'):
                     self.gpt_path = options['FUB_CSIRO']['gpt_path']
-                if options.has_option('FUB_CSIRO', 'graph_file_default'):
-                    self.graph_file = options['FUB_CSIRO']['graph_file_default']
 
     def check_runac(self):
-        if self.gpt_path is None or self.graph_file is None:
+        if self.gpt_path is None:
             if self.verbose:
-                print('[ERROR: FUB_CSIRO class can no be started. GPT and/or graph file paths are not available]')
+                print('[ERROR]: FUB_CSIRO class can no be started. GPT file path is not available')
             return False
         if not os.path.exists(self.gpt_path):
             if self.verbose:
-                print('[ERROR: FUB_CSIRO class can no be started. GPT path does not exist]')
-            return False
-        if not os.path.exists(self.graph_file):
-            if self.verbose:
-                print('[ERROR: FUB_CSIRO class can no be started. Graph file path does not exist]')
+                print('[ERROR]: FUB_CSIRO class can no be started. GPT path does not exist')
             return False
         return True
 
@@ -49,7 +42,7 @@ class FUB_CSIRO:
         if self.verbose:
             print(f'[INFO] Input product: {prod_name}')
 
-        cmd = f'{self.gpt_path} {self.graph_file} -f NetCDF4-CF -t {output_path} {prod_path}'
+        cmd = f'{self.gpt_path} FubCsiroOp {prod_path} -f NetCDF4-CF -t {output_path} '
         if self.verbose:
             print(f'[INFO] Starting FUB-CSIRO processing...')
         proc = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -69,5 +62,5 @@ class FUB_CSIRO:
                 print(f'[INFO] FUB-CSIRO completed. Output file name: {output_name}')
             return True
         else:
-            print(f'[ERROR] FUB-CSIRO NOT completed for product: {prod_name}')
+            print(f'[ERROR] FUB-CSIRO  NOT completed for product: {prod_name}')
             return False
