@@ -45,7 +45,7 @@ class FUB_CSIRO:
         cmd = f'{self.gpt_path} FubCsiroOp {prod_path} -f NetCDF4-CF -t {output_path}'
         if self.verbose:
             print(f'[INFO] Starting FUB-CSIRO processing...')
-            print(cmd)
+            #print(cmd)
         proc = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         outs, errs = proc.communicate()
         if self.verbose:

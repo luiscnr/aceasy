@@ -6,6 +6,7 @@ import os
 from c2rcc import C2RCC
 from polymer_lois import POLYMER
 from fub_csiro_lois import FUB_CSIRO
+from acolite_lois import ACOLITE
 
 parser = argparse.ArgumentParser(description="Atmospheric correction launcher")
 
@@ -14,7 +15,7 @@ parser.add_argument("-p", "--product", help="Input product (testing)")
 parser.add_argument('-i', "--inputpath", help="Input directory")
 parser.add_argument('-o', "--outputpath", help="Output directory", required=True)
 parser.add_argument('-c', "--config_file", help="Configuration file (Default: aceasy_config.ini)")
-parser.add_argument('-ac', "--atm_correction", help="Atmospheric correction", choices=["C2RCC","POLYMER","FUB_CSIRO"], required=True)
+parser.add_argument('-ac', "--atm_correction", help="Atmospheric correction", choices=["C2RCC","POLYMER","FUB_CSIRO","ACOLITE"], required=True)
 args = parser.parse_args()
 
 # Press the green button in the gutter to run the script.
@@ -56,6 +57,8 @@ if __name__ == '__main__':
         corrector = POLYMER(fconfig, args.verbose)
     elif args.atm_correction == 'FUB_CSIRO':
         corrector = FUB_CSIRO(fconfig,args.verbose)
+    elif args.atm_correction == 'ACOLITE':
+        corrector = ACOLITE(fconfig,args.verbose)
 
     if not corrector.check_runac():
         exit(1)
