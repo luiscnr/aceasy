@@ -56,7 +56,7 @@ class ACOLITE:
 
         sprod = S3Product(prod_path)
         foutput = os.path.join(output_path,sprod.get_acolite_filename_output())
-        
+
         if os.path.exists(output_path) and os.path.isdir(output_path) and os.path.exists(foutput):
             print(f'[INFO] Output file {output_path} already exists. Skiping...')
             return True
