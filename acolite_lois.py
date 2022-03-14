@@ -82,7 +82,6 @@ class ACOLITE:
             print(f'[INFO] Settings file: {file_settings}')
         acolite_py = os.path.join(self.acolite_path, 'launch_acolite.py')
         cmd=f'{self.python_call} {acolite_py} --settings {file_settings} --cli'
-        print(cmd)
         proc = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         outs, errs = proc.communicate()
         if self.verbose:
