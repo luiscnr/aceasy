@@ -130,7 +130,7 @@ if __name__ == '__main__':
                                 print('--------------------------------------------------')
                             p = corrector.run_process(prod_path, output_path_jday)
 
-                        if not os.path.isdir(prod_path) and f.find('.zip') and f.find('EFR') > 0:
+                        if not os.path.isdir(prod_path) and f.endswith('.zip') and f.find('EFR') > 0:
                             if not args.temp_path:
                                 print(f'[ERROR] Temporary path must be defined to work with zip files. Use the option -tp')
                                 continue
@@ -139,6 +139,7 @@ if __name__ == '__main__':
                                 continue
                             iszipped = True
                             cgeo = CHECK_GEO()
+                            print(prod_path)
                             cgeo.start_polygon_image_from_zip_manifest_file(prod_path)
                             check_geo = cgeo.check_geo_area(53,66,7,31)
                             print('->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><',check_geo)
