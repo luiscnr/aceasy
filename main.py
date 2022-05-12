@@ -1,5 +1,7 @@
 import argparse
 import os
+from datetime import datetime
+from datetime import timedelta
 
 # code_home = os.path.abspath('')
 # print(code_home)
@@ -7,6 +9,8 @@ from c2rcc import C2RCC
 from polymer_lois import POLYMER
 from fub_csiro_lois import FUB_CSIRO
 from acolite_lois import ACOLITE
+import zipfile as zp
+from check_geo import CHECK_GEO
 
 parser = argparse.ArgumentParser(description="Atmospheric correction launcher")
 
@@ -14,8 +18,12 @@ parser.add_argument("-v", "--verbose", help="Verbose mode.", action="store_true"
 parser.add_argument("-p", "--product", help="Input product (testing)")
 parser.add_argument('-i', "--inputpath", help="Input directory")
 parser.add_argument('-o', "--outputpath", help="Output directory", required=True)
+parser.add_argument('-tp', "--temp_path", help="Temporary directory")
+parser.add_argument('-sd', "--start_date", help="Start date (yyyy-mm-dd)")
+parser.add_argument('-ed', "--end_date", help="End date (yyyy-mm-dd")
 parser.add_argument('-c', "--config_file", help="Configuration file (Default: aceasy_config.ini)")
-parser.add_argument('-ac', "--atm_correction", help="Atmospheric correction", choices=["C2RCC","POLYMER","FUB_CSIRO","ACOLITE"], required=True)
+parser.add_argument('-ac', "--atm_correction", help="Atmospheric correction",
+                    choices=["C2RCC", "POLYMER", "FUB_CSIRO", "ACOLITE"], required=True)
 args = parser.parse_args()
 
 # Press the green button in the gutter to run the script.
@@ -56,9 +64,29 @@ if __name__ == '__main__':
     elif args.atm_correction == 'POLYMER':
         corrector = POLYMER(fconfig, args.verbose)
     elif args.atm_correction == 'FUB_CSIRO':
-        corrector = FUB_CSIRO(fconfig,args.verbose)
+        corrector = FUB_CSIRO(fconfig, args.verbose)
     elif args.atm_correction == 'ACOLITE':
-        corrector = ACOLITE(fconfig,args.verbose)
+        corrector = ACOLITE(fconfig, args.verbose)
+
+    start_date = None
+    end_date = None
+    if args.start_date and args.end_date:
+        try:
+            start_date = datetime.strptime(args.start_date, '%Y-%m-%d')
+        except ValueError:
+            print(f'[ERROR] Start date: {args.start_date} should be in format: yyyy-mm-dd')
+            exit(1)
+        try:
+            end_date = datetime.strptime(args.end_date, '%Y-%m-%d')
+        except ValueError:
+            print(f'[ERROR] End date: {args.end_date} should be in format: yyyy-mm-dd')
+            exit(1)
+        if start_date > end_date:
+            print(f'[ERROR] End date should be equal or greater than start date')
+            exit(1)
+
+        if args.verbose:
+            print(f'[INFO] Start date: {args.start_date} End date: {args.end_date}')
 
     if not corrector.check_runac():
         exit(1)
@@ -66,17 +94,67 @@ if __name__ == '__main__':
         print(f'[INFO] Started {args.atm_correction} processor')
 
     if input_path is None:  # single product, for testing
-        p = corrector.run_process(prod_path,output_path)
+        p = corrector.run_process(prod_path, output_path)
         if args.verbose:
             print('--------------------------------------------------')
     else:
-        for f in os.listdir(input_path):
-            prod_path = os.path.join(input_path,f)
-            if os.path.isdir(prod_path) and f.endswith('.SEN3'):
-                if args.verbose:
-                    print('--------------------------------------------------')
-                p = corrector.run_process(prod_path,output_path)
+        if start_date is not None and end_date is not None:  # formato year/jjj
+            date_here = start_date
+            while date_here <= end_date:
+                year_str = date_here.strftime('%Y')
+                day_str = date_here.strftime('%j')
 
+                # temporal
+                # jday_list = [1, 45, 135, 225, 315]
+                # jday = int(day_str)
+                # if jday not in jday_list:
+                #     date_here = date_here + timedelta(hours=24)
+                #     continue
+                ####
+
+                input_path_date = os.path.join(input_path, year_str, day_str)
+
+                if os.path.exists(input_path_date):
+                    output_path_year = os.path.join(output_path, year_str)
+                    if not os.path.exists(output_path_year):
+                        os.mkdir(output_path_year)
+                    output_path_jday = os.path.join(output_path_year, day_str)
+                    if not os.path.exists(output_path_jday):
+                        os.mkdir(output_path_jday)
+                    if args.verbose:
+                        print('*************************************************')
+                    for f in os.listdir(input_path_date):
+                        prod_path = os.path.join(input_path_date, f)
+                        if os.path.isdir(prod_path) and f.endswith('.SEN3') and f.find('EFR') > 0:
+                            if args.verbose:
+                                print('--------------------------------------------------')
+                            p = corrector.run_process(prod_path, output_path_jday)
+
+                        if not os.path.isdir(prod_path) and f.find('.zip') and f.find('EFR') > 0:
+                            if not args.temp_path:
+                                print(f'[ERROR] Temporary path must be defined to work with zip files. Use the option -tp')
+                                continue
+                            if not os.path.exists(args.temp_path):
+                                print(f'[ERROR] Temporary path {args.temp_path} does not exist')
+                                continue
+                            iszipped = True
+                            cgeo = CHECK_GEO()
+                            cgeo.start_polygon_image_from_zip_manifest_file(prod_path)
+                            check_geo = cgeo.check_geo_area(53,66,7,31)
+                            print('->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><',check_geo)
+
+                else:
+                    if args.verbose:
+                        print(f'[WARNING] Path: {input_path_date} does not exist. Skipping..')
+
+                date_here = date_here + timedelta(hours=24)
+        else:
+            for f in os.listdir(input_path):
+                prod_path = os.path.join(input_path, f)
+                if os.path.isdir(prod_path) and f.endswith('.SEN3') and f.find('EFR') > 0:
+                    if args.verbose:
+                        print('--------------------------------------------------')
+                    p = corrector.run_process(prod_path, output_path)
 
     # if args.atm_correction == 'C2RCC':
     #     corrector = C2RCC(fconfig, args.verbose)
@@ -96,4 +174,3 @@ if __name__ == '__main__':
     #                 if args.verbose:
     #                     print('--------------------------------------------------')
     #                 p = corrector.run_process(prod_path,output_path)
-
