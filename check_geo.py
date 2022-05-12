@@ -43,11 +43,11 @@ class CHECK_GEO():
     def check_polygon(self, polygon_area):
         if not isinstance(polygon_area, Polygon):
             return -1
-        intersection = self.polygon_image.intersection(polygon_area)
-        if not intersection is None:
+        if self.polygon_image.intersects(polygon_area):
             flag_location = 1
         else:
             flag_location = 0
+            
         return flag_location
 
     def check_geo_area(self, south, north, west, east):
