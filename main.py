@@ -141,7 +141,7 @@ if __name__ == '__main__':
                             cgeo = CHECK_GEO()
                             print(prod_path)
                             cgeo.start_polygon_image_from_zip_manifest_file(prod_path)
-                            check_geo = cgeo.check_geo_area(53,66,7,31)
+                            check_geo = cgeo.check_geo_area(53,66,120,125)#7,31)
                             print('->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><',check_geo)
 
                 else:

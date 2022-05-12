@@ -47,7 +47,7 @@ class CHECK_GEO():
             flag_location = 1
         else:
             flag_location = 0
-            
+
         return flag_location
 
     def check_geo_area(self, south, north, west, east):
