@@ -132,17 +132,33 @@ if __name__ == '__main__':
 
                         if not os.path.isdir(prod_path) and f.endswith('.zip') and f.find('EFR') > 0:
                             if not args.temp_path:
-                                print(f'[ERROR] Temporary path must be defined to work with zip files. Use the option -tp')
+                                print(
+                                    f'[ERROR] Temporary path must be defined to work with zip files. Use the option -tp')
                                 continue
                             if not os.path.exists(args.temp_path):
                                 print(f'[ERROR] Temporary path {args.temp_path} does not exist')
                                 continue
+                            unzip_path = args.temp_path
                             iszipped = True
                             cgeo = CHECK_GEO()
-                            print(prod_path)
                             cgeo.start_polygon_image_from_zip_manifest_file(prod_path)
-                            check_geo = cgeo.check_geo_area(53,66,120,125)#7,31)
-                            print('->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><',check_geo)
+                            check_geo = cgeo.check_geo_area(53, 66, 7, 31)
+                            if check_geo == 1:
+                                with zp.ZipFile(prod_path, 'r') as zprod:
+                                    if args.verbose:
+                                        print(f'[INFO] Unziping {f} to {unzip_path}')
+                                    zprod.extractall(path=unzip_path)
+                                path_prod_u = prod_path.split('/')[-1][0:-4]
+                                if not path_prod_u.endswith('.SEN3'):
+                                    path_prod_u = path_prod_u + '.SEN3'
+                                path_prod_u = os.path.join(unzip_path, path_prod_u)
+                                if args.verbose:
+                                    print(f'[INFO] Running atmospheric correction for {path_prod_u}')
+                                p = corrector.run_process(path_prod_u, output_path_jday)
+                            elif check_geo <= 0:
+                                if args.verbose:
+                                    print(f'[WARNING] Image out of the interest area. Skipping')
+                                continue
 
                 else:
                     if args.verbose:
