@@ -9,6 +9,7 @@ from c2rcc import C2RCC
 from polymer_lois import POLYMER
 from fub_csiro_lois import FUB_CSIRO
 from acolite_lois import ACOLITE
+from idepix_lois import IDEPIX
 import zipfile as zp
 from check_geo import CHECK_GEO
 
@@ -23,7 +24,7 @@ parser.add_argument('-sd', "--start_date", help="Start date (yyyy-mm-dd)")
 parser.add_argument('-ed', "--end_date", help="End date (yyyy-mm-dd")
 parser.add_argument('-c', "--config_file", help="Configuration file (Default: aceasy_config.ini)")
 parser.add_argument('-ac', "--atm_correction", help="Atmospheric correction",
-                    choices=["C2RCC", "POLYMER", "FUB_CSIRO", "ACOLITE"], required=True)
+                    choices=["C2RCC", "POLYMER", "FUB_CSIRO", "ACOLITE", "IDEPIX"], required=True)
 args = parser.parse_args()
 
 # Press the green button in the gutter to run the script.
@@ -67,6 +68,8 @@ if __name__ == '__main__':
         corrector = FUB_CSIRO(fconfig, args.verbose)
     elif args.atm_correction == 'ACOLITE':
         corrector = ACOLITE(fconfig, args.verbose)
+    elif args.atm_correction == 'IDEPIX':
+        corrector = IDEPIX(fconfig,args.verbose)
 
     start_date = None
     end_date = None

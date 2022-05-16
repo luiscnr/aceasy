@@ -44,7 +44,7 @@ class IDEPIX:
 
         cmd = f'{self.gpt_path} Idepix.Olci {prod_path} -f NetCDF4-CF -t {output_path}'
         if self.verbose:
-            print(f'[INFO] Starting FUB-CSIRO processing...')
+            print(f'[INFO] Starting IDEPIX processing...')
             #print(cmd)
         proc = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         outs, errs = proc.communicate()
