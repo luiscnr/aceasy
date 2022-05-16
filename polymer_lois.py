@@ -88,8 +88,10 @@ class POLYMER:
             if self.extraoptions[key]['apply']:
                 params[key] = self.extraoptions[key]['value']
 
-        print(params)
-        res = run_atm_corr(Level1(prod_path),Level2(filename = output_path,fmt = 'netcdf4'),**params)
+        #Level2('memory')  # store output in memory
+        #res = run_atm_corr(Level1(prod_path),Level2(filename = output_path,fmt = 'netcdf4'),**params)
+        res = run_atm_corr(Level1(prod_path), Level2('memory'), **params)
+
         if isinstance(res,Level2_NETCDF) and os.path.exists(output_path):
             if self.verbose:
                 print(f'[INFO] Polymer completed. Output file name: {output_name}')
