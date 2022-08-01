@@ -183,12 +183,15 @@ if __name__ == '__main__':
                                 # Deleting temporarty
                                 if args.verbose:
                                     print('f[INFO] Deleting temporary files...')
-                                
+
                                 cmd =  f'rm -r {path_prod_u}'
                                 prog = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
                                 out, err = prog.communicate()
-                                if err:
-                                    print(err)
+
+                                cmd = f'rmdir {path_prod_u}'
+                                prog = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
+                                out, err = prog.communicate()
+                                
 
                             elif check_geo <= 0:
                                 if args.verbose:
