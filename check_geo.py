@@ -2,7 +2,7 @@ import zipfile as zp
 import os
 from shapely.geometry import Point
 from shapely.geometry import Polygon
-import simplekml
+
 
 class CHECK_GEO():
     def __init__(self):
@@ -46,10 +46,7 @@ class CHECK_GEO():
                         self.coords_image = coords
                 gc.close()
 
-    def save_polygon_image_askml(self,file_out):
-        kml = simplekml.Kml()
-        kml.newlinestring(name=file_out, description="Image",coords=self.coords_image)
-        kml.save(file_out)
+
 
 
     def get_geo_limits(self):

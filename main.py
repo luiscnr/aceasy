@@ -28,18 +28,18 @@ parser.add_argument('-ac', "--atm_correction", help="Atmospheric correction",
 args = parser.parse_args()
 
 
-def save_areas(input_path, output_path):
-    for name in os.listdir(input_path):
-
-        if name.startswith('S3A_OL_1_EFR') or name.startswith('S3B_OL_1_EFR'):
-            prod_path = os.path.join(input_path, name)
-            cgeo = CHECK_GEO()
-            if prod_path.endswith('SEN3'):
-                cgeo.start_polygon_from_prod_manifest_file(prod_path)
-            if prod_path.endswith('zip'):
-                cgeo.start_polygon_image_from_zip_manifest_file(prod_path)
-            output_file = os.path.join(output_path, name[:-3] + '.kml')
-            cgeo.save_polygon_image_askml(output_file)
+# def save_areas(input_path, output_path):
+#     for name in os.listdir(input_path):
+#
+#         if name.startswith('S3A_OL_1_EFR') or name.startswith('S3B_OL_1_EFR'):
+#             prod_path = os.path.join(input_path, name)
+#             cgeo = CHECK_GEO()
+#             if prod_path.endswith('SEN3'):
+#                 cgeo.start_polygon_from_prod_manifest_file(prod_path)
+#             if prod_path.endswith('zip'):
+#                 cgeo.start_polygon_image_from_zip_manifest_file(prod_path)
+#             output_file = os.path.join(output_path, name[:-3] + '.kml')
+#             cgeo.save_polygon_image_askml(output_file)
 
 
 def delete_folder_content(path_folder):
@@ -85,9 +85,9 @@ if __name__ == '__main__':
         exit(1)
     output_path = args.outputpath
 
-    if args.atm_correction == 'SHP':  ##save area as polygon
-        save_areas(input_path, output_path)
-        exit(0)
+    # if args.atm_correction == 'SHP':  ##save area as polygon
+    #     save_areas(input_path, output_path)
+    #     exit(0)
 
     if args.atm_correction == 'C2RCC':
         corrector = C2RCC(fconfig, args.verbose)
