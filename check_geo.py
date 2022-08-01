@@ -2,11 +2,12 @@ import zipfile as zp
 import os
 from shapely.geometry import Point
 from shapely.geometry import Polygon
-
+import simplekml
 
 class CHECK_GEO():
     def __init__(self):
         self.polygon_image = None
+        self.coords_image = None
 
     def start_polygon_image_from_zip_manifest_file(self, prod_path):
         with zp.ZipFile(prod_path, 'r') as zprod:
@@ -24,8 +25,36 @@ class CHECK_GEO():
                         for i in range(0, len(clist), 2):
                             coord_here = (float(clist[i + 1]), float(clist[i]))
                             coords.append(coord_here)
+                        self.coords_image = coords
                         self.polygon_image = Polygon(coords)  # create polygon
                 gc.close()
+
+    def start_polygon_from_prod_manifest_file(self, prod_path):
+        if os.path.exists(prod_path) and os.path.isdir(prod_path):
+            geoname = os.path.join(prod_path, 'xfdumanifest.xml')
+            if os.path.exists(geoname):
+                gc = open(geoname)
+                for line in gc:
+                    line_str = line.strip()
+                    if line_str.startswith('<gml:posList>'):
+                        clist = line_str[len('<gml:posList>'):line_str.index('</gml:posList>')].split()
+                        coords = []
+                        for i in range(0, len(clist), 2):
+                            coord_here = (float(clist[i + 1]), float(clist[i]))
+                            coords.append(coord_here)
+                        self.polygon_image = Polygon(coords)  # create polygon
+                        self.coords_image = coords
+                gc.close()
+
+    def save_polygon_image_askml(self,file_out):
+        kml = simplekml.Kml()
+        kml.newlinestring(name=file_out, description="Image",coords=self.coords_image)
+        kml.save(file_out)
+
+
+    def get_geo_limits(self):
+        if self.polygon_image is None:
+            return None
 
     def check_point(self, point_site):
         if not isinstance(point_site, Point):
@@ -47,7 +76,6 @@ class CHECK_GEO():
             flag_location = 1
         else:
             flag_location = 0
-
         return flag_location
 
     def check_geo_area(self, south, north, west, east):

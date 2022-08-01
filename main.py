@@ -24,8 +24,33 @@ parser.add_argument('-sd', "--start_date", help="Start date (yyyy-mm-dd)")
 parser.add_argument('-ed', "--end_date", help="End date (yyyy-mm-dd")
 parser.add_argument('-c', "--config_file", help="Configuration file (Default: aceasy_config.ini)")
 parser.add_argument('-ac', "--atm_correction", help="Atmospheric correction",
-                    choices=["C2RCC", "POLYMER", "FUB_CSIRO", "ACOLITE", "IDEPIX"], required=True)
+                    choices=["C2RCC", "POLYMER", "FUB_CSIRO", "ACOLITE", "IDEPIX", "SHP"], required=True)
 args = parser.parse_args()
+
+
+def save_areas(input_path, output_path):
+    for name in os.listdir(input_path):
+
+        if name.startswith('S3A_OL_1_EFR') or name.startswith('S3B_OL_1_EFR'):
+            prod_path = os.path.join(input_path, name)
+            cgeo = CHECK_GEO()
+            if prod_path.endswith('SEN3'):
+                cgeo.start_polygon_from_prod_manifest_file(prod_path)
+            if prod_path.endswith('zip'):
+                cgeo.start_polygon_image_from_zip_manifest_file(prod_path)
+            output_file = os.path.join(output_path, name[:-3] + '.kml')
+            cgeo.save_polygon_image_askml(output_file)
+
+
+def delete_folder_content(path_folder):
+    res = True
+    for f in os.listdir(path_folder):
+        try:
+            os.remove(os.path.join(path_folder, f))
+        except OSError:
+            res = False
+    return res
+
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
@@ -60,6 +85,10 @@ if __name__ == '__main__':
         exit(1)
     output_path = args.outputpath
 
+    if args.atm_correction == 'SHP':  ##save area as polygon
+        save_areas(input_path, output_path)
+        exit(0)
+
     if args.atm_correction == 'C2RCC':
         corrector = C2RCC(fconfig, args.verbose)
     elif args.atm_correction == 'POLYMER':
@@ -69,7 +98,7 @@ if __name__ == '__main__':
     elif args.atm_correction == 'ACOLITE':
         corrector = ACOLITE(fconfig, args.verbose)
     elif args.atm_correction == 'IDEPIX':
-        corrector = IDEPIX(fconfig,args.verbose)
+        corrector = IDEPIX(fconfig, args.verbose)
 
     start_date = None
     end_date = None
@@ -106,14 +135,6 @@ if __name__ == '__main__':
             while date_here <= end_date:
                 year_str = date_here.strftime('%Y')
                 day_str = date_here.strftime('%j')
-
-                # temporal
-                # jday_list = [1, 45, 135, 225, 315]
-                # jday = int(day_str)
-                # if jday not in jday_list:
-                #     date_here = date_here + timedelta(hours=24)
-                #     continue
-                ####
 
                 input_path_date = os.path.join(input_path, year_str, day_str)
 
@@ -158,6 +179,15 @@ if __name__ == '__main__':
                                 if args.verbose:
                                     print(f'[INFO] Running atmospheric correction for {path_prod_u}')
                                 p = corrector.run_process(path_prod_u, output_path_jday)
+                                # Deleting temporarty
+                                if args.verbose:
+                                    print('f[INFO] Deleting temporary files...')
+                                try:
+                                    delete_folder_content(path_prod_u)
+                                    os.rmdir(path_prod_u)
+                                except:
+                                    print(f'[WARNING] Temporary path: {path_prod_u} could not be deleted')
+
                             elif check_geo <= 0:
                                 if args.verbose:
                                     print(f'[WARNING] Image out of the interest area. Skipping')
