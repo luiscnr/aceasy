@@ -1,5 +1,6 @@
 import argparse
 import os
+import subprocess
 from datetime import datetime
 from datetime import timedelta
 
@@ -182,11 +183,12 @@ if __name__ == '__main__':
                                 # Deleting temporarty
                                 if args.verbose:
                                     print('f[INFO] Deleting temporary files...')
-                                try:
-                                    delete_folder_content(path_prod_u)
-                                    os.rmdir(path_prod_u)
-                                except:
-                                    print(f'[WARNING] Temporary path: {path_prod_u} could not be deleted')
+                                
+                                cmd =  f'rm -r {path_prod_u}'
+                                prog = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
+                                out, err = prog.communicate()
+                                if err:
+                                    print(err)
 
                             elif check_geo <= 0:
                                 if args.verbose:
