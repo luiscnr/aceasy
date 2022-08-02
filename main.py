@@ -163,6 +163,8 @@ if __name__ == '__main__':
                             if not os.path.exists(args.temp_path):
                                 print(f'[ERROR] Temporary path {args.temp_path} does not exist')
                                 continue
+                            if args.verbose:
+                                print(f'[INFO] Working with zip path: {prod_path}')
                             unzip_path = args.temp_path
                             iszipped = True
                             cgeo = CHECK_GEO()
