@@ -168,7 +168,9 @@ if __name__ == '__main__':
                             unzip_path = args.temp_path
                             iszipped = True
                             cgeo = CHECK_GEO()
-                            print('llega aqui....')
+                            if not cgeo.check_zip_file(prod_path):
+                                print(f'[WARNING] Zip file {prod_path} is not valid. Skipping...')
+                                continue
                             cgeo.start_polygon_image_from_zip_manifest_file(prod_path)
                             check_geo = cgeo.check_geo_area(53, 66, 7, 31)
                             if check_geo == 1:

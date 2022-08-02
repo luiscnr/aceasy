@@ -9,6 +9,16 @@ class CHECK_GEO():
         self.polygon_image = None
         self.coords_image = None
 
+    def check_zip_file(self,prod_path):
+        valid = True
+        try:
+            zprod = zp.ZipFile(prod_path,'r')
+            zprod.close()
+        except:
+            valid = False
+            zprod.close()
+        return valid
+
     def start_polygon_image_from_zip_manifest_file(self, prod_path):
         with zp.ZipFile(prod_path, 'r') as zprod:
             fname = prod_path.split('/')[-1][0:-4]
