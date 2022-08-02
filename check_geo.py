@@ -16,7 +16,6 @@ class CHECK_GEO():
             zprod.close()
         except:
             valid = False
-            zprod.close()
         return valid
 
     def start_polygon_image_from_zip_manifest_file(self, prod_path):
