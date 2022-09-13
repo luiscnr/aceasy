@@ -1,6 +1,7 @@
 import os
 from datetime import datetime as dt
 
+
 class S3Product:
     def __init__(self, path_prod):
         self.path_prod = path_prod
@@ -10,7 +11,7 @@ class S3Product:
             dformat = '%Y%m%dT%H%M%S'
             for l in lvalues:
                 try:
-                    self.date =dt.strptime(l.strip(),dformat)
+                    self.date = dt.strptime(l.strip(), dformat)
                     break
                 except ValueError:
                     continue
@@ -21,7 +22,3 @@ class S3Product:
         dates = self.date.strftime('%Y_%m_%d_%H_%M_%S')
         fname = f'{self.platform}_{self.instrument}_{dates}_L2R.nc'
         return fname
-
-
-
-
