@@ -11,6 +11,7 @@ from polymer_lois import POLYMER
 from fub_csiro_lois import FUB_CSIRO
 from acolite_lois import ACOLITE
 from idepix_lois import IDEPIX
+from baltic_mlp import BALTIC_MLP
 import zipfile as zp
 from check_geo import CHECK_GEO
 
@@ -25,7 +26,7 @@ parser.add_argument('-sd', "--start_date", help="Start date (yyyy-mm-dd)")
 parser.add_argument('-ed', "--end_date", help="End date (yyyy-mm-dd")
 parser.add_argument('-c', "--config_file", help="Configuration file (Default: aceasy_config.ini)")
 parser.add_argument('-ac', "--atm_correction", help="Atmospheric correction",
-                    choices=["C2RCC", "POLYMER", "FUB_CSIRO", "ACOLITE", "IDEPIX", "SHP"], required=True)
+                    choices=["C2RCC", "POLYMER", "FUB_CSIRO", "ACOLITE", "IDEPIX", "BALMLP"], required=True)
 args = parser.parse_args()
 
 
@@ -70,25 +71,18 @@ if __name__ == '__main__':
     if not os.path.exists(fconfig):
         print(f'[ERROR] Config file: {fconfig} does not exist')
         exit(1)
-
     if not args.product and not args.inputpath:
         print(f'[ERROR] Product name or input folder are required')
         exit(1)
-
     input_path = None
     if args.inputpath:
         input_path = args.inputpath
     if args.product:
         prod_path = args.product
-
     if not args.outputpath:
         print(f'[ERROR] Output folder option is required')
         exit(1)
     output_path = args.outputpath
-
-    # if args.atm_correction == 'SHP':  ##save area as polygon
-    #     save_areas(input_path, output_path)
-    #     exit(0)
 
     if args.atm_correction == 'C2RCC':
         corrector = C2RCC(fconfig, args.verbose)
@@ -100,6 +94,8 @@ if __name__ == '__main__':
         corrector = ACOLITE(fconfig, args.verbose)
     elif args.atm_correction == 'IDEPIX':
         corrector = IDEPIX(fconfig, args.verbose)
+    elif args.atm_correction == 'BALMLP':
+        corrector = BALTIC_MLP(fconfig, args.verbose)
 
     start_date = None
     end_date = None
@@ -189,7 +185,7 @@ if __name__ == '__main__':
                                 if args.verbose:
                                     print('[INFO] Deleting temporary files...')
 
-                                cmd =  f'rm -r {path_prod_u}'
+                                cmd = f'rm -r {path_prod_u}'
                                 prog = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
                                 out, err = prog.communicate()
 

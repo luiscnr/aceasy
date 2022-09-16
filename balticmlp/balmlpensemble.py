@@ -9,8 +9,12 @@ pd.set_option('display.precision', 4)
 class BalMLP():
     def __init__(self, path_file):
 
-        # Six bands: Table 2
+        if path_file is None:
+            path_file = os.path.join('balticmlp')
+            if not os.path.exists(path_file) or not os.path.isdir(path_file):
+                path_file = None
 
+        # Six bands: Table 2
         parFile = "blts_rrs412-rrs443-rrs490-rrs510-rrs555-rrs670-mlp-1-of-1-test-1-of-1.par"
         if path_file is not None:
             parFile = os.path.join(path_file, parFile)
@@ -56,6 +60,7 @@ class BalMLP():
     # Compute Chl
     def mlpChl(self, mlpPar, rrs):
         # Data pre-processing
+
         l = np.log10(rrs)
         x = (l - mlpPar['model'].muIn) / mlpPar['model'].stdIn
 
@@ -73,6 +78,8 @@ class BalMLP():
 
         # Weight
         wgt = 1 / eta
+
+        wgt = wgt[0]
 
         return chl, wgt
 
@@ -106,7 +113,20 @@ class BalMLP():
 
         tmp = np.multiply(self.chl_5_670, self.wgt_5_670) + np.multiply(self.chl_4, self.wgt_4) + np.multiply(
             self.chl_3, self.wgt_3)
+
         self.ens3 = np.divide(tmp, self.wgt_5_670 + self.wgt_4 + self.wgt_3)
+
+    ##rrs with 5 bands:443_490_510_555_670
+    def compute_chla_ensemble_3bands(self, rrs):
+        self.chl_5_670, self.wgt_5_670 = self.mlp_5_bands_670(rrs[:, [0, 1, 2, 3, 4]])
+        self.chl_4, self.wgt_4 = self.mlp_4_bands(rrs[:, [1, 2, 3, 4]])
+        self.chl_3, self.wgt_3 = self.mlp_3_bands(rrs[:, [1, 2, 3]])
+
+        tmp = np.multiply(self.chl_5_670, self.wgt_5_670) + np.multiply(self.chl_4, self.wgt_4) + np.multiply(
+            self.chl_3, self.wgt_3)
+
+        self.ens3 = np.divide(tmp, self.wgt_5_670 + self.wgt_4 + self.wgt_3)
+        return self.ens3
 
     def get_values(self):
         values = [self.wgt_3[[0]], self.wgt_4[[0]], self.wgt_5_412[[0]], self.wgt_5_670[[0]], self.wgt_6[[0]],
