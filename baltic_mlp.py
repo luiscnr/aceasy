@@ -40,7 +40,10 @@ class BALTIC_MLP():
         if self.verbose:
             print(f'[INFO] Image dimensions {ny}x{nx}')
 
+        print(startY,endY,startX,endX)
         latArray,lonArray = self.get_lat_lon_arrays(ncpolymer,startY,endY+1,startX,endX+1)
+        print(latArray.shape)
+        print(lonArray.shape)
 
         # defining output array
         array_chl = np.empty((ny, nx))

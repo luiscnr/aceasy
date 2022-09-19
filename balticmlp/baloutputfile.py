@@ -59,8 +59,8 @@ class BalOutputFile:
         satellite_latitude.units = "degrees_north"
         satellite_latitude.long_name = "latitude"
         satellite_latitude.standard_name = "latitude"
-        satellite_latitude.valid_min = 53.250
-        satellite_latitude.valid_max = 65.850
+        # satellite_latitude.valid_min = 53.250
+        # satellite_latitude.valid_max = 65.850
 
         # longitude
         satellite_longitude = self.OFILE.createVariable('longitude', 'f4', ('lat', 'lon'), fill_value=-999, zlib=True,
@@ -69,8 +69,8 @@ class BalOutputFile:
         satellite_longitude.units = "degrees_east"
         satellite_longitude.long_name = "longitude"
         satellite_longitude.standard_name = "longitude"
-        satellite_longitude.valid_min = 9.2500
-        satellite_longitude.valid_max = 30.2500
+        # satellite_longitude.valid_min = 9.2500
+        # satellite_longitude.valid_max = 30.2500
 
     def create_data_variable(self, var_name, array):
 
