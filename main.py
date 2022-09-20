@@ -123,9 +123,35 @@ if __name__ == '__main__':
         print(f'[INFO] Started {args.atm_correction} processor')
 
     if input_path is None:  # single product, for testing
-        p = corrector.run_process(prod_path, output_path)
-        if args.verbose:
-            print('--------------------------------------------------')
+        f = os.path.basename(prod_path)
+        if os.path.isdir(prod_path) and f.endswith('.SEN3') and f.find('EFR') > 0:
+            p = corrector.run_process(prod_path, output_path)
+            if args.verbose:
+                print('--------------------------------------------------')
+        if not os.path.isdir(prod_path) and f.endswith('.zip') and f.find('EFR') > 0:
+            if args.verbose:
+                print(f'[INFO] Working with zip path: {prod_path}')
+            with zp.ZipFile(prod_path, 'r') as zprod:
+                if args.verbose:
+                    print(f'[INFO] Unziping {f} to {output_path}')
+                zprod.extractall(path=output_path)
+            path_prod_u = prod_path.split('/')[-1][0:-4]
+            if not path_prod_u.endswith('.SEN3'):
+                path_prod_u = path_prod_u + '.SEN3'
+            path_prod_u = os.path.join(output_path, path_prod_u)
+            if args.verbose:
+                print(f'[INFO] Running atmospheric correction for {path_prod_u}')
+            p = corrector.run_process(path_prod_u, output_path)
+
+            if args.verbose:
+                print(f'[INFO] Deleting unzipped path prode {path_prod_u}')
+            cmd = f'rm -r {path_prod_u}'
+            prog = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
+            out, err = prog.communicate()
+
+            cmd = f'rmdir {path_prod_u}'
+            prog = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
+            out, err = prog.communicate()
     else:
         if start_date is not None and end_date is not None:  # formato year/jjj
             date_here = start_date
