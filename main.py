@@ -211,11 +211,11 @@ if __name__ == '__main__':
                                 if args.verbose:
                                     print(f'[INFO] Running atmospheric correction for {path_prod_u}')
                                 p = corrector.run_process(path_prod_u, output_path_jday)
+
                                 # Deleting temporarty
                                 if args.verbose:
                                     print('[INFO] Deleting temporary files...')
-
-                                cmd = f'rm -r {path_prod_u}'
+                                cmd = f'rm -rf {path_prod_u}/*'
                                 prog = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
                                 out, err = prog.communicate()
 
