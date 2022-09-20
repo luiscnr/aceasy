@@ -94,7 +94,11 @@ class POLYMER:
                 params[key] = self.extraoptions[key]['value']
 
         #Level2('memory')  # store output in memory
-        res = run_atm_corr(Level1(prod_path),Level2(filename = output_path,fmt = 'netcdf4'),**params)
+        try:
+            res = run_atm_corr(Level1(prod_path),Level2(filename = output_path,fmt = 'netcdf4'),**params)
+        except:
+            print(f'[ERROR] Polymer NOT completed for product: {prod_name}')
+            return False
         #res = run_atm_corr(Level1(prod_path), Level2('memory'), **params)
 
         if isinstance(res,Level2_NETCDF) and os.path.exists(output_path):
