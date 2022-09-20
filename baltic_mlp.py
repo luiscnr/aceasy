@@ -1,3 +1,4 @@
+import configparser
 import math
 import os.path
 
@@ -13,8 +14,15 @@ class BALTIC_MLP():
         self.verbose = verbose
         if fconfig is None:
             fconfig = 'aceasy_config.ini'
+        path_par = None
+        if os.path.exists(fconfig):
+            options = configparser.ConfigParser()
+            options.read(fconfig)
+            if options.has_section('BALMLP'):
+                if options.has_option('BALMLP', 'par_path'):
+                    path_par = options['BALMLP']['par_path']
 
-        self.balmlp = balmlpensemble.BalMLP(None)
+        self.balmlp = balmlpensemble.BalMLP(path_par)
 
 
 
@@ -40,10 +48,10 @@ class BALTIC_MLP():
         if self.verbose:
             print(f'[INFO] Image dimensions {ny}x{nx}')
 
-        print(startY,endY,startX,endX)
+        #print(startY,endY,startX,endX)
         latArray,lonArray = self.get_lat_lon_arrays(ncpolymer,startY,endY+1,startX,endX+1)
-        print(latArray.shape)
-        print(lonArray.shape)
+        #print(latArray.shape)
+        #print(lonArray.shape)
 
         # defining output array
         array_chl = np.empty((ny, nx))
