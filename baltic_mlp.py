@@ -34,6 +34,7 @@ class BALTIC_MLP():
         fileout = self.get_file_out(prod_path, output_dir)
         if os.path.exists(fileout):
             print(f'[WARNING] Output file {fileout} already exits. Skipping...')
+            return
         if self.verbose:
             print(f'[INFO] Starting chla processing')
         ncpolymer = Dataset(prod_path)
