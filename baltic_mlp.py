@@ -31,6 +31,9 @@ class BALTIC_MLP():
         return True
 
     def run_process(self, prod_path, output_dir):
+        fileout = self.get_file_out(prod_path, output_dir)
+        if os.path.exists(fileout):
+            print(f'[WARNING] Output file {fileout} already exits. Skipping...')
         if self.verbose:
             print(f'[INFO] Starting chla processing')
         ncpolymer = Dataset(prod_path)
@@ -84,7 +87,7 @@ class BALTIC_MLP():
                     chla_here[:] = np.NaN
                     chla_here[valid_mask] = chla_res
                     array_chl[yini:yend, xini:xend] = chla_here[:, :]
-        fileout = self.get_file_out(prod_path,output_dir)
+
         if self.verbose:
             print(f'[INFO] Chla processing completed')
             print(f'[INFO] Output file: {fileout}')
