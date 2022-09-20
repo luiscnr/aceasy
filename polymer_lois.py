@@ -23,8 +23,6 @@ class POLYMER:
 
         self.polymer_path = None
 
-
-
         self.extraoptions = {
             'multiprocessing':{
                 'value':0,
@@ -32,6 +30,10 @@ class POLYMER:
             },
             'normalize':{
                 'value':3,
+                'apply': False
+            },
+            'bands_rw':{
+                'value':[],
                 'apply': False
             }
         }
@@ -44,7 +46,10 @@ class POLYMER:
                 if options.has_option('POLYMER','multiprocessing'):
                     self.extraoptions['multiprocessing']['value'] = int(options['POLYMER'] ['multiprocessing'])
                     self.extraoptions['multiprocessing']['apply'] = True
-
+                if options.has_option('POLYMER','bands_rw'):
+                    svalue = options['POLYMER']['bands_rw']
+                    self.extraoptions['bands_rw']['value'] = [int(x.strip()) for x in svalue.strip().split(',')]
+                    self.extraoptions['bands_rw']['apply'] = True
                 if options.has_option('POLYMER','normalize'):
                     self.extraoptions['normalize']['value'] = int(options['POLYMER'] ['normalize'])
                     self.extraoptions['normalize']['apply'] = True
