@@ -124,11 +124,15 @@ if __name__ == '__main__':
 
     if input_path is None:  # single product, for testing
         f = os.path.basename(prod_path)
-        if os.path.isdir(prod_path) and f.endswith('.SEN3') and f.find('EFR') > 0:
+        if args.atm_correction == 'BALMLP' and f.endswith('.nc'):
             p = corrector.run_process(prod_path, output_path)
             if args.verbose:
                 print('--------------------------------------------------')
-        if not os.path.isdir(prod_path) and f.endswith('.zip') and f.find('EFR') > 0:
+        elif os.path.isdir(prod_path) and f.endswith('.SEN3') and f.find('EFR') > 0:
+            p = corrector.run_process(prod_path, output_path)
+            if args.verbose:
+                print('--------------------------------------------------')
+        elif not os.path.isdir(prod_path) and f.endswith('.zip') and f.find('EFR') > 0:
             if args.verbose:
                 print(f'[INFO] Working with zip path: {prod_path}')
             with zp.ZipFile(prod_path, 'r') as zprod:
