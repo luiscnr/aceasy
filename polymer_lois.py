@@ -88,10 +88,6 @@ class POLYMER:
         if self.verbose:
             print(f'[INFO] Input product: {prod_name}')
 
-
-
-        print(sys.path)
-
         from polymer.main import run_atm_corr, Level1, Level2
         from polymer.level2_nc import Level2_NETCDF
         params = {}
