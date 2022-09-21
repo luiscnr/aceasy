@@ -149,13 +149,14 @@ if __name__ == '__main__':
 
             if args.verbose:
                 print(f'[INFO] Deleting unzipped path prode {path_prod_u}')
-            cmd = f'rm -r {path_prod_u}'
+            cmd = f'rm -rf {path_prod_u}'
             prog = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
             out, err = prog.communicate()
 
             cmd = f'rmdir {path_prod_u}'
             prog = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
             out, err = prog.communicate()
+
     else:
         if start_date is not None and end_date is not None:  # formato year/jjj
             date_here = start_date
