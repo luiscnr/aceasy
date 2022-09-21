@@ -99,7 +99,7 @@ class POLYMER:
         try:
             res = run_atm_corr(Level1(prod_path),Level2(filename = output_path,fmt = 'netcdf4'),**params)
         except:
-            print(f'[ERROR] Polymer NOT completed for product: {prod_name}')
+            print(f'[ERROR] Polymer WAS NOT completed for product: {prod_name}')
             return False
         #res = run_atm_corr(Level1(prod_path), Level2('memory'), **params)
 
