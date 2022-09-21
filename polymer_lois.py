@@ -43,6 +43,9 @@ class POLYMER:
             if options.has_section('POLYMER'):
                 if options.has_option('POLYMER', 'polymer_path'):
                     self.polymer_path = options['POLYMER']['polymer_path']
+                    sys.path.append(self.polymer_path)
+                    if self.verbose:
+                        print(f'[INFO] Polymer path: {self.polymer_path}')
                 if options.has_option('POLYMER','multiprocessing'):
                     self.extraoptions['multiprocessing']['value'] = int(options['POLYMER'] ['multiprocessing'])
                     self.extraoptions['multiprocessing']['apply'] = True
@@ -85,9 +88,7 @@ class POLYMER:
         if self.verbose:
             print(f'[INFO] Input product: {prod_name}')
 
-        sys.path.append(self.polymer_path)
-        if self.verbose:
-            print(f'[INFO] Polymer path: {self.polymer_path}')
+
 
         print(sys.path)
 
