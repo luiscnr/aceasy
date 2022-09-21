@@ -24,16 +24,16 @@ class POLYMER:
         self.polymer_path = None
 
         self.extraoptions = {
-            'multiprocessing':{
-                'value':0,
-                'apply':False
-            },
-            'normalize':{
-                'value':3,
+            'multiprocessing': {
+                'value': 0,
                 'apply': False
             },
-            'bands_rw':{
-                'value':[],
+            'normalize': {
+                'value': 3,
+                'apply': False
+            },
+            'bands_rw': {
+                'value': [],
                 'apply': False
             }
         }
@@ -43,30 +43,29 @@ class POLYMER:
             if options.has_section('POLYMER'):
                 if options.has_option('POLYMER', 'polymer_path'):
                     self.polymer_path = options['POLYMER']['polymer_path']
-                    sys.path.append(self.polymer_path)
+                    if not self.polymer_path.strip() == 'PWD':
+                        sys.path.append(self.polymer_path)
                     if self.verbose:
                         print(f'[INFO] Polymer path: {self.polymer_path}')
-                if options.has_option('POLYMER','multiprocessing'):
-                    self.extraoptions['multiprocessing']['value'] = int(options['POLYMER'] ['multiprocessing'])
+                if options.has_option('POLYMER', 'multiprocessing'):
+                    self.extraoptions['multiprocessing']['value'] = int(options['POLYMER']['multiprocessing'])
                     self.extraoptions['multiprocessing']['apply'] = True
-                if options.has_option('POLYMER','bands_rw'):
+                if options.has_option('POLYMER', 'bands_rw'):
                     svalue = options['POLYMER']['bands_rw']
                     self.extraoptions['bands_rw']['value'] = [int(x.strip()) for x in svalue.strip().split(',')]
                     self.extraoptions['bands_rw']['apply'] = True
-                if options.has_option('POLYMER','normalize'):
-                    self.extraoptions['normalize']['value'] = int(options['POLYMER'] ['normalize'])
+                if options.has_option('POLYMER', 'normalize'):
+                    self.extraoptions['normalize']['value'] = int(options['POLYMER']['normalize'])
                     self.extraoptions['normalize']['apply'] = True
-
-
 
     def check_runac(self):
         if self.polymer_path is None:
             if self.verbose:
-                print('[ERROR: POLYMER class can no be started. Polymer path is not available]')
+                print('[ERROR] POLYMER class can no be started. Polymer path is not available')
             return False
-        if not os.path.exists(self.polymer_path):
+        if not self.polymer_path == 'PWD' and not os.path.exists(self.polymer_path):
             if self.verbose:
-                print('[ERROR: POLYMER class can no be started. Polymer path does not exist]')
+                print('[ERROR] POLYMER class can no be started. Polymer path does not exist')
             return False
         return True
 
@@ -95,15 +94,15 @@ class POLYMER:
             if self.extraoptions[key]['apply']:
                 params[key] = self.extraoptions[key]['value']
 
-        #Level2('memory')  # store output in memory
+        # Level2('memory')  # store output in memory
         try:
-            res = run_atm_corr(Level1(prod_path),Level2(filename = output_path,fmt = 'netcdf4'),**params)
+            res = run_atm_corr(Level1(prod_path), Level2(filename=output_path, fmt='netcdf4'), **params)
         except:
             print(f'[ERROR] Polymer WAS NOT completed for product: {prod_name}')
             return False
-        #res = run_atm_corr(Level1(prod_path), Level2('memory'), **params)
+        # res = run_atm_corr(Level1(prod_path), Level2('memory'), **params)
 
-        if isinstance(res,Level2_NETCDF) and os.path.exists(output_path):
+        if isinstance(res, Level2_NETCDF) and os.path.exists(output_path):
             if self.verbose:
                 print(f'[INFO] Polymer completed. Output file name: {output_name}')
             return True
