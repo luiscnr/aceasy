@@ -86,6 +86,9 @@ class POLYMER:
             print(f'[INFO] Input product: {prod_name}')
 
         sys.path.append(self.polymer_path)
+        if self.verbose:
+            print(f'[INFO] Polymer path: {self.polymer_path}')
+
         from polymer.main import run_atm_corr, Level1, Level2
         from polymer.level2_nc import Level2_NETCDF
         params = {}

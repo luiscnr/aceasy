@@ -59,8 +59,7 @@ class BalOutputFile:
         satellite_latitude.units = "degrees_north"
         satellite_latitude.long_name = "latitude"
         satellite_latitude.standard_name = "latitude"
-        # satellite_latitude.valid_min = 53.250
-        # satellite_latitude.valid_max = 65.850
+
 
         # longitude
         satellite_longitude = self.OFILE.createVariable('longitude', 'f4', ('lat', 'lon'), fill_value=-999, zlib=True,
@@ -69,8 +68,7 @@ class BalOutputFile:
         satellite_longitude.units = "degrees_east"
         satellite_longitude.long_name = "longitude"
         satellite_longitude.standard_name = "longitude"
-        # satellite_longitude.valid_min = 9.2500
-        # satellite_longitude.valid_max = 30.2500
+
 
     def create_data_variable(self, var_name, array):
 
@@ -86,8 +84,8 @@ class BalOutputFile:
         var.type = "surface"
         var.units = "milligram m^-3"
         var.missing_value = - 999
-        var.valid_min = 0.0100000000000000
-        var.valid_max = 300
+        # var.valid_min = 0.0100000000000000
+        # var.valid_max = 300
         var.comment = "Reference"
         var.source = "OLCI - POLYMER v. 4.14 atmospheric processor - MLP"
 

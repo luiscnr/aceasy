@@ -24,7 +24,22 @@ class BALTIC_MLP():
 
         self.balmlp = balmlpensemble.BalMLP(path_par)
 
-
+        self.rrsbands = {
+            'Rw400': 'rrs400',
+            'Rw412': 'rrs412_5',
+            'Rw443': 'rrs442_5',
+            'Rw490': 'rrs490',
+            'Rw510': 'rrs510',
+            'Rw560': 'rrs560',
+            'Rw620': 'rrs620',
+            'Rw665': 'rrs665',
+            'Rw674': 'rrs673_75',
+            'Rw681': 'rrs681_25',
+            'Rw709': 'rrs708_75',
+            'Rw754': 'rrs753_75',
+            'Rw779': 'rrs778_75',
+            'Rw865': 'rrs400'
+        }
 
     def check_runac(self):
         # NO IMPLEMENTED
