@@ -234,7 +234,6 @@ def bsc_qaa(rrs_in, band_in, band_out, g0=0.089, g1=0.1245):
             rrs_out[i] = rrsf[b_all] * (rrs_in[b_in[0]] / rrsf[ballin])
         # if there are two nearest bands at the same spectral distance
         else:
-
             ballin = nearest.nearest(band_all, band_in[b_in[0]])
             rrs_tmp1 = rrsf[b_all] * (rrs_in[b_in[0]] / rrsf[ballin])
             ballin = nearest.nearest(band_all, band_in[b_in[1]])

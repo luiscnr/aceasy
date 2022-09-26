@@ -15,6 +15,8 @@ from baltic_mlp import BALTIC_MLP
 import zipfile as zp
 from check_geo import CHECK_GEO
 
+from multiprocessing import Pool
+
 parser = argparse.ArgumentParser(description="Atmospheric correction launcher")
 
 parser.add_argument("-v", "--verbose", help="Verbose mode.", action="store_true")
@@ -43,6 +45,10 @@ args = parser.parse_args()
 #             output_file = os.path.join(output_path, name[:-3] + '.kml')
 #             cgeo.save_polygon_image_askml(output_file)
 
+def run_parallel_corrector(params):
+    corrector = params[0]
+    print(params[1],params[2])
+    corrector.run_process(params[1],params[2])
 
 def delete_folder_content(path_folder):
     res = True
@@ -158,6 +164,7 @@ if __name__ == '__main__':
             out, err = prog.communicate()
 
     else:
+
         if start_date is not None and end_date is not None:  # formato year/jjj
             date_here = start_date
             while date_here <= end_date:
@@ -175,12 +182,16 @@ if __name__ == '__main__':
                         os.mkdir(output_path_jday)
                     if args.verbose:
                         print('*************************************************')
+                    ##first we obtain list of param (corrector,input_path,output_path)
+                    param_list = []
                     for f in os.listdir(input_path_date):
                         prod_path = os.path.join(input_path_date, f)
                         if os.path.isdir(prod_path) and f.endswith('.SEN3') and f.find('EFR') > 0:
                             if args.verbose:
                                 print('--------------------------------------------------')
-                            p = corrector.run_process(prod_path, output_path_jday)
+                            #p = corrector.run_process(prod_path, output_path_jday)
+                            params = [corrector,prod_path,output_path_jday]
+                            param_list.append(params)
 
                         if not os.path.isdir(prod_path) and f.endswith('.zip') and f.find('EFR') > 0:
                             if not args.temp_path:
@@ -211,24 +222,35 @@ if __name__ == '__main__':
                                 path_prod_u = os.path.join(unzip_path, path_prod_u)
                                 if args.verbose:
                                     print(f'[INFO] Running atmospheric correction for {path_prod_u}')
-                                p = corrector.run_process(path_prod_u, output_path_jday)
-
-                                # Deleting temporarty
-                                if args.verbose:
-                                    print('[INFO] Deleting temporary files...')
-                                cmd = f'rm -rf {path_prod_u}/*'
-                                prog = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
-                                out, err = prog.communicate()
-
-                                cmd = f'rmdir {path_prod_u}'
-                                prog = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
-                                out, err = prog.communicate()
+                                params = [corrector, path_prod_u, output_path_jday]
+                                param_list.append(params)
 
 
+                                # p = corrector.run_process(path_prod_u, output_path_jday)
+                                # # Deleting temporarty
+                                # if args.verbose:
+                                #     print('[INFO] Deleting temporary files...')
+                                # cmd = f'rm -rf {path_prod_u}/*'
+                                # prog = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
+                                # out, err = prog.communicate()
+                                #
+                                # cmd = f'rmdir {path_prod_u}'
+                                # prog = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
+                                # out, err = prog.communicate()
                             elif check_geo <= 0:
                                 if args.verbose:
                                     print(f'[WARNING] Image out of the interest area. Skipping')
                                 continue
+
+                    ##run the list of product as parallel processes
+                    if len(param_list)==0:
+
+                        continue
+                    print('RUNNING PARALLEL PROCESSORS...,')
+                    p = Pool()
+                    p.map(run_parallel_corrector, param_list)
+
+
 
                 else:
                     if args.verbose:

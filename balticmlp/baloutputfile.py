@@ -87,7 +87,22 @@ class BalOutputFile:
         # var.valid_min = 0.0100000000000000
         # var.valid_max = 300
         var.comment = "Reference"
-        var.source = "OLCI - POLYMER v. 4.14 atmospheric processor - MLP"
+        var.source = "OLCI - POLYMER v. 4.14 Atmospheric Correction Processor - BAL MLP Ensemble"
+
+    def create_rrs_variable(self, array, varname, wl):
+        var= self.create_data_variable(varname,array)
+        var.coordinates = "lat long"
+        var.band_name = varname.lower()
+        wlstr = varname[3:].replace('_','.')
+        var.long_name = f'Remote Sensing Reflectance at {wlstr}'
+        var.standard_name = 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air'
+        var.units = 'sr^-1'
+        var.type = 'surface'
+        var.source = 'Polymer v. 4.14 Atmospheric Correction Processor'
+        var.central_wavelength = wl
+        #var.valid_min = 0.000001
+        #var.valid_max = 1
+
 
     def close_file(self):
         self.OFILE.close()

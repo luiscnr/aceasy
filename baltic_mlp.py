@@ -7,6 +7,7 @@ from balticmlp import balmlpensemble
 from balticmlp import polymerflag
 from balticmlp import baloutputfile
 import numpy as np
+import BSC_QAA.bsc_qaa_EUMETSAT as bsc_qaa
 
 
 class BALTIC_MLP():
@@ -25,27 +26,40 @@ class BALTIC_MLP():
         self.balmlp = balmlpensemble.BalMLP(path_par)
 
         self.rrsbands = {
-            'Rw400': 'rrs400',
-            'Rw412': 'rrs412_5',
-            'Rw443': 'rrs442_5',
-            'Rw490': 'rrs490',
-            'Rw510': 'rrs510',
-            'Rw560': 'rrs560',
-            'Rw620': 'rrs620',
-            'Rw665': 'rrs665',
-            'Rw674': 'rrs673_75',
-            'Rw681': 'rrs681_25',
-            'Rw709': 'rrs708_75',
-            'Rw754': 'rrs753_75',
-            'Rw779': 'rrs778_75',
-            'Rw865': 'rrs400'
+            'Rw400': 'RRS400',
+            'Rw412': 'RRS412_5',
+            'Rw443': 'RRS442_5',
+            'Rw490': 'RRS490',
+            'Rw510': 'RRS510',
+            'Rw560': 'RRS560',
+            'Rw620': 'RRS620',
+            'Rw665': 'RRS665',
+            'Rw674': 'RRS673_75',
+            'Rw681': 'RRS681_25',
+            'Rw709': 'RRS708_75',
+            'Rw754': 'RRS753_75',
+            'Rw779': 'RRS778_75',
+            'Rw865': 'RRS865'
         }
+
+        # for retrieving RRS
+        self.central_wavelength = {}
+
+        # for chla algorithm
+        self.wlbands_chla = ['Rw443', 'Rw490', 'Rw510', 'Rw560', 'Rw665']
+        self.wl_chla = [443, 490, 510, 560, 665]
+        self.central_wl_chla = []
+        self.applyBandShifting = True
+
+        # BAL LIMITES
+        self.geo_limits = [53.25, 65.85, 9.25, 30.25]  # latmin,latmax,lonmin,lonmax
 
     def check_runac(self):
         # NO IMPLEMENTED
         return True
 
     def run_process(self, prod_path, output_dir):
+
         fileout = self.get_file_out(prod_path, output_dir)
         if os.path.exists(fileout):
             print(f'[WARNING] Output file {fileout} already exits. Skipping...')
@@ -53,24 +67,33 @@ class BALTIC_MLP():
         if self.verbose:
             print(f'[INFO] Starting chla processing')
         ncpolymer = Dataset(prod_path)
+
+        # info bands
+        self.retrive_info_wlbands(ncpolymer)
+
         # flag object
         flag_band = ncpolymer.variables['bitmask']
         flagging = polymerflag.Class_Flags_Polymer(flag_band)
 
         # image limits
-        startX = 0
-        startY = 0
-        endX = ncpolymer.dimensions['width'].size - 1
-        endY = ncpolymer.dimensions['height'].size - 1
+        if prod_path.split('/')[-1].lower().find('trim')>0:
+            startX = 0
+            startY = 0
+            endX = ncpolymer.dimensions['width'].size - 1
+            endY = ncpolymer.dimensions['height'].size - 1
+        else:
+            startY, endY, startX, endX = self.get_geo_limits(ncpolymer)
+            if self.verbose:
+                print(f'[INFO] TRIMMING y->{startY}:{endY} x->{startX}:{endX}')
         ny = (endY - startY) + 1
         nx = (endX - startX) + 1
         if self.verbose:
             print(f'[INFO] Image dimensions {ny}x{nx}')
 
-        #print(startY,endY,startX,endX)
-        latArray,lonArray = self.get_lat_lon_arrays(ncpolymer,startY,endY+1,startX,endX+1)
-        #print(latArray.shape)
-        #print(lonArray.shape)
+        # print(startY,endY,startX,endX)
+        # latArray,lonArray = self.get_lat_lon_arrays(ncpolymer,startY,endY+1,startX,endX+1)
+        # print(latArray.shape)
+        # print(lonArray.shape)
 
         # defining output array
         array_chl = np.empty((ny, nx))
@@ -88,7 +111,7 @@ class BALTIC_MLP():
                 yini = y
                 yend = y + tileY
                 if yend > endY:
-                    yend = endY +1
+                    yend = endY + 1
                 xini = x
                 xend = x + tileX
                 if xend > endX:
@@ -102,15 +125,71 @@ class BALTIC_MLP():
                     chla_here = np.empty(valid_mask.shape)
                     chla_here[:] = np.NaN
                     chla_here[valid_mask] = chla_res
-                    array_chl[yini:yend, xini:xend] = chla_here[:, :]
+                    array_chl[yini-startY:yend-startY, xini-startX:xend-startX] = chla_here[:, :]
 
         if self.verbose:
             print(f'[INFO] Chla processing completed')
             print(f'[INFO] Output file: {fileout}')
-        self.create_file(fileout,ncpolymer,array_chl,latArray,lonArray)
 
-    def create_file(self,fileout,ncpolymer,array_chl,latArray,lonArray):
+        self.create_file(fileout, ncpolymer, array_chl, startY, endY + 1, startX, endX + 1)
 
+    def get_geo_limits(self, ncpolymer):
+        array_lat = np.array(ncpolymer.variables['latitude'][:, :])
+        array_lon = np.array(ncpolymer.variables['longitude'][:, :])
+        width = ncpolymer.dimensions['width'].size
+        height = ncpolymer.dimensions['height'].size
+        geovalid = np.zeros(array_lat.shape,dtype=np.bool)
+        for r in range(height):
+            for c in range(width):
+                if self.geo_limits[0] <= array_lat[r, c] <= self.geo_limits[1] and self.geo_limits[2] <= array_lon[r,c] <= self.geo_limits[3]:
+                    geovalid[r,c] = True
+        r, c = np.where(geovalid)
+        startY = r.min()
+        endY = r.max()
+        startX = c.min()
+        endX = c.max()
+
+        return startY,endY,startX,endX
+
+    def find_row_column_from_lat_lon(self, lat, lon, lat0, lon0):
+        # % closest squared distance
+        # % lat and lon are arrays of MxN
+        # % lat0 and lon0 is the coordinates of one point
+        if self.contain_location(lat, lon, lat0, lon0):
+            dist_squared = (lat - lat0) ** 2 + (lon - lon0) ** 2
+            r, c = np.unravel_index(np.argmin(dist_squared),
+                                    lon.shape)  # index to the closest in the latitude and longitude arrays
+        else:
+            # print('Warning: Location not contained in the file!!!')
+            r = np.nan
+            c = np.nan
+        return r, c
+
+    def contain_location(self, lat, lon, in_situ_lat, in_situ_lon):
+        if lat.min() <= in_situ_lat <= lat.max() and lon.min() <= in_situ_lon <= lon.max():
+            contain_flag = 1
+        else:
+            contain_flag = 0
+
+        return contain_flag
+
+    def retrive_info_wlbands(self, ncpolymer):
+        if 'central_wavelength' in ncpolymer.ncattrs():
+            cws = ncpolymer.central_wavelength.replace('{', '')
+            cws = cws.replace('}', '')
+            cws = cws.split(',')
+            for cw in cws:
+                cwhere = cw.split(':')
+                band = f'Rw{cwhere[0].strip()}'
+                self.central_wavelength[band] = float(cwhere[1].strip())
+            for wlband in self.wlbands_chla:
+                self.central_wl_chla.append(self.central_wavelength[wlband])
+        else:
+            self.applyBandShifting = False
+
+    def create_file(self, fileout, ncpolymer, array_chl, yini, yend, xini, xend):
+        if self.verbose:
+            print(f'[INFO] Writting output file: {fileout}')
         ncoutput = baloutputfile.BalOutputFile(fileout)
         if not ncoutput.FILE_CREATED:
             print(f'[ERROR] File {fileout} could not be created. Please check permissions')
@@ -118,18 +197,43 @@ class BALTIC_MLP():
         ncoutput.set_global_attributes()
         ny = array_chl.shape[0]
         nx = array_chl.shape[1]
-        ncoutput.create_dimensions(ny,nx)
-        print(latArray.shape,lonArray.shape,array_chl.shape,'============================')
-        ncoutput.create_lat_long_variables(latArray,lonArray)
+        ncoutput.create_dimensions(ny, nx)
+
+        # latitude, longitude
+        if self.verbose:
+            print(f'[INFO]    Adding latitude/longitude...')
+        array_lat = np.array(ncpolymer.variables['latitude'][yini:yend, xini:xend])
+        array_lon = np.array(ncpolymer.variables['longitude'][yini:yend, xini:xend])
+        ncoutput.create_lat_long_variables(array_lat, array_lon)
+
+        # rrs
+        if self.verbose:
+            print(f'[INFO]    Adding rrs:')
+        for rrsvar in self.rrsbands.keys():
+            namevar = self.rrsbands[rrsvar]
+            if self.verbose:
+                print(f'[INFO]     {rrsvar}->{namevar}')
+            if not rrsvar in ncpolymer.variables:
+                print(f'[WARNING] Band {rrsvar} is not available in the Polymer file')
+                continue
+            array = np.ma.array(ncpolymer.variables[rrsvar][yini:yend, xini:xend])
+            array[array.mask] = -999
+            array[~array.mask] = array[~array.mask] / np.pi
+            wl = self.central_wavelength[rrsvar]
+            ncoutput.create_rrs_variable(array, namevar, wl)
+        if self.verbose:
+            print(f'[INFO]    Adding chla...')
         ncoutput.create_chla_variable(array_chl)
         ncoutput.close_file()
+        if self.verbose:
+            print(f'[INFO]    File {fileout} was created')
 
-    def get_file_out(self,prod_path,output_dir):
+    def get_file_out(self, prod_path, output_dir):
         name = prod_path.split('/')[-1]
         nameout = name[:-3] + '_MLP.nc'
-        if nameout.find('OL_1_EFR')>0:
-            nameout = nameout.replace('OL_1_EFR','OL_2_WFR')
-        fileout = os.path.join(output_dir,nameout)
+        if nameout.find('OL_1_EFR') > 0:
+            nameout = nameout.replace('OL_1_EFR', 'OL_2_WFR')
+        fileout = os.path.join(output_dir, nameout)
         return fileout
 
     def get_valid_mask(self, flagging, ncpolymer, yini, yend, xini, xend):
@@ -142,15 +246,26 @@ class BALTIC_MLP():
     def get_valid_rrs(self, ncpolymer, valid_mask, nvalid, yini, yend, xini, xend):
         # 443_490_510_555_670
         wlbands = ['Rw443', 'Rw490', 'Rw510', 'Rw560', 'Rw665']
-        rrsdata = np.zeros([nvalid, 5])
+        # rrsdata = np.zeros([nvalid, 5])
+        rrsdata = np.zeros([5, nvalid])
         for iband in range(5):
             wlband = wlbands[iband]
-            band = np.array(ncpolymer.variables[wlband][yini:yend, xini:xend])
-            rrsdata[:, iband] = band[valid_mask]
+            band = np.ma.array(ncpolymer.variables[wlband][yini:yend, xini:xend])
+            valid_mask[band.mask] = False
+            # rrsdata[:, iband] = band[valid_mask]
+            rrsdata[iband, :] = band[valid_mask]
         rrsdata = rrsdata / np.pi
+
+        if self.applyBandShifting:
+            # rrsdata_out = rrsdata.transpose()
+            rrsdata_out = bsc_qaa.bsc_qaa(rrsdata, self.central_wl_chla, self.wl_chla)
+            rrsdata = rrsdata_out.transpose()
+        else:
+            rrsdata = rrsdata.transpose()
+
         return rrsdata
 
-    def get_lat_lon_arrays(self,ncpolymer,yini,yend,xini,xend):
-        array_lat = np.array(ncpolymer.variables['latitude'][yini:yend, xini:xend])
-        array_lon = np.array(ncpolymer.variables['longitude'][yini:yend, xini:xend])
-        return array_lat, array_lon
+    # def get_lat_lon_arrays(self,ncpolymer,yini,yend,xini,xend):
+    #     array_lat = np.array(ncpolymer.variables['latitude'][yini:yend, xini:xend])
+    #     array_lon = np.array(ncpolymer.variables['longitude'][yini:yend, xini:xend])
+    #     return array_lat, array_lon
