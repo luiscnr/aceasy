@@ -1,4 +1,5 @@
 import argparse
+import configparser
 import os
 import subprocess
 from datetime import datetime
@@ -59,6 +60,8 @@ def delete_folder_content(path_folder):
             res = False
     return res
 
+def get_geolimits():
+    return None
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
@@ -102,6 +105,17 @@ if __name__ == '__main__':
         corrector = IDEPIX(fconfig, args.verbose)
     elif args.atm_correction == 'BALMLP':
         corrector = BALTIC_MLP(fconfig, args.verbose)
+
+    applyPool = 0
+    geolimits = None
+    options = configparser.ConfigParser()
+    options.read(fconfig)
+    if options.has_section('GLOBAL'):
+        if options.has_option('GLOBAL', 'pool'):
+            applyPool = int(options['GLOBAL']['pool'])
+        if options.has_option('GLOBAL','geolimits'):
+            geolimits = get_geolimits(options['GLOBAL']['geolimits'])
+
 
     start_date = None
     end_date = None
@@ -164,7 +178,6 @@ if __name__ == '__main__':
             out, err = prog.communicate()
 
     else:
-
         if start_date is not None and end_date is not None:  # formato year/jjj
             date_here = start_date
             while date_here <= end_date:
@@ -247,7 +260,7 @@ if __name__ == '__main__':
 
                         continue
                     print('RUNNING PARALLEL PROCESSORS...,')
-                    p = Pool()
+                    p = Pool(2)
                     p.map(run_parallel_corrector, param_list)
 
 
