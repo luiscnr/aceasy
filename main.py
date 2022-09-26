@@ -46,10 +46,12 @@ args = parser.parse_args()
 #             output_file = os.path.join(output_path, name[:-3] + '.kml')
 #             cgeo.save_polygon_image_askml(output_file)
 
+#Params-> 0: corrector; 1: input_path; 2: output_path; 3: delete input path
 def run_parallel_corrector(params):
     corrector = params[0]
-    print(params[1],params[2])
-    corrector.run_process(params[1],params[2])
+    corrector.run_process(params[1], params[2])
+    if params[3]:
+        delete_unzipped_path(params[1])
 
 def delete_folder_content(path_folder):
     res = True
@@ -60,8 +62,58 @@ def delete_folder_content(path_folder):
             res = False
     return res
 
-def get_geolimits():
-    return None
+
+def delete_unzipped_path(path_prod_u):
+    if args.verbose:
+        print(f'[INFO] Deleting unzipped path prod {path_prod_u}')
+    cmd = f'rm -rf {path_prod_u}'
+    prog = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
+    out, err = prog.communicate()
+
+    cmd = f'rmdir {path_prod_u}'
+    prog = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
+    out, err = prog.communicate()
+
+
+def get_geo_limits(option):
+    geo_limits = None
+    if option.strip().lower() == 'bal':
+        geo_limits = [53.25, 65.85, 9.25, 30.25]
+    else:
+        try:
+            lstr = options.strip().split(',')
+            if len(lstr) == 4:
+                geo_limits = [float(lstr[0]), float(lstr[1]), float(lstr[2]), float(lstr[3])]
+        except:
+            geo_limits = None
+
+    return geo_limits
+
+
+def check_geo_limits(prod_path, geo_limits, iszipped):
+    if geo_limits is None:
+        return 1
+    cgeo = CHECK_GEO()
+    if iszipped:
+        if not cgeo.check_zip_file(prod_path):
+            return -1
+        cgeo.start_polygon_image_from_zip_manifest_file(prod_path)
+        check_geo = cgeo.check_geo_area(geo_limits[0], geo_limits[1], geo_limits[2], geo_limits[3])
+        return check_geo
+
+    if not iszipped:
+        cgeo.start_polygon_from_prod_manifest_file(prod_path)
+        check_geo = cgeo.check_geo_area(geo_limits[0], geo_limits[1], geo_limits[2], geo_limits[3])
+        return check_geo
+
+
+def print_check_geo_errors(check_geo):
+    if args.verbose:
+        if check_geo == 0:
+            print(f'[WARNING] Image out of the interest area. Skiping')
+        elif check_geo == -1:
+            print(f'[WARNING] Image covegara could not be checked: invalid product. Skiping')
+
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
@@ -107,15 +159,14 @@ if __name__ == '__main__':
         corrector = BALTIC_MLP(fconfig, args.verbose)
 
     applyPool = 0
-    geolimits = None
+    geo_limits = None
     options = configparser.ConfigParser()
     options.read(fconfig)
     if options.has_section('GLOBAL'):
         if options.has_option('GLOBAL', 'pool'):
             applyPool = int(options['GLOBAL']['pool'])
-        if options.has_option('GLOBAL','geolimits'):
-            geolimits = get_geolimits(options['GLOBAL']['geolimits'])
-
+        if options.has_option('GLOBAL', 'geolimits'):
+            geo_limits = get_geo_limits(options['GLOBAL']['geolimits'])
 
     start_date = None
     end_date = None
@@ -146,38 +197,34 @@ if __name__ == '__main__':
         f = os.path.basename(prod_path)
         if args.atm_correction == 'BALMLP' and f.endswith('.nc'):
             p = corrector.run_process(prod_path, output_path)
-            if args.verbose:
-                print('--------------------------------------------------')
         elif os.path.isdir(prod_path) and f.endswith('.SEN3') and f.find('EFR') > 0:
-            p = corrector.run_process(prod_path, output_path)
-            if args.verbose:
-                print('--------------------------------------------------')
+            check_geo = check_geo_limits(prod_path, geo_limits, False)
+            if check_geo == 1:
+                p = corrector.run_process(prod_path, output_path)
+            else:
+                print_check_geo_errors(check_geo)
         elif not os.path.isdir(prod_path) and f.endswith('.zip') and f.find('EFR') > 0:
             if args.verbose:
                 print(f'[INFO] Working with zip path: {prod_path}')
-            with zp.ZipFile(prod_path, 'r') as zprod:
+            check_geo = check_geo_limits(prod_path, geo_limits, True)
+            if check_geo == 1:
+                with zp.ZipFile(prod_path, 'r') as zprod:
+                    if args.verbose:
+                        print(f'[INFO] Unziping {f} to {output_path}')
+                    zprod.extractall(path=output_path)
+                path_prod_u = prod_path.split('/')[-1][0:-4]
+                if not path_prod_u.endswith('.SEN3'):
+                    path_prod_u = path_prod_u + '.SEN3'
+                path_prod_u = os.path.join(output_path, path_prod_u)
                 if args.verbose:
-                    print(f'[INFO] Unziping {f} to {output_path}')
-                zprod.extractall(path=output_path)
-            path_prod_u = prod_path.split('/')[-1][0:-4]
-            if not path_prod_u.endswith('.SEN3'):
-                path_prod_u = path_prod_u + '.SEN3'
-            path_prod_u = os.path.join(output_path, path_prod_u)
-            if args.verbose:
-                print(f'[INFO] Running atmospheric correction for {path_prod_u}')
-            p = corrector.run_process(path_prod_u, output_path)
-
-            if args.verbose:
-                print(f'[INFO] Deleting unzipped path prode {path_prod_u}')
-            cmd = f'rm -rf {path_prod_u}'
-            prog = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
-            out, err = prog.communicate()
-
-            cmd = f'rmdir {path_prod_u}'
-            prog = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
-            out, err = prog.communicate()
-
-    else:
+                    print(f'[INFO] Running atmospheric correction for {path_prod_u}')
+                p = corrector.run_process(path_prod_u, output_path)
+                delete_unzipped_path(path_prod_u)
+            else:
+                print_check_geo_errors(check_geo)
+        if args.verbose:
+            print('--------------------------------------------------')
+    else: ##WORKING WITH FOLDERS
         if start_date is not None and end_date is not None:  # formato year/jjj
             date_here = start_date
             while date_here <= end_date:
@@ -195,17 +242,19 @@ if __name__ == '__main__':
                         os.mkdir(output_path_jday)
                     if args.verbose:
                         print('*************************************************')
-                    ##first we obtain list of param (corrector,input_path,output_path)
+
+                    ##first we obtain list of param (corrector,input_path,output_path,iszipped)
                     param_list = []
                     for f in os.listdir(input_path_date):
                         prod_path = os.path.join(input_path_date, f)
                         if os.path.isdir(prod_path) and f.endswith('.SEN3') and f.find('EFR') > 0:
-                            if args.verbose:
-                                print('--------------------------------------------------')
-                            #p = corrector.run_process(prod_path, output_path_jday)
-                            params = [corrector,prod_path,output_path_jday]
-                            param_list.append(params)
-
+                            check_geo = check_geo_limits(prod_path,geo_limits,False)
+                            if check_geo==1:
+                                # p = corrector.run_process(prod_path, output_path_jday)
+                                params = [corrector, prod_path, output_path_jday, False]
+                                param_list.append(params)
+                            else:
+                                print_check_geo_errors(check_geo)
                         if not os.path.isdir(prod_path) and f.endswith('.zip') and f.find('EFR') > 0:
                             if not args.temp_path:
                                 print(
@@ -218,12 +267,7 @@ if __name__ == '__main__':
                                 print(f'[INFO] Working with zip path: {prod_path}')
                             unzip_path = args.temp_path
                             iszipped = True
-                            cgeo = CHECK_GEO()
-                            if not cgeo.check_zip_file(prod_path):
-                                print(f'[WARNING] Zip file {prod_path} is not valid. Skipping...')
-                                continue
-                            cgeo.start_polygon_image_from_zip_manifest_file(prod_path)
-                            check_geo = cgeo.check_geo_area(53, 66, 7, 31)
+                            check_geo = check_geo_limits(prod_path,geo_limits,True)
                             if check_geo == 1:
                                 with zp.ZipFile(prod_path, 'r') as zprod:
                                     if args.verbose:
@@ -235,41 +279,43 @@ if __name__ == '__main__':
                                 path_prod_u = os.path.join(unzip_path, path_prod_u)
                                 if args.verbose:
                                     print(f'[INFO] Running atmospheric correction for {path_prod_u}')
-                                params = [corrector, path_prod_u, output_path_jday]
+                                params = [corrector, path_prod_u, output_path_jday, True]
                                 param_list.append(params)
-
-
-                                # p = corrector.run_process(path_prod_u, output_path_jday)
-                                # # Deleting temporarty
-                                # if args.verbose:
-                                #     print('[INFO] Deleting temporary files...')
-                                # cmd = f'rm -rf {path_prod_u}/*'
-                                # prog = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
-                                # out, err = prog.communicate()
-                                #
-                                # cmd = f'rmdir {path_prod_u}'
-                                # prog = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
-                                # out, err = prog.communicate()
-                            elif check_geo <= 0:
-                                if args.verbose:
-                                    print(f'[WARNING] Image out of the interest area. Skipping')
+                            else:
+                                print_check_geo_errors(check_geo)
                                 continue
 
+
                     ##run the list of product as parallel processes
-                    if len(param_list)==0:
-
+                    if len(param_list) == 0:
+                        print(f'[WARNING] No valid products were found for date: {date_here}')
                         continue
-                    print('RUNNING PARALLEL PROCESSORS...,')
-                    p = Pool(2)
-                    p.map(run_parallel_corrector, param_list)
-
-
+                    if applyPool==0:
+                        if args.verbose:
+                            print(f'[INFO] Starting sequencial processing. Number of products: {len(param_list)}')
+                        for params in param_list:
+                            corrector = params[0]
+                            corrector.run_process(params[1], params[2])
+                            if params[3]:
+                                delete_unzipped_path(params[1])
+                    else:
+                        if args.verbose:
+                            print(f'[INFO] Starting parallel processing. Number of products: {len(param_list)}')
+                            print(f'[INFO] CPUs: {os.cpu_count()}')
+                            print(f'[INFO] Parallel processes: {applyPool}')
+                        if applyPool<0:
+                            poolhere = Pool()
+                        else:
+                            poolhere = Pool(applyPool)
+                        poolhere.map(run_parallel_corrector, param_list)
 
                 else:
                     if args.verbose:
                         print(f'[WARNING] Path: {input_path_date} does not exist. Skipping..')
 
                 date_here = date_here + timedelta(hours=24)
+                if args.verbose:
+                    print('--------------------------------------------------')
         else:
             for f in os.listdir(input_path):
                 prod_path = os.path.join(input_path, f)
