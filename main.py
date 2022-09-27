@@ -46,12 +46,15 @@ args = parser.parse_args()
 #             output_file = os.path.join(output_path, name[:-3] + '.kml')
 #             cgeo.save_polygon_image_askml(output_file)
 
-#Params-> 0: corrector; 1: input_path; 2: output_path; 3: delete input path
+# Params-> 0: corrector; 1: input_path; 2: output_path; 3: delete input path; 4: alternative path
 def run_parallel_corrector(params):
     corrector = params[0]
-    corrector.run_process(params[1], params[2])
+    b = corrector.run_process(params[1], params[2])
+    if not b and params[4] is not None:
+        corrector.run_process(params[4], params[2])
     if params[3]:
         delete_unzipped_path(params[1])
+
 
 def delete_folder_content(path_folder):
     res = True
@@ -115,6 +118,61 @@ def print_check_geo_errors(check_geo):
             print(f'[WARNING] Image covegara could not be checked: invalid product. Skiping')
 
 
+def check_exist_output_file(prod_path, output_dir, suffix):
+    prod_name = prod_path.split('/')[-1]
+    if prod_name.endswith('.zip'):
+        prod_name = prod_name[:-4]
+        if not prod_name.endswith('.SEN3'):
+            prod_name = prod_name + '.SEN3'
+
+    if prod_name.endswith('.SEN3'):
+        if os.path.isdir(output_dir):
+            output_name = prod_name[0:-5] + '_' + suffix + '.nc'
+            output_path = os.path.join(output_dir, output_name)
+            if os.path.exists(output_path):
+                return True
+
+    return False
+
+
+def search_alternative_prod_path(f, data_alternative_path, year_str, day_str):
+    if data_alternative_path is None:
+        return None
+    output_path = os.path.join(data_alternative_path, year_str, day_str)
+    if not os.path.exists(output_path) or not os.path.isdir(output_path):
+        return None
+    sdate, edate = get_start_end_times_from_file_name(f)
+    if sdate is None or edate is None:
+        return None
+    sensor = f[0:3]
+    for fout in os.listdir(output_path):
+        output_path_jday = os.path.join(output_path, fout)
+        if fout.startswith(sensor) and fout.find('EFR') > 0:
+            sdate_o, edate_o = get_start_end_times_from_file_name(fout)
+            if sdate_o is not None and edate_o is not None:
+                if sdate >= sdate_o and edate <= edate_o:
+                    return output_path_jday
+    return None
+
+
+def get_start_end_times_from_file_name(fname):
+    lfname = fname.split('_')
+    sdate = None
+    edate = None
+    for l in lfname:
+        if sdate is None and edate is None:
+            try:
+                sdate = datetime.strptime(l.strip(), '%Y%m%dT%H%M%S')
+            except:
+                pass
+        elif sdate is not None and edate is None:
+            try:
+                edate = datetime.strptime(l.strip(), '%Y%m%dT%H%M%S')
+            except:
+                pass
+    return sdate, edate
+
+
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     print('[INFO] Started')
@@ -147,19 +205,25 @@ if __name__ == '__main__':
 
     if args.atm_correction == 'C2RCC':
         corrector = C2RCC(fconfig, args.verbose)
+        suffix = 'C2RCC'
     elif args.atm_correction == 'POLYMER':
         corrector = POLYMER(fconfig, args.verbose)
+        suffix = 'POLYMER'
     elif args.atm_correction == 'FUB_CSIRO':
         corrector = FUB_CSIRO(fconfig, args.verbose)
+        suffix = 'FUB'
     elif args.atm_correction == 'ACOLITE':
         corrector = ACOLITE(fconfig, args.verbose)
+        suffix = 'ACOLITE'
     elif args.atm_correction == 'IDEPIX':
         corrector = IDEPIX(fconfig, args.verbose)
+        suffix = 'IDEPIX'
     elif args.atm_correction == 'BALMLP':
         corrector = BALTIC_MLP(fconfig, args.verbose)
 
     applyPool = 0
     geo_limits = None
+    data_alternative_path = None
     options = configparser.ConfigParser()
     options.read(fconfig)
     if options.has_section('GLOBAL'):
@@ -167,6 +231,10 @@ if __name__ == '__main__':
             applyPool = int(options['GLOBAL']['pool'])
         if options.has_option('GLOBAL', 'geolimits'):
             geo_limits = get_geo_limits(options['GLOBAL']['geolimits'])
+        if options.has_option('GLOBAL', 'data_alternative_path'):
+            data_alternative_path = options['GLOBAL']['data_alternative_path'].strip()
+            if not os.path.exists(data_alternative_path):
+                data_alternative_path = None
 
     start_date = None
     end_date = None
@@ -224,7 +292,7 @@ if __name__ == '__main__':
                 print_check_geo_errors(check_geo)
         if args.verbose:
             print('--------------------------------------------------')
-    else: ##WORKING WITH FOLDERS
+    else:  ##WORKING WITH FOLDERS
         if start_date is not None and end_date is not None:  # formato year/jjj
             date_here = start_date
             while date_here <= end_date:
@@ -247,11 +315,25 @@ if __name__ == '__main__':
                     param_list = []
                     for f in os.listdir(input_path_date):
                         prod_path = os.path.join(input_path_date, f)
+                        prod_path_alt = search_alternative_prod_path(f, data_alternative_path, year_str, day_str)
+                        coutput = check_exist_output_file(prod_path, output_path_jday, suffix)
+                        if coutput:
+                            print(f'[INFO] Output file already exists. Skiping...')
+                            continue
+                        else:  # temporary code, for working with alternative source file
+                            if prod_path_alt is None:
+                                if args.verbose:
+                                    print('[INFO] Alternative path was not found. Skiping')
+                                continue
+                            else:
+                                if args.verbose:
+                                    print(f'[INFO] Working with alternative path: {prod_path}')
+                                prod_path = prod_path_alt
+
                         if os.path.isdir(prod_path) and f.endswith('.SEN3') and f.find('EFR') > 0:
-                            check_geo = check_geo_limits(prod_path,geo_limits,False)
-                            if check_geo==1:
-                                # p = corrector.run_process(prod_path, output_path_jday)
-                                params = [corrector, prod_path, output_path_jday, False]
+                            check_geo = check_geo_limits(prod_path, geo_limits, False)
+                            if check_geo == 1:
+                                params = [corrector, prod_path, output_path_jday, False, prod_path_alt]
                                 param_list.append(params)
                             else:
                                 print_check_geo_errors(check_geo)
@@ -267,7 +349,7 @@ if __name__ == '__main__':
                                 print(f'[INFO] Working with zip path: {prod_path}')
                             unzip_path = args.temp_path
                             iszipped = True
-                            check_geo = check_geo_limits(prod_path,geo_limits,True)
+                            check_geo = check_geo_limits(prod_path, geo_limits, True)
                             if check_geo == 1:
                                 with zp.ZipFile(prod_path, 'r') as zprod:
                                     if args.verbose:
@@ -279,23 +361,24 @@ if __name__ == '__main__':
                                 path_prod_u = os.path.join(unzip_path, path_prod_u)
                                 if args.verbose:
                                     print(f'[INFO] Running atmospheric correction for {path_prod_u}')
-                                params = [corrector, path_prod_u, output_path_jday, True]
+                                params = [corrector, path_prod_u, output_path_jday, True, prod_path_alt]
                                 param_list.append(params)
                             else:
                                 print_check_geo_errors(check_geo)
                                 continue
 
-
                     ##run the list of product as parallel processes
                     if len(param_list) == 0:
                         print(f'[WARNING] No valid products were found for date: {date_here}')
                         continue
-                    if applyPool==0:
+                    if applyPool == 0:
                         if args.verbose:
                             print(f'[INFO] Starting sequencial processing. Number of products: {len(param_list)}')
                         for params in param_list:
                             corrector = params[0]
-                            corrector.run_process(params[1], params[2])
+                            b = corrector.run_process(params[1], params[2])
+                            if not b and params[4] is not None:
+                                corrector.run_process(params[4], params[2])
                             if params[3]:
                                 delete_unzipped_path(params[1])
                     else:
@@ -303,7 +386,7 @@ if __name__ == '__main__':
                             print(f'[INFO] Starting parallel processing. Number of products: {len(param_list)}')
                             print(f'[INFO] CPUs: {os.cpu_count()}')
                             print(f'[INFO] Parallel processes: {applyPool}')
-                        if applyPool<0:
+                        if applyPool < 0:
                             poolhere = Pool()
                         else:
                             poolhere = Pool(applyPool)
