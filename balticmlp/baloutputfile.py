@@ -13,9 +13,44 @@ class BalOutputFile:
             # print('Permission denied: ', ofname)
             self.FILE_CREATED = False
 
-    def set_global_attributes(self):
+        iop_comment = 'QAA v. 6 modified as in Brando et al. (2021)'
+        iop_source ='OLCI - POLYMER v.4.14 Atmospheric Correction Processor'
+        self.iop_attributes = {
+            'ADG443':{
+                'long_name':'Absorption due to gelbstoff and detrital material at 443 nm',
+                'standard_name':'volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter_and_non_algal_particles',
+                'type':'surface',
+                'units':'m^-1',
+                'comment': iop_comment,
+                'source': iop_source
+            },
+            'APH443':{
+                'long_name': 'Absorption due to phytoplankton at 443 nm',
+                'standard_name': 'volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_phytoplankton',
+                'type': 'surface',
+                'units': 'm^-1',
+                'comment': iop_comment,
+                'source': iop_source
+            },
+            'BBP443':{
+                'long_name': 'Particulate back-scattering coefficient at 443 nm',
+                'standard_name': 'volume_backwards_scattering_coefficient_of_radiative_flux_in_sea_water_due_to_particles',
+                'type': 'surface',
+                'units': 'm^-1',
+                'comment': iop_comment,
+                'source': iop_source
+            }
+        }
+
+    def set_global_attributes(self,ncpolymer):
         # Atributes
         self.OFILE.creation_time = dt.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+        self.OFILE.start_time = ncpolymer.start_time
+        self.OFILE.stop_time = ncpolymer.stop_time
+        self.OFILE.polymer_source_file = ncpolymer.l2_filename.split('/')[-1]
+        self.OFILE.l1_source_file = ncpolymer.l1_filename.split('/')[-1]
+        self.OFILE.timeliness = self.OFILE.polymer_source_file.split('_')[16]
+        self.OFILE.platform = self.OFILE.polymer_source_file[2]
         # satellite = at['satellite']
         # platform = at['platform']
         # sensor = at['sensor']
@@ -83,25 +118,59 @@ class BalOutputFile:
         var.standard_name = "mass_concentration_of_chlorophyll_a_in_sea_water"
         var.type = "surface"
         var.units = "milligram m^-3"
-        var.missing_value = - 999
+        var.missing_value = - 999.0
         # var.valid_min = 0.0100000000000000
         # var.valid_max = 300
-        var.comment = "Reference"
-        var.source = "OLCI - POLYMER v. 4.14 Atmospheric Correction Processor - BAL MLP Ensemble"
+        var.comment = "Brando VE, Sammartino M, Colella S, Bracaglia M, Di Cicco A, D’Alimonte D, Kajiyama T, Kaitala S and Attila J (2021). Phytoplankton Bloom Dynamics in the Baltic Sea Using a Consistently Reprocessed Time Series of Multi-Sensor Reflectance and Novel Chlorophyll-a Retrievals. Remote Sens. 13:3071. doi: 10.3390/rs13163071"
+        var.source = "OLCI - POLYMER v.4.14 Atmospheric Correction Processor - BAL MLP Ensemble"
 
-    def create_rrs_variable(self, array, varname, wl):
+    def create_rrs_variable(self, array, varname, wl, varattr):
         var= self.create_data_variable(varname,array)
         var.coordinates = "lat long"
         var.band_name = varname.lower()
         wlstr = varname[3:].replace('_','.')
         var.long_name = f'Remote Sensing Reflectance at {wlstr}'
-        var.standard_name = 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air'
-        var.units = 'sr^-1'
-        var.type = 'surface'
-        var.source = 'Polymer v. 4.14 Atmospheric Correction Processor'
         var.central_wavelength = wl
+        if varattr is not None:
+            if 'RRS' in varattr.keys():
+                for at in varattr['RRS']:
+                    var.setncattr(at,varattr['RRS'][at])
+
+        # var.standard_name = 'surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air'
+        # var.units = 'sr^-1'
+        # var.type = 'surface'
+        # var.source = 'OLCI - POLYMER v.4.14 Atmospheric Correction Processor'
         #var.valid_min = 0.000001
         #var.valid_max = 1
+
+    def create_iop_variable(self, array, varname):
+        var = self.create_data_variable(varname, array)
+        var.coordinates = "lat long"
+        var.long_name = self.iop_attributes[varname]['long_name']
+        var.standard_name = self.iop_attributes[varname]['standard_name']
+        var.type = self.iop_attributes[varname]['type']
+        var.units = self.iop_attributes[varname]['units']
+        var.comment = self.iop_attributes[varname]['comment']
+        var.source = self.iop_attributes[varname]['source']
+        var.missing_value = -999.0
+
+    def create_kd_variable(self,array, varname):
+        var = self.create_data_variable(varname, array)
+        var.coordinates = "lat long"
+        var.long_name = "OLCI Diffuse Attenuation Coefficient at 490 nm"
+        var.standard_name = "volume_attenuation_coefficient_of_downwelling_radiative_flux_in_sea_water"
+        var.missing_value = -999.0
+        var.type = 'surface'
+        var.units = 'm^-1'
+        var.source = 'OLCI - POLYMER v.4.14 Atmospheric Correction Processor'
+
+    def create_var_general(self,array,varname,varattr):
+        var = self.create_data_variable(varname, array)
+        var.coordinates = "lat long"
+        if varattr is not None:
+            if varname in varattr.keys():
+                for at in varattr[varname]:
+                    var.setncattr(at,varattr[varname][at])
 
 
     def close_file(self):

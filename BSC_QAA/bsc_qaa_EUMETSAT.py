@@ -15,6 +15,9 @@ QAA input:list
 import numpy as np
 import numpy.ma as ma
 import sys, os
+
+import pandas as pd
+
 from BSC_QAA import nearest
 
 
@@ -83,7 +86,7 @@ def qaa(rrs_in, band_in, g0=0.089, g1=0.1245):  # the qaa algorithm
     Rrs670_max = 20. * rrs_in[b555] ** 1.5
     Rrs670_min = 0.9 * rrs_in[b555] ** 1.7  # two thresholds(TH) for Rrs670
 
-    b670 = nearest.nearest(band_in, 670.)[0]  # the closest band to 555 nm
+    b670 = nearest.nearest(band_in, 670.)[0]  # the closest band to 670 nm
     if ma.abs(band_in[b670] - 670.) > 10.:  # the 670nm band must be close to b670
         sys.exit('no red band')
     b490 = nearest.nearest(band_in, 490.)[0]  # the closest band to 490 nm
@@ -157,8 +160,11 @@ def qaa(rrs_in, band_in, g0=0.089, g1=0.1245):  # the qaa algorithm
     bbp555 = bbp0 * (lam0 / band_in[b555]) ** n
     np.set_printoptions(threshold=sys.maxsize)
 
+    b510 = nearest.nearest(band_in, 510.)[0]  # the closest band to 555 nm
+    bbp510 = bbp0 * (lam0 / band_in[b510]) ** n
+
     out = {'bbp443': bbp443, 'adg443': adg443, 'aph443': aph443, 'lambda0': lam0, 'eta': n, 's': s, 'a555': a555,
-           'bbp0': bbp0, 'a0': a0}
+           'bbp0': bbp0, 'a0': a0, 'bbp510': bbp510}
     for key in out:
         if shaper == 1:
             out[key] = out[key][0, 0]
@@ -184,6 +190,14 @@ def bsc_qaa(rrs_in, band_in, band_out, g0=0.089, g1=0.1245):
         rrs_prov[:, :, 0] = rrs_in
         rrs_in = rrs_prov
     res = qaa(rrs_in, band_in, g0, g1)  # qaa in backward mode to evaluate the parameters
+
+    niop = len(res['adg443'])
+    iop = np.ma.ones((niop,3))
+    iop[:,0] = res['adg443'][:,0]
+    iop[:,1] = res['aph443'][:,0]
+    iop[:,2] = res['bbp443'][:,0]
+
+
     b_tmp = list(band_in) + list(band_out)
     band_all = sorted(list(set(b_tmp)))  # list with input and output bands
     band_all = ma.array(band_all)
@@ -264,4 +278,4 @@ def bsc_qaa(rrs_in, band_in, band_out, g0=0.089, g1=0.1245):
         rrs_prov_o = rrs_out[:, :, 0]
         rrs_out = rrs_prov_o
 
-    return rrs_out
+    return rrs_out, iop

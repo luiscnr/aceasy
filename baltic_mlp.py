@@ -1,5 +1,5 @@
 import configparser
-import math
+import json
 import os.path
 
 from netCDF4 import Dataset
@@ -51,8 +51,32 @@ class BALTIC_MLP():
         self.central_wl_chla = []
         self.applyBandShifting = True
 
-        # BAL LIMITES
+        # IOP
+        self.iop_var = ['ADG443', 'APH443', 'BBP443']
+
+        # PSC
+        self.psc_var = ['MICRO', 'NANO', 'PICO']
+
+        # PFT
+        self.pft_var = ['DIATO', 'DINO', 'GREEN', 'CRYPTO', 'PROKAR']
+
+        # BAL LIMITS
         self.geo_limits = [53.25, 65.85, 9.25, 30.25]  # latmin,latmax,lonmin,lonmax
+
+        # ALL VARIABLES
+        self.all_var = ['CHL', 'ADG443', 'APH443', 'BBP443', 'KD490', 'MICRO', 'NANO', 'PICO', 'DIATO', 'DINO', 'GREEN',
+                        'CRYPTO', 'PROKAR']
+
+        self.varattr = None
+        sdir = os.path.abspath(os.path.dirname(__file__))
+        foptions = os.path.join(sdir, 'varat.json')
+        if not os.path.exists(foptions):
+            path2info = os.path.join(os.path.dirname(sdir))
+            foptions = os.path.join(path2info, 'varat.json')
+        if os.path.exists(foptions):
+            f = open(foptions, "r")
+            self.varattr = json.load(f)
+            f.close()
 
     def check_runac(self):
         # NO IMPLEMENTED
@@ -65,7 +89,7 @@ class BALTIC_MLP():
             print(f'[WARNING] Output file {fileout} already exits. Skipping...')
             return
         if self.verbose:
-            print(f'[INFO] Starting chla processing')
+            print(f'[INFO] Starting water processing')
         ncpolymer = Dataset(prod_path)
 
         # info bands
@@ -76,7 +100,7 @@ class BALTIC_MLP():
         flagging = polymerflag.Class_Flags_Polymer(flag_band)
 
         # image limits
-        if prod_path.split('/')[-1].lower().find('trim')>0:
+        if prod_path.split('/')[-1].lower().find('trim') > 0:
             startX = 0
             startY = 0
             endX = ncpolymer.dimensions['width'].size - 1
@@ -84,7 +108,7 @@ class BALTIC_MLP():
         else:
             startY, endY, startX, endX = self.get_geo_limits(ncpolymer)
             if self.verbose:
-                print(f'[INFO] TRIMMING y->{startY}:{endY} x->{startX}:{endX}')
+                print(f'[INFO] Trimming y->{startY}:{endY} x->{startX}:{endX}')
         ny = (endY - startY) + 1
         nx = (endX - startX) + 1
         if self.verbose:
@@ -95,9 +119,12 @@ class BALTIC_MLP():
         # print(latArray.shape)
         # print(lonArray.shape)
 
-        # defining output array
-        array_chl = np.empty((ny, nx))
-        array_chl[:] = np.NaN
+        # defining output arrays
+        all_arrays = {}
+        for var in self.all_var:
+            array = np.empty((ny, nx))
+            array[:] = np.NaN
+            all_arrays[var] = array
 
         # defining tile sizes
         tileX = 250
@@ -105,8 +132,9 @@ class BALTIC_MLP():
 
         # computing chla for each tile
         for y in range(startY, endY, tileY):
-            if self.verbose and (y == 0 or ((y % 100) == 0)):
-                print(f'[INFO] Processing line {y}/{ny}')
+            ycheck = y - startY
+            if self.verbose and (ycheck == 0 or ((ycheck % tileY) == 0)):
+                print(f'[INFO] Processing line {ycheck}/{ny}')
             for x in range(startX, endX, tileX):
                 yini = y
                 yend = y + tileY
@@ -118,38 +146,68 @@ class BALTIC_MLP():
                     xend = endX + 1
                 nvalid, valid_mask = self.get_valid_mask(flagging, ncpolymer, yini, yend, xini, xend)
 
-                # chla estimation, only if the tile includes valid pixels
+                # chla, iop, psc and kd estimation, only if the tile includes valid pixels
                 if nvalid > 0:
-                    rrs_data = self.get_valid_rrs(ncpolymer, valid_mask, nvalid, yini, yend, xini, xend)
+                    rrs_data, iop = self.get_valid_rrs(ncpolymer, valid_mask, nvalid, yini, yend, xini, xend)
+                    # chl
                     chla_res = self.balmlp.compute_chla_ensemble_3bands(rrs_data)
                     chla_here = np.empty(valid_mask.shape)
                     chla_here[:] = np.NaN
                     chla_here[valid_mask] = chla_res
-                    array_chl[yini-startY:yend-startY, xini-startX:xend-startX] = chla_here[:, :]
+                    all_arrays['CHL'][yini - startY:yend - startY, xini - startX:xend - startX] = chla_here[:, :]
+                    # iop
+                    if iop is None:
+                        continue
+                    for n in range(3):
+                        iop_here = np.empty(valid_mask.shape)
+                        iop_here[:] = np.NaN
+                        iop_here[valid_mask] = iop[:, n]
+                        all_arrays[self.iop_var[n]][yini - startY:yend - startY,
+                        xini - startX:xend - startX] = iop_here[:, :]
+                    # kd, using 490 and 555 bands
+                    kd_res = self.compute_kd(rrs_data[:, 1], rrs_data[:, 3])
+                    kd_here = np.empty(valid_mask.shape)
+                    kd_here[:] = np.NaN
+                    kd_here[valid_mask] = kd_res[:]
+                    all_arrays['KD490'][yini - startY:yend - startY, xini - startX:xend - startX] = kd_here[:, :]
+
+                    # psc and pft
+                    psc, pft = self.compute_psc_pft(chla_res)
+                    for var in self.psc_var:
+                        psc_here = np.empty(valid_mask.shape)
+                        psc_here[:] = np.NaN
+                        psc_here[valid_mask] = psc[var][:]
+                        all_arrays[var][yini - startY:yend - startY, xini - startX:xend - startX] = psc_here[:, :]
+                    for var in self.pft_var:
+                        pft_here = np.empty(valid_mask.shape)
+                        pft_here[:] = np.NaN
+                        pft_here[valid_mask] = pft[var][:]
+                        all_arrays[var][yini - startY:yend - startY, xini - startX:xend - startX] = pft_here[:, :]
 
         if self.verbose:
-            print(f'[INFO] Chla processing completed')
+            print(f'[INFO] Water processing completed')
             print(f'[INFO] Output file: {fileout}')
 
-        self.create_file(fileout, ncpolymer, array_chl, startY, endY + 1, startX, endX + 1)
+        self.create_file(fileout, ncpolymer, all_arrays, startY, endY + 1, startX, endX + 1)
 
     def get_geo_limits(self, ncpolymer):
         array_lat = np.array(ncpolymer.variables['latitude'][:, :])
         array_lon = np.array(ncpolymer.variables['longitude'][:, :])
         width = ncpolymer.dimensions['width'].size
         height = ncpolymer.dimensions['height'].size
-        geovalid = np.zeros(array_lat.shape,dtype=np.bool)
+        geovalid = np.zeros(array_lat.shape, dtype=np.bool)
         for r in range(height):
             for c in range(width):
-                if self.geo_limits[0] <= array_lat[r, c] <= self.geo_limits[1] and self.geo_limits[2] <= array_lon[r,c] <= self.geo_limits[3]:
-                    geovalid[r,c] = True
+                if self.geo_limits[0] <= array_lat[r, c] <= self.geo_limits[1] and self.geo_limits[2] <= array_lon[
+                    r, c] <= self.geo_limits[3]:
+                    geovalid[r, c] = True
         r, c = np.where(geovalid)
         startY = r.min()
         endY = r.max()
         startX = c.min()
         endX = c.max()
 
-        return startY,endY,startX,endX
+        return startY, endY, startX, endX
 
     def find_row_column_from_lat_lon(self, lat, lon, lat0, lon0):
         # % closest squared distance
@@ -187,14 +245,16 @@ class BALTIC_MLP():
         else:
             self.applyBandShifting = False
 
-    def create_file(self, fileout, ncpolymer, array_chl, yini, yend, xini, xend):
+    def create_file(self, fileout, ncpolymer, all_arrays, yini, yend, xini, xend):
         if self.verbose:
             print(f'[INFO] Writting output file: {fileout}')
         ncoutput = baloutputfile.BalOutputFile(fileout)
         if not ncoutput.FILE_CREATED:
             print(f'[ERROR] File {fileout} could not be created. Please check permissions')
             return False
-        ncoutput.set_global_attributes()
+
+        ncoutput.set_global_attributes(ncpolymer)
+        array_chl = all_arrays['CHL']
         ny = array_chl.shape[0]
         nx = array_chl.shape[1]
         ncoutput.create_dimensions(ny, nx)
@@ -220,10 +280,43 @@ class BALTIC_MLP():
             array[array.mask] = -999
             array[~array.mask] = array[~array.mask] / np.pi
             wl = self.central_wavelength[rrsvar]
-            ncoutput.create_rrs_variable(array, namevar, wl)
+            ncoutput.create_rrs_variable(array, namevar, wl, self.varattr)
+
+        #chl
         if self.verbose:
             print(f'[INFO]    Adding chla...')
-        ncoutput.create_chla_variable(array_chl)
+        #ncoutput.create_chla_variable(array_chl)
+        ncoutput.create_var_general(array_chl,'CHL',self.varattr)
+
+        #IOP
+        if self.verbose:
+            print(f'[INFO]    Adding IOPs...')
+        for var in self.iop_var:
+            if self.verbose:
+                print(f'[INFO]     {var}')
+            #ncoutput.create_iop_variable(all_arrays[var], var)
+            ncoutput.create_var_general(all_arrays[var],var,self.varattr)
+
+        #KD490
+        if self.verbose:
+            print(f'[INFO]    Adding KD490...')
+        #ncoutput.create_kd_variable(all_arrays['KD490'], 'KD490')
+        ncoutput.create_var_general(all_arrays['KD490'],'KD490',self.varattr)
+
+        if self.verbose:
+            print(f'[INFO]    Adding PSC...')
+        for var in self.psc_var:
+            if self.verbose:
+                print(f'[INFO]     {var}')
+            ncoutput.create_var_general(all_arrays[var],var,self.varattr)
+
+        if self.verbose:
+            print(f'[INFO]    Adding PFT...')
+        for var in self.pft_var:
+            if self.verbose:
+                print(f'[INFO]     {var}')
+            ncoutput.create_var_general(all_arrays[var],var,self.varattr)
+
         ncoutput.close_file()
         if self.verbose:
             print(f'[INFO]    File {fileout} was created')
@@ -256,14 +349,81 @@ class BALTIC_MLP():
             rrsdata[iband, :] = band[valid_mask]
         rrsdata = rrsdata / np.pi
 
+        iop = None
+
         if self.applyBandShifting:
             # rrsdata_out = rrsdata.transpose()
-            rrsdata_out = bsc_qaa.bsc_qaa(rrsdata, self.central_wl_chla, self.wl_chla)
+            rrsdata_out, iop = bsc_qaa.bsc_qaa(rrsdata, self.central_wl_chla, self.wl_chla)
             rrsdata = rrsdata_out.transpose()
         else:
             rrsdata = rrsdata.transpose()
 
-        return rrsdata
+        return rrsdata, iop
+
+    def compute_kd(self, rrs490, rrs555):
+        r = np.log10(rrs490 / rrs555)
+        a = [0.0166, -0.8515, -1.8263, 1.8714, -2.4414, -1.0690]
+        val = a[1] + r * (a[2] + r * (a[3] + r * (a[4] + r * a[5])))
+        out = a[0] + np.power(10, val)
+        return out
+        # IDL CODE
+        # r490 = input(*, 0) & r555 = input(*, 1)
+        #
+        # r = ALOG10(r490(good) / r555(good))
+        #
+        # a = [0.0166, -0.8515, -1.8263, 1.8714, -2.4414, -1.0690];
+        # kd490
+        # standard
+        # out = a(0) + 10.0 ^ (a(1) + r * (a(2) + r * (a(3) + r * (a(4) + r * a(5)))))
+
+    def compute_psc_pft(self, chl):
+
+        x_log = np.log10(chl)
+
+        psc = {}
+        pft = {}
+
+        # PSC - pico
+        a = 0.261
+        b = 1.870
+        psc['PICO'] = a * np.exp(b * x_log)
+
+        # PSC - nano
+        a = 0.324
+        b = 2.412
+        psc['NANO'] = a * np.exp(b * x_log)
+
+        # PSC - micro
+        psc['MICRO'] = chl - psc['PICO'] - psc['NANO']
+
+        ##PFT - Dino
+        a = 0.050
+        b = 2.313
+        pft['DINO'] = a * np.exp(b * x_log)
+
+        ##PFT - diato
+        pft['DIATO'] = psc['MICRO'] - pft['DINO']
+
+        ## PFT - Green algae & Prochlorophytes
+        a = 0.119
+        b = 2.181
+        pft['GREEN'] = a * np.exp(b * x_log)
+
+        ## PFT - Cryptophytes
+        pft['CRYPTO'] = psc['NANO'] - (0.5 * pft['GREEN'])
+
+        ## PFT - Prokaryotes
+        pft['PROKAR'] = psc['PICO'] - (0.5 * pft['GREEN'])
+
+        for var in self.psc_var:
+            psc[var][chl < 0.13] = -999
+            psc[var][chl > 25.5] = -999
+
+        for var in self.pft_var:
+            pft[var][chl < 0.13] = -999
+            pft[var][chl > 25.5] = -999
+
+        return psc, pft
 
     # def get_lat_lon_arrays(self,ncpolymer,yini,yend,xini,xend):
     #     array_lat = np.array(ncpolymer.variables['latitude'][yini:yend, xini:xend])
