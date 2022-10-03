@@ -370,6 +370,7 @@ if __name__ == '__main__':
                     ##run the list of product as parallel processes
                     if len(param_list) == 0:
                         print(f'[WARNING] No valid products were found for date: {date_here}')
+                        date_here = date_here + timedelta(hours=24)
                         continue
                     if applyPool == 0:
                         if args.verbose:
