@@ -139,14 +139,17 @@ def search_alternative_prod_path(f, data_alternative_path, year_str, day_str):
     if data_alternative_path is None:
         return None
     output_path = os.path.join(data_alternative_path, year_str, day_str)
+    print(f'Output path {output_path}' )
     if not os.path.exists(output_path) or not os.path.isdir(output_path):
         return None
     sdate, edate = get_start_end_times_from_file_name(f)
+    print(f'SDate: {sdate} Edate {edate}')
     if sdate is None or edate is None:
         return None
     sensor = f[0:3]
     for fout in os.listdir(output_path):
         output_path_jday = os.path.join(output_path, fout)
+        print(f'Output path jday: {output_path_jday}')
         if fout.startswith(sensor) and fout.find('EFR') > 0:
             sdate_o, edate_o = get_start_end_times_from_file_name(fout)
             if sdate_o is not None and edate_o is not None:
@@ -318,7 +321,7 @@ if __name__ == '__main__':
                         prod_path_alt = search_alternative_prod_path(f, data_alternative_path, year_str, day_str)
                         coutput = check_exist_output_file(prod_path, output_path_jday, suffix)
                         if coutput:
-                            print(f'[INFO] Output file already exists. Skiping...')
+                            print(f'[INFO] Output file for path: {prod_path} already exists. Skiping...')
                             continue
                         else:  # temporary code, for working with alternative source file
                             if prod_path_alt is None:
