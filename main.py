@@ -334,7 +334,8 @@ if __name__ == '__main__':
                     ##first we obtain list of param (corrector,input_path,output_path,iszipped)
                     param_list = []
                     for f in os.listdir(input_path_date):
-                        prod_path = os.path.join(input_path_date, f)
+                        prod_name = f
+                        prod_path = os.path.join(input_path_date, prod_name)
                         print('-----------------------------------------------------------------------')
 
                         coutput = check_exist_output_file(prod_path, output_path_jday, suffix)
@@ -355,15 +356,16 @@ if __name__ == '__main__':
                                 if args.verbose:
                                     print(f'[INFO] Working with alternative path: {prod_path}')
                                 prod_path = prod_path_alt
-                        print('&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&',prod_path)
-                        if os.path.isdir(prod_path) and f.endswith('.SEN3') and f.find('EFR') > 0:
+                                prod_name = prod_path.split('/')[-1]
+
+                        if os.path.isdir(prod_path) and prod_name.endswith('.SEN3') and prod_name.find('EFR') > 0:
                             check_geo = check_geo_limits(prod_path, geo_limits, False)
                             if check_geo == 1:
                                 params = [corrector, prod_path, output_path_jday, False, prod_path_alt]
                                 param_list.append(params)
                             else:
                                 print_check_geo_errors(check_geo)
-                        if not os.path.isdir(prod_path) and f.endswith('.zip') and f.find('EFR') > 0:
+                        if not os.path.isdir(prod_path) and prod_name.endswith('.zip') and prod_name.find('EFR') > 0:
                             if not args.temp_path:
                                 print(
                                     f'[ERROR] Temporary path must be defined to work with zip files. Use the option -tp')
@@ -379,7 +381,7 @@ if __name__ == '__main__':
                             if check_geo == 1:
                                 with zp.ZipFile(prod_path, 'r') as zprod:
                                     if args.verbose:
-                                        print(f'[INFO] Unziping {f} to {unzip_path}')
+                                        print(f'[INFO] Unziping {prod_name} to {unzip_path}')
                                     zprod.extractall(path=unzip_path)
                                 path_prod_u = prod_path.split('/')[-1][0:-4]
                                 if not path_prod_u.endswith('.SEN3'):
