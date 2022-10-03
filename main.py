@@ -162,7 +162,7 @@ def search_alternative_prod_path(f, data_alternative_path, year_str, day_str):
             sdate_o, edate_o = get_start_end_times_from_file_name(fout)
             print(f'Alternative path: {output_path_jday} Sdate {sdate_o} Edate {edate_o}')
             if sdate_o is not None and edate_o is not None:
-                print(f'Here: {sdate} --- {edate}')
+                print(f'Here: {sdate}>={sdate_o} --- {edate}<={edate_o}')
                 if sdate >= sdate_o and edate <= edate_o:
                     return output_path_jday
     return None
