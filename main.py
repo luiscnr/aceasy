@@ -329,7 +329,7 @@ if __name__ == '__main__':
                         prod_path = os.path.join(input_path_date, f)
                         print('-----------------------------------------------------------------------')
 
-                        prod_path_alt = search_alternative_prod_path(f, data_alternative_path, year_str, day_str)
+
                         coutput = check_exist_output_file(prod_path, output_path_jday, suffix)
                         print(prod_path,'-->',coutput)
                         if coutput == -1:
@@ -339,6 +339,7 @@ if __name__ == '__main__':
                             print(f'[INFO] Output file for path: {prod_path} already exists. Skiping...')
                             continue
                         else:  # temporary code, for working with alternative source file
+                            prod_path_alt = search_alternative_prod_path(f, data_alternative_path, year_str, day_str)
                             if prod_path_alt is None:
                                 if args.verbose:
                                     print('[INFO] Alternative path was not found. Skiping')
