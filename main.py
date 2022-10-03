@@ -330,13 +330,14 @@ if __name__ == '__main__':
                         os.mkdir(output_path_jday)
                     if args.verbose:
                         print('*************************************************')
+                        print(f'DATE: {date_here}')
 
                     ##first we obtain list of param (corrector,input_path,output_path,iszipped)
                     param_list = []
                     for f in os.listdir(input_path_date):
                         prod_name = f
                         prod_path = os.path.join(input_path_date, prod_name)
-                        print('-----------------------------------------------------------------------')
+                        print('---------------')
 
                         coutput = check_exist_output_file(prod_path, output_path_jday, suffix)
                         # print(prod_path, '-->', coutput)
