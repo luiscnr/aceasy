@@ -160,16 +160,17 @@ def search_alternative_prod_path(f, data_alternative_path, year_str, day_str):
 
         if fout.startswith(sensor) and fout.find('EFR') > 0:
             sdate_o, edate_o = get_start_end_times_from_file_name(fout)
-            print(f'Alternative path: {output_path_jday} Sdate {sdate_o} Edate {edate_o}')
+            #print(f'Alternative path: {output_path_jday} Sdate {sdate_o} Edate {edate_o}')
             if sdate_o is not None and edate_o is not None:
-                print(f'Here: {sdate}>={sdate_o} --- {edate}<={edate_o}')
+                #print(f'Here: {sdate}>={sdate_o} --- {edate}<={edate_o}')
                 if sdate >= sdate_o and edate <= edate_o:
                     return output_path_jday
                 if sdate >= sdate_o and edate > edate_o:
                     sec_total = (edate - sdate).total_seconds()
                     sec_out = (edate - edate_o).total_seconds()
-                    porc = (sec_total - sec_out) / sec_total
-                    print('--->', porc)
+                    porc = ((sec_total - sec_out) / sec_total)*100
+                    if porc>80:
+                        return output_path_jday
 
     return None
 
