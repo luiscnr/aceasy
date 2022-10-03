@@ -338,7 +338,7 @@ if __name__ == '__main__':
                         print('-----------------------------------------------------------------------')
 
                         coutput = check_exist_output_file(prod_path, output_path_jday, suffix)
-                        print(prod_path, '-->', coutput)
+                        #print(prod_path, '-->', coutput)
                         if coutput == -1:
                             ##format no valid
                             continue
@@ -355,7 +355,7 @@ if __name__ == '__main__':
                                 if args.verbose:
                                     print(f'[INFO] Working with alternative path: {prod_path}')
                                 prod_path = prod_path_alt
-
+                        print('&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&',prod_path)
                         if os.path.isdir(prod_path) and f.endswith('.SEN3') and f.find('EFR') > 0:
                             check_geo = check_geo_limits(prod_path, geo_limits, False)
                             if check_geo == 1:
