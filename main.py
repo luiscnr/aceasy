@@ -165,6 +165,12 @@ def search_alternative_prod_path(f, data_alternative_path, year_str, day_str):
                 print(f'Here: {sdate}>={sdate_o} --- {edate}<={edate_o}')
                 if sdate >= sdate_o and edate <= edate_o:
                     return output_path_jday
+                if sdate >= sdate_o and edate_o >= edate:
+                    sec_total = (edate - sdate).total_seconds()
+                    sec_out = (edate_o - edate).total_seconds()
+                    porc = (sec_total - sec_out) / sec_total
+                    print('--->', porc)
+
     return None
 
 
