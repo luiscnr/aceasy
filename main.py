@@ -327,6 +327,8 @@ if __name__ == '__main__':
                     param_list = []
                     for f in os.listdir(input_path_date):
                         prod_path = os.path.join(input_path_date, f)
+                        print('-----------------------------------------------------------------------')
+                        print(prod_path)
                         prod_path_alt = search_alternative_prod_path(f, data_alternative_path, year_str, day_str)
                         coutput = check_exist_output_file(prod_path, output_path_jday, suffix)
                         if coutput == -1:
