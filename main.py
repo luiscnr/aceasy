@@ -120,6 +120,14 @@ def print_check_geo_errors(check_geo):
 
 def check_exist_output_file(prod_path, output_dir, suffix):
     prod_name = prod_path.split('/')[-1]
+    valid = False
+    if os.path.isdir(prod_path) and prod_name.endswith('.SEN3') and prod_name.find('EFR') > 0:
+        valid = True
+    if not os.path.isdir(prod_path) and prod_name.endswith('.zip') and prod_name.find('EFR') > 0:
+        valid = True
+    if not valid:
+        return -1
+
     if prod_name.endswith('.zip'):
         prod_name = prod_name[:-4]
         if not prod_name.endswith('.SEN3'):
@@ -130,9 +138,9 @@ def check_exist_output_file(prod_path, output_dir, suffix):
             output_name = prod_name[0:-5] + '_' + suffix + '.nc'
             output_path = os.path.join(output_dir, output_name)
             if os.path.exists(output_path):
-                return True
+                return 1
 
-    return False
+    return 0
 
 
 def search_alternative_prod_path(f, data_alternative_path, year_str, day_str):
@@ -321,7 +329,10 @@ if __name__ == '__main__':
                         prod_path = os.path.join(input_path_date, f)
                         prod_path_alt = search_alternative_prod_path(f, data_alternative_path, year_str, day_str)
                         coutput = check_exist_output_file(prod_path, output_path_jday, suffix)
-                        if coutput:
+                        if coutput == -1:
+                            ##format no valid
+                            continue
+                        elif coutput == 0:
                             print(f'[INFO] Output file for path: {prod_path} already exists. Skiping...')
                             continue
                         else:  # temporary code, for working with alternative source file
