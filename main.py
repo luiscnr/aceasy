@@ -335,7 +335,7 @@ if __name__ == '__main__':
                         if coutput == -1:
                             ##format no valid
                             continue
-                        elif coutput == 0:
+                        elif coutput == 1:
                             print(f'[INFO] Output file for path: {prod_path} already exists. Skiping...')
                             continue
                         else:  # temporary code, for working with alternative source file
