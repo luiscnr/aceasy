@@ -260,7 +260,9 @@ def do_zip(prod_path):
 
 #input_file (param[0]) could be repeated
 def optimize_param_list(param_list):
-    param_list_new = param_list[0]
+
+    param_list_new = [param_list[0]]
+
     for idx in range(1,len(param_list)):
         repeated = False
         for icheck in range(idx):
