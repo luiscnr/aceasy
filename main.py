@@ -209,14 +209,12 @@ def search_alternative_prod_path(f, data_alternative_path, year_str, day_str):
                     sec_total = (edate - sdate).total_seconds()
                     sec_out = (edate - edate_o).total_seconds()
                     porc = ((sec_total - sec_out) / sec_total) * 100
-                    print('-->>',porc)
                     if porc > 50:
                         return output_path_jday
                 if sdate < sdate_o <= edate <= edate_o:
                     sec_total = (edate - sdate).total_seconds()
                     sec_out = (sdate_o - sdate).total_seconds()
                     porc = ((sec_total - sec_out) / sec_total) * 100
-                    print('=====>',porc)
                     if porc > 50:
                         return output_path_jday
 
@@ -436,7 +434,7 @@ if __name__ == '__main__':
                                 continue
                             else:
                                 if args.verbose:
-                                    print(f'[INFO] Working with alternative path: {prod_path}')
+                                    print(f'[INFO] Working with alternative path: {prod_path_alt}')
                                 prod_path = prod_path_alt
                                 prod_name = prod_path.split('/')[-1]
                                 coutput = check_exist_output_file(prod_path, output_path_jday, suffix)
