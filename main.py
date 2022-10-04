@@ -57,7 +57,6 @@ def run_parallel_corrector(params):
         b = corrector.run_process(path_product_input, params[2])
     else:
         print(f'[ERROR] Path {params[0]} is not valid. Skiping...')
-   
 
     # corrector = params[0]
     #
@@ -66,8 +65,8 @@ def run_parallel_corrector(params):
 
     # if not b and params[4] is not None:
     #     corrector.run_process(params[4], params[2])
-    # if params[3]:
-    #     delete_unzipped_path(params[1])
+    if params[3]:
+        delete_unzipped_path(params[1])
 
 
 def delete_folder_content(path_folder):
@@ -156,32 +155,32 @@ def check_exist_output_file(prod_path, output_dir, suffix):
 
     return 0
 
-def check_path_validity(prod_path,prod_name):
+
+def check_path_validity(prod_path, prod_name):
     valid = False
     iszipped = False
     if prod_path is None:
-        return valid,iszipped
+        return valid, iszipped
     if prod_name is None:
         prod_name = prod_path.split('/')[-1]
     if os.path.isdir(prod_path) and prod_name.endswith('.SEN3') and prod_name.find('EFR') > 0:
         valid = True
-        return valid,iszipped
+        return valid, iszipped
     if not os.path.isdir(prod_path) and prod_name.endswith('.zip') and prod_name.find('EFR') > 0:
         iszipped = True
         if not args.temp_path:
             print(
                 f'[ERROR] Temporary path must be defined to work with zip files. Use the option -tp')
             valid = False
-            return valid,iszipped
+            return valid, iszipped
         if not os.path.exists(args.temp_path):
             print(f'[ERROR] Temporary path {args.temp_path} does not exist')
             valid = False
-            return valid,iszipped
+            return valid, iszipped
         valid = True
-        return valid,iszipped
+        return valid, iszipped
 
-    return valid,iszipped
-
+    return valid, iszipped
 
 
 def search_alternative_prod_path(f, data_alternative_path, year_str, day_str):
@@ -239,6 +238,7 @@ def get_start_end_times_from_file_name(fname):
                 pass
     return sdate, edate
 
+
 def do_zip(prod_path):
     if args.verbose:
         print(f'[INFO] Working with zip path: {prod_path}')
@@ -257,6 +257,20 @@ def do_zip(prod_path):
             print(f'[INFO] Running atmospheric correction for {path_prod_u}')
         return path_prod_u
     return None
+
+#input_file (param[0]) could be repeated
+def optimize_param_list(param_list):
+    param_list_new = []
+    for idx in range(1,len(param_list)):
+        repeated = False
+        for icheck in range(idx):
+            if param_list[idx][1]==param_list[icheck][1]:
+                repeated = True
+                break
+        if not repeated:
+            param_list_new.append(param_list[idx])
+    return param_list_new
+
 
 
 # Press the green button in the gutter to run the script.
@@ -426,10 +440,11 @@ if __name__ == '__main__':
                                 prod_name = prod_path.split('/')[-1]
                                 coutput = check_exist_output_file(prod_path, output_path_jday, suffix)
                                 if coutput == 1:
-                                    print(f'[INFO] Output file for alternative path: {prod_path} already exists. Skiping...')
+                                    print(
+                                        f'[INFO] Output file for alternative path: {prod_path} already exists. Skiping...')
                                     continue
 
-                        valid, iszipped = check_path_validity(prod_path,prod_name)
+                        valid, iszipped = check_path_validity(prod_path, prod_name)
                         if not valid:
                             continue
                         check_geo = check_geo_limits(prod_path, geo_limits, iszipped)
@@ -438,7 +453,6 @@ if __name__ == '__main__':
                             param_list.append(params)
                         else:
                             print_check_geo_errors(check_geo)
-
 
                         # if os.path.isdir(prod_path) and prod_name.endswith('.SEN3') and prod_name.find('EFR') > 0:
                         #     check_geo = check_geo_limits(prod_path, geo_limits, False)
@@ -476,7 +490,8 @@ if __name__ == '__main__':
                         #     else:
                         #         print_check_geo_errors(check_geo)
                         #         continue
-
+                    
+                    param_list = optimize_param_list(param_list)
                     ##run the list of product as parallel processes
                     if len(param_list) == 0:
                         print(f'[WARNING] No valid products were found for date: {date_here}')
@@ -488,18 +503,18 @@ if __name__ == '__main__':
                         for params in param_list:
                             corrector = params[0]
                             path_product_input = params[1]
-                            if params[3]: #zipped
+                            if params[3]:  # zipped
                                 path_product_input = do_zip(params[1])
-                            valid_input,iszipped_input = check_path_validity(path_product_input,None)
+                            valid_input, iszipped_input = check_path_validity(path_product_input, None)
                             if valid_input and not iszipped_input:
                                 b = corrector.run_process(path_product_input, params[2])
                             else:
                                 print(f'[ERROR] Path {params[0]} is not valid. Skiping...')
-                            continue
+                                continue
                             # if not b and params[4] is not None:
                             #     corrector.run_process(params[4], params[2])
-                            # if params[3]:
-                            #     delete_unzipped_path(params[1])
+                        if params[3]:
+                            delete_unzipped_path(params[1])
                     else:
                         if args.verbose:
                             print(f'[INFO] Starting parallel processing. Number of products: {len(param_list)}')
