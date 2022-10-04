@@ -205,19 +205,19 @@ def search_alternative_prod_path(f, data_alternative_path, year_str, day_str):
                 # print(f'Here: {sdate}>={sdate_o} --- {edate}<={edate_o}')
                 if sdate >= sdate_o and edate <= edate_o:
                     return output_path_jday
-                if sdate >= sdate_o and edate > edate_o:
+                if sdate_o <= sdate <= edate_o < edate:
                     sec_total = (edate - sdate).total_seconds()
                     sec_out = (edate - edate_o).total_seconds()
                     porc = ((sec_total - sec_out) / sec_total) * 100
-                    print(porc)
-                    if porc > 80:
+                    print('-->>',porc)
+                    if porc > 50:
                         return output_path_jday
-                if sdate < sdate_o and edate <= edate_o:
+                if sdate < sdate_o <= edate <= edate_o:
                     sec_total = (edate - sdate).total_seconds()
                     sec_out = (sdate_o - sdate).total_seconds()
                     porc = ((sec_total - sec_out) / sec_total) * 100
-                    print(porc)
-                    if porc > 80:
+                    print('=====>',porc)
+                    if porc > 50:
                         return output_path_jday
 
     return None
