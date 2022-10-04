@@ -420,7 +420,6 @@ if __name__ == '__main__':
                         print('---------------')
 
                         coutput = check_exist_output_file(prod_path, output_path_jday, suffix)
-                        # print(prod_path, '-->', coutput)
                         if coutput == -1:
                             ##format no valid
                             continue
@@ -431,7 +430,7 @@ if __name__ == '__main__':
                             prod_path_alt = search_alternative_prod_path(f, data_alternative_path, year_str, day_str)
                             if prod_path_alt is None:
                                 if args.verbose:
-                                    print('[INFO] Alternative path was not found. Skiping')
+                                    print(f'[INFO] Alternative path was not found for {prod_path}. Skiping')
                                 continue
                             else:
                                 if args.verbose:
@@ -454,43 +453,8 @@ if __name__ == '__main__':
                         else:
                             print_check_geo_errors(check_geo)
 
-                        # if os.path.isdir(prod_path) and prod_name.endswith('.SEN3') and prod_name.find('EFR') > 0:
-                        #     check_geo = check_geo_limits(prod_path, geo_limits, False)
-                        #     if check_geo == 1:
-                        #         params = [corrector, prod_path, output_path_jday, False, prod_path_alt]
-                        #         param_list.append(params)
-                        #     else:
-                        #         print_check_geo_errors(check_geo)
-                        # if not os.path.isdir(prod_path) and prod_name.endswith('.zip') and prod_name.find('EFR') > 0:
-                        #     if not args.temp_path:
-                        #         print(
-                        #             f'[ERROR] Temporary path must be defined to work with zip files. Use the option -tp')
-                        #         continue
-                        #     if not os.path.exists(args.temp_path):
-                        #         print(f'[ERROR] Temporary path {args.temp_path} does not exist')
-                        #         continue
-                        #     if args.verbose:
-                        #         print(f'[INFO] Working with zip path: {prod_path}')
-                        #     unzip_path = args.temp_path
-                        #     iszipped = True
-                        #     check_geo = check_geo_limits(prod_path, geo_limits, True)
-                        #     if check_geo == 1:
-                        #         with zp.ZipFile(prod_path, 'r') as zprod:
-                        #             if args.verbose:
-                        #                 print(f'[INFO] Unziping {prod_name} to {unzip_path}')
-                        #             zprod.extractall(path=unzip_path)
-                        #         path_prod_u = prod_path.split('/')[-1][0:-4]
-                        #         if not path_prod_u.endswith('.SEN3'):
-                        #             path_prod_u = path_prod_u + '.SEN3'
-                        #         path_prod_u = os.path.join(unzip_path, path_prod_u)
-                        #         if args.verbose:
-                        #             print(f'[INFO] Running atmospheric correction for {path_prod_u}')
-                        #         params = [corrector, path_prod_u, output_path_jday, True, prod_path_alt]
-                        #         param_list.append(params)
-                        #     else:
-                        #         print_check_geo_errors(check_geo)
-                        #         continue
-                    
+
+
                     param_list = optimize_param_list(param_list)
                     ##run the list of product as parallel processes
                     if len(param_list) == 0:
