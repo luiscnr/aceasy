@@ -49,11 +49,14 @@ args = parser.parse_args()
 # Params-> 0: corrector; 1: input_path; 2: output_path; 3: delete input path; 4: alternative path
 def run_parallel_corrector(params):
     corrector = params[0]
+
+    print(params[1],'->',params[2])
     b = corrector.run_process(params[1], params[2])
-    if not b and params[4] is not None:
-        corrector.run_process(params[4], params[2])
-    if params[3]:
-        delete_unzipped_path(params[1])
+
+    # if not b and params[4] is not None:
+    #     corrector.run_process(params[4], params[2])
+    # if params[3]:
+    #     delete_unzipped_path(params[1])
 
 
 def delete_folder_content(path_folder):
