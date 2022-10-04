@@ -455,12 +455,13 @@ if __name__ == '__main__':
 
 
 
-                    param_list = optimize_param_list(param_list)
+
                     ##run the list of product as parallel processes
                     if len(param_list) == 0:
                         print(f'[WARNING] No valid products were found for date: {date_here}')
                         date_here = date_here + timedelta(hours=24)
                         continue
+                    param_list = optimize_param_list(param_list)
                     if applyPool == 0:
                         if args.verbose:
                             print(f'[INFO] Starting sequencial processing. Number of products: {len(param_list)}')
