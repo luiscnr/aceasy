@@ -171,6 +171,12 @@ def search_alternative_prod_path(f, data_alternative_path, year_str, day_str):
                     porc = ((sec_total - sec_out) / sec_total) * 100
                     if porc > 80:
                         return output_path_jday
+                if sdate < sdate_o and edate <= edate_o:
+                    sec_total = (edate - sdate).total_seconds()
+                    sec_out = (sdate_o - sdate).total_seconds()
+                    porc = ((sec_total - sec_out) / sec_total) * 100
+                    if porc > 80:
+                        return output_path_jday
 
     return None
 
