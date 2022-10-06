@@ -49,7 +49,7 @@ class BalOutputFile:
         self.OFILE.stop_time = ncpolymer.stop_time
         self.OFILE.polymer_source_file = ncpolymer.l2_filename.split('/')[-1]
         self.OFILE.l1_source_file = ncpolymer.l1_filename.split('/')[-1]
-        self.OFILE.timeliness = self.OFILE.polymer_source_file.split('_')[16]
+        self.OFILE.timeliness = self.OFILE.polymer_source_file.split('_')[17]
         self.OFILE.platform = self.OFILE.polymer_source_file[2]
         # satellite = at['satellite']
         # platform = at['platform']

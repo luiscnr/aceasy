@@ -63,6 +63,7 @@
 "type":"surface",
 "units":"m^-1",
 "source":"OLCI - POLYMER v.4.14 Atmospheric Correction Processor",
+"comment":"Sentinel-3 OLCI Transparency Products ATBD (https://sentinels.copernicus.eu/documents/247904/349589/OLCI_L2_Transparency_Products.pdf)", 
 "missing_value":-999.0,
 "valid_min":0.0,
 "valid_max":10.0
@@ -73,6 +74,8 @@
 "standard_name":"mass_concentration_of_microphytoplankton_expressed_as_chlorophyll_in_sea_water",
 "type":"surface",
 "units":"milligram m^-3",
+"source":"OLCI - POLYMER v.4.14 Atmospheric Correction Processor - BAL MLP Ensemble",
+"comment":"Derived from chl as in Brando et al. (2021). Chl validity range: 0.13-25.5 mg m-3",
 "missing_value":-999.0,
 "valid_min":0.01,
 "valid_max":100.0
@@ -83,6 +86,8 @@
 "standard_name":"mass_concentration_of_nanophytoplankton_expressed_as_chlorophyll_in_sea_water",
 "type":"surface",
 "units":"milligram m^-3",
+"source":"OLCI - POLYMER v.4.14 Atmospheric Correction Processor - BAL MLP Ensemble",
+"comment":"Derived from chl as in Brando et al. (2021). Chl validity range: 0.13-25.5 mg m-3",
 "missing_value":-999.0,
 "valid_min":0.01,
 "valid_max":100.0
@@ -93,6 +98,8 @@
 "standard_name":"mass_concentration_of_picophytoplankton_expressed_as_chlorophyll_in_sea_water",
 "type":"surface",
 "units":"milligram m^-3",
+"source":"OLCI - POLYMER v.4.14 Atmospheric Correction Processor - BAL MLP Ensemble",
+"comment":"Derived from chl as in Brando et al. (2021). Chl validity range: 0.13-25.5 mg m-3",
 "missing_value":-999.0,
 "valid_min":0.01,
 "valid_max":100.0
@@ -103,6 +110,8 @@
 "standard_name":"mass_concentration_of_dinophytes_expressed_as_chlorophyll_in_sea_water",
 "type":"surface",
 "units":"milligram m^-3",
+"source":"OLCI - POLYMER v.4.14 Atmospheric Correction Processor - BAL MLP Ensemble",
+"comment":"Derived from chl as in Brando et al. (2021). Chl validity range: 0.13-25.5 mg m-3",
 "missing_value":-999.0,
 "valid_min":0.01,
 "valid_max":100.0
@@ -113,6 +122,8 @@
 "standard_name":"mass_concentration_of_diatoms_expressed_as_chlorophyll_in_sea_water",
 "type":"surface",
 "units":"milligram m^-3",
+"source":"OLCI - POLYMER v.4.14 Atmospheric Correction Processor - BAL MLP Ensemble",
+"comment":"Derived from chl as in Brando et al. (2021). Chl validity range: 0.13-25.5 mg m-3",
 "missing_value":-999.0,
 "valid_min":0.01,
 "valid_max":100.0
@@ -123,6 +134,8 @@
 "standard_name":"mass_concentration_of_greenalgae_and_prochlorophytes_expressed_as_chlorophyll_in_sea_water",
 "type":"surface",
 "units":"milligram m^-3",
+"source":"OLCI - POLYMER v.4.14 Atmospheric Correction Processor - BAL MLP Ensemble",
+"comment":"Derived from chl as in Brando et al. (2021). Chl validity range: 0.13-25.5 mg m-3",
 "missing_value":-999.0,
 "valid_min":0.01,
 "valid_max":100.0
@@ -133,6 +146,8 @@
 "standard_name":"mass_concentration_of_cryptophytes_expressed_as_chlorophyll_in_sea_water",
 "type":"surface",
 "units":"milligram m^-3",
+"source":"OLCI - POLYMER v.4.14 Atmospheric Correction Processor - BAL MLP Ensemble",
+"comment":"Derived from chl as in Brando et al. (2021). Chl validity range: 0.13-25.5 mg m-3",
 "missing_value":-999.0,
 "valid_min":0.01,
 "valid_max":100.0
@@ -143,6 +158,8 @@
 "standard_name":"mass_concentration_of_prokaryotes_expressed_as_chlorophyll_in_sea_water",
 "type":"surface",
 "units":"milligram m^-3",
+"source":"OLCI - POLYMER v.4.14 Atmospheric Correction Processor - BAL MLP Ensemble",
+"comment":"Derived from chl as in Brando et al. (2021). Chl validity range: 0.13-25.5 mg m-3",
 "missing_value":-999.0,
 "valid_min":0.01,
 "valid_max":100.0
