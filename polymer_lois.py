@@ -69,7 +69,6 @@ class POLYMER:
             return False
         return True
 
-
     def run_process(self, prod_path, output_dir):
         prod_name = prod_path.split('/')[-1]
         if prod_name.endswith('.SEN3') and os.path.isdir(prod_path):

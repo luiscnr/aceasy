@@ -46,27 +46,39 @@ args = parser.parse_args()
 #             output_file = os.path.join(output_path, name[:-3] + '.kml')
 #             cgeo.save_polygon_image_askml(output_file)
 
-# Params-> 0: corrector; 1: input_path; 2: output_path; 3: delete input path; 4: alternative path
+# Params-> 0: corrector; 1: input_path; 2: output_path; 3: zipped input path; 4: alternative path, 5: zipped alternative input path
 def run_parallel_corrector(params):
     corrector = params[0]
     path_product_input = params[1]
-    if params[3]:  # zipped
-        path_product_input = do_zip(params[1])
+    output_file = params[2]
+    zipped_input_path = params[3]
+    alt_path_product_input = params[4]
+    zipped_alt_input_path = params[5]
+
+    if zipped_input_path:  # zipped
+        path_product_input = do_zip(path_product_input)
+
     valid_input, iszipped_input = check_path_validity(path_product_input, None)
     if valid_input and not iszipped_input:
-        b = corrector.run_process(path_product_input, params[2])
+        b = corrector.run_process(path_product_input, output_file)
+
+        ##ERROR,WORKING WITH ALTERNATIVE PATH
+        if not b and alt_path_product_input is not None:
+            if args.verbose:
+                print(f'[INFO] Error with main path. Working with alternative path: {alt_path_product_input}')
+            if zipped_alt_input_path:
+                alt_path_product_input = do_zip(alt_path_product_input)
+            valid_input_alt, iszipped_input_alt = check_path_validity(alt_path_product_input, None)
+            if valid_input_alt and not iszipped_input_alt:
+                corrector.run_process(alt_path_product_input, output_file)
+            if zipped_alt_input_path:
+                delete_unzipped_path(alt_path_product_input)
+
     else:
-        print(f'[ERROR] Path {params[0]} is not valid. Skiping...')
+        print(f'[ERROR] Path {path_product_input} is not valid. Skiping...')
 
-    # corrector = params[0]
-    #
-    # print(params[1],'->',params[2])
-    # b = corrector.run_process(params[1], params[2])
-
-    # if not b and params[4] is not None:
-    #     corrector.run_process(params[4], params[2])
-    if params[3]:
-        delete_unzipped_path(params[1])
+    if zipped_input_path:
+        delete_unzipped_path(path_product_input)
 
 
 def delete_folder_content(path_folder):
@@ -139,8 +151,9 @@ def check_exist_output_file(prod_path, output_dir, suffix):
     if not os.path.isdir(prod_path) and prod_name.endswith('.zip') and prod_name.find('EFR') > 0:
         valid = True
     if not valid:
-        return -1
+        return -1, None
 
+    output_path = None
     if prod_name.endswith('.zip'):
         prod_name = prod_name[:-4]
         if not prod_name.endswith('.SEN3'):
@@ -150,10 +163,14 @@ def check_exist_output_file(prod_path, output_dir, suffix):
         if os.path.isdir(output_dir):
             output_name = prod_name[0:-5] + '_' + suffix + '.nc'
             output_path = os.path.join(output_dir, output_name)
-            if os.path.exists(output_path):
-                return 1
 
-    return 0
+    if output_path is None:
+        return -1, None
+
+    if os.path.exists(output_path):
+        return 1, output_path
+    else:
+        return 0, output_path
 
 
 def check_path_validity(prod_path, prod_name):
@@ -258,21 +275,20 @@ def do_zip(prod_path):
         return path_prod_u
     return None
 
-#input_file (param[0]) could be repeated
-def optimize_param_list(param_list):
 
+# input_file (param[0]) could be repeated
+def optimize_param_list(param_list):
     param_list_new = [param_list[0]]
 
-    for idx in range(1,len(param_list)):
+    for idx in range(1, len(param_list)):
         repeated = False
         for icheck in range(idx):
-            if param_list[idx][1]==param_list[icheck][1]:
+            if param_list[idx][1] == param_list[icheck][1]:
                 repeated = True
                 break
         if not repeated:
             param_list_new.append(param_list[idx])
     return param_list_new
-
 
 
 # Press the green button in the gutter to run the script.
@@ -421,42 +437,34 @@ if __name__ == '__main__':
                         prod_path = os.path.join(input_path_date, prod_name)
                         print('---------------')
 
-                        coutput = check_exist_output_file(prod_path, output_path_jday, suffix)
+                        coutput,output_file_path = check_exist_output_file(prod_path, output_path_jday, suffix)
                         if coutput == -1:
                             ##format no valid
                             continue
                         elif coutput == 1:
                             print(f'[INFO] Output file for path: {prod_path} already exists. Skiping...')
                             continue
-                        else:  # temporary code, for working with alternative source file
-                            prod_path_alt = search_alternative_prod_path(f, data_alternative_path, year_str, day_str)
-                            if prod_path_alt is None:
-                                if args.verbose:
-                                    print(f'[INFO] Alternative path was not found for {prod_path}. Skiping')
-                                continue
-                            else:
-                                if args.verbose:
-                                    print(f'[INFO] Working with alternative path: {prod_path_alt}')
-                                prod_path = prod_path_alt
-                                prod_name = prod_path.split('/')[-1]
-                                coutput = check_exist_output_file(prod_path, output_path_jday, suffix)
-                                if coutput == 1:
-                                    print(
-                                        f'[INFO] Output file for alternative path: {prod_path} already exists. Skiping...')
-                                    continue
 
+                        #path validity and geo_limits for path_prod
                         valid, iszipped = check_path_validity(prod_path, prod_name)
                         if not valid:
                             continue
                         check_geo = check_geo_limits(prod_path, geo_limits, iszipped)
+
                         if check_geo == 1:
-                            params = [corrector, prod_path, output_path_jday, iszipped, prod_path_alt]
+                            # alternative prod path, it's useful for Polymer if the trim fails
+                            prod_path_altn = search_alternative_prod_path(f, data_alternative_path, year_str, day_str)
+                            prod_path_alt = None
+                            valid_alt, iszipped_alt = check_path_validity(prod_path, prod_name)
+                            if valid_alt:
+                                check_geo = check_geo_limits(prod_path_altn, geo_limits, iszipped_alt)
+                                if check_geo==1:
+                                    prod_path_alt = prod_path_altn
+                            ##definining alternative path
+                            params = [corrector, prod_path, output_file_path, iszipped, prod_path_alt, iszipped_alt]
                             param_list.append(params)
                         else:
                             print_check_geo_errors(check_geo)
-
-
-
 
                     ##run the list of product as parallel processes
                     if len(param_list) == 0:
@@ -468,20 +476,8 @@ if __name__ == '__main__':
                         if args.verbose:
                             print(f'[INFO] Starting sequencial processing. Number of products: {len(param_list)}')
                         for params in param_list:
-                            corrector = params[0]
-                            path_product_input = params[1]
-                            if params[3]:  # zipped
-                                path_product_input = do_zip(params[1])
-                            valid_input, iszipped_input = check_path_validity(path_product_input, None)
-                            if valid_input and not iszipped_input:
-                                b = corrector.run_process(path_product_input, params[2])
-                            else:
-                                print(f'[ERROR] Path {params[0]} is not valid. Skiping...')
-                                continue
-                            # if not b and params[4] is not None:
-                            #     corrector.run_process(params[4], params[2])
-                        if params[3]:
-                            delete_unzipped_path(params[1])
+                            run_parallel_corrector(params)
+
                     else:
                         if args.verbose:
                             print(f'[INFO] Starting parallel processing. Number of products: {len(param_list)}')
