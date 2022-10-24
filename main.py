@@ -454,14 +454,15 @@ if __name__ == '__main__':
                         if check_geo == 1:
                             # alternative prod path, it's useful for Polymer if the trim fails
                             prod_path_altn = search_alternative_prod_path(f, data_alternative_path, year_str, day_str)
-                            prod_name_altn = prod_path_altn.split('/')[-1]
                             prod_path_alt = None
-                            valid_alt, iszipped_alt = check_path_validity(prod_path_altn, prod_name_altn)
-                            if valid_alt:
-                                check_geo = check_geo_limits(prod_path_altn, geo_limits, iszipped_alt)
-                                if check_geo==1:
-                                    prod_path_alt = prod_path_altn
-                            ##definining alternative path
+                            if prod_path_altn is not None:
+                                prod_name_altn = prod_path_altn.split('/')[-1]
+                                valid_alt, iszipped_alt = check_path_validity(prod_path_altn, prod_name_altn)
+                                if valid_alt:
+                                    check_geo = check_geo_limits(prod_path_altn, geo_limits, iszipped_alt)
+                                    if check_geo==1:
+                                        prod_path_alt = prod_path_altn
+                            ##end definining alternative path
                             params = [corrector, prod_path, output_file_path, iszipped, prod_path_alt, iszipped_alt]
                             param_list.append(params)
                         else:
