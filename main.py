@@ -430,11 +430,11 @@ if __name__ == '__main__':
                         st = os.stat(output_path)
                         os.chmod(output_path, st.st_mode | stat.S_IWOTH | stat.S_IWGRP)
                         os.mkdir(output_path_year)
-                        st = os.stat(output_path_year)
-                        os.chmod(output_path_year,st.st_mode | stat.S_IWOTH | stat.S_IWGRP)
 
                     output_path_jday = os.path.join(output_path_year, day_str)
                     if not os.path.exists(output_path_jday):
+                        st = os.stat(output_path_year)
+                        os.chmod(output_path_year, st.st_mode | stat.S_IWOTH | stat.S_IWGRP)
                         os.mkdir(output_path_jday)
                         st = os.stat(output_path_jday)
                         os.chmod(output_path_jday, st.st_mode | stat.S_IWOTH | stat.S_IWGRP)
