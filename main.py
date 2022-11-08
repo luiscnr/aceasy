@@ -180,6 +180,11 @@ def check_path_validity(prod_path, prod_name):
         return valid, iszipped
     if prod_name is None:
         prod_name = prod_path.split('/')[-1]
+
+    if args.atm_correction == 'BALMLP' and prod_name.endswith('_POLYMER.nc'):
+        valid = True
+        return valid,iszipped
+
     if os.path.isdir(prod_path) and prod_name.endswith('.SEN3') and prod_name.find('EFR') > 0:
         valid = True
         return valid, iszipped
