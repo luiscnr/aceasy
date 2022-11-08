@@ -437,7 +437,12 @@ if __name__ == '__main__':
                         prod_path = os.path.join(input_path_date, prod_name)
                         print('---------------')
 
-                        coutput,output_file_path = check_exist_output_file(prod_path, output_path_jday, suffix)
+                        if args.atm_correction == 'BALMLP' and prod_name.endswith('_POLYMER.nc'):
+                            params = [corrector, prod_path, output_path_jday, False, None, False]
+                            param_list.append(params)
+                            continue
+
+                        coutput, output_file_path = check_exist_output_file(prod_path, output_path_jday, suffix)
                         if coutput == -1:
                             ##format no valid
                             continue
@@ -445,7 +450,7 @@ if __name__ == '__main__':
                             print(f'[INFO] Output file for path: {prod_path} already exists. Skiping...')
                             continue
 
-                        #path validity and geo_limits for path_prod
+                        # path validity and geo_limits for path_prod
                         valid, iszipped = check_path_validity(prod_path, prod_name)
                         if not valid:
                             continue
@@ -460,7 +465,7 @@ if __name__ == '__main__':
                                 valid_alt, iszipped_alt = check_path_validity(prod_path_altn, prod_name_altn)
                                 if valid_alt:
                                     check_geo = check_geo_limits(prod_path_altn, geo_limits, iszipped_alt)
-                                    if check_geo==1:
+                                    if check_geo == 1:
                                         prod_path_alt = prod_path_altn
                             ##end definining alternative path
                             params = [corrector, prod_path, output_file_path, iszipped, prod_path_alt, iszipped_alt]
