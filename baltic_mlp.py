@@ -127,8 +127,8 @@ class BALTIC_MLP():
             all_arrays[var] = array
 
         # defining tile sizes
-        tileX = 250
-        tileY = 250
+        tileX = 500
+        tileY = 500
 
         # computing chla for each tile
         for y in range(startY, endY, tileY):

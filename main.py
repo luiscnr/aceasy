@@ -495,6 +495,9 @@ if __name__ == '__main__':
                         if args.verbose:
                             print(f'[INFO] Starting sequencial processing. Number of products: {len(param_list)}')
                         for params in param_list:
+                            if args.atm_correction == 'BALMLP':
+                                corrector = BALTIC_MLP(fconfig, args.verbose)
+                                params[0] = corrector
                             run_parallel_corrector(params)
 
                     else:
