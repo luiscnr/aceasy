@@ -13,6 +13,7 @@ from fub_csiro_lois import FUB_CSIRO
 from acolite_lois import ACOLITE
 from idepix_lois import IDEPIX
 from baltic_mlp import BALTIC_MLP
+from baltic_all import BALTIC_ALL
 import zipfile as zp
 from check_geo import CHECK_GEO
 
@@ -29,7 +30,7 @@ parser.add_argument('-sd', "--start_date", help="Start date (yyyy-mm-dd)")
 parser.add_argument('-ed', "--end_date", help="End date (yyyy-mm-dd")
 parser.add_argument('-c', "--config_file", help="Configuration file (Default: aceasy_config.ini)")
 parser.add_argument('-ac', "--atm_correction", help="Atmospheric correction",
-                    choices=["C2RCC", "POLYMER", "FUB_CSIRO", "ACOLITE", "IDEPIX", "BALMLP"], required=True)
+                    choices=["C2RCC", "POLYMER", "FUB_CSIRO", "ACOLITE", "IDEPIX", "BALMLP", "BALALL"], required=True)
 args = parser.parse_args()
 
 
@@ -182,6 +183,10 @@ def check_path_validity(prod_path, prod_name):
         prod_name = prod_path.split('/')[-1]
 
     if args.atm_correction == 'BALMLP' and prod_name.endswith('_POLYMER.nc'):
+        valid = True
+        return valid,iszipped
+
+    if args.atm_correction == 'BALALL':
         valid = True
         return valid,iszipped
 
@@ -343,6 +348,8 @@ if __name__ == '__main__':
         suffix = 'IDEPIX'
     elif args.atm_correction == 'BALMLP':
         corrector = BALTIC_MLP(fconfig, args.verbose)
+    elif args.atm_correction == 'BALALL':
+        corrector = BALTIC_ALL(args.verbose)
 
     applyPool = 0
     geo_limits = None
@@ -387,6 +394,8 @@ if __name__ == '__main__':
     if input_path is None:  # single product, for testing
         f = os.path.basename(prod_path)
         if args.atm_correction == 'BALMLP' and f.endswith('.nc'):
+            p = corrector.run_process(prod_path, output_path)
+        elif args.atm_correction == 'BALALL' and os.path.isdir(prod_path):
             p = corrector.run_process(prod_path, output_path)
         elif os.path.isdir(prod_path) and f.endswith('.SEN3') and f.find('EFR') > 0:
             check_geo = check_geo_limits(prod_path, geo_limits, False)
@@ -441,6 +450,10 @@ if __name__ == '__main__':
                     if args.verbose:
                         print('*************************************************')
                         print(f'DATE: {date_here}')
+
+                    if args.atm_correcton == 'BALALL':
+                        corrector.run_process(input_path_date,output_path_jday)
+                        continue
 
                     ##first we obtain list of param (corrector,input_path,output_path,iszipped)
                     param_list = []
