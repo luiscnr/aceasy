@@ -349,7 +349,7 @@ if __name__ == '__main__':
     elif args.atm_correction == 'BALMLP':
         corrector = BALTIC_MLP(fconfig, args.verbose)
     elif args.atm_correction == 'BALALL':
-        corrector = BALTIC_ALL(args.verbose)
+        corrector = BALTIC_ALL(fconfig,args.verbose)
 
     applyPool = 0
     geo_limits = None
