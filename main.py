@@ -432,7 +432,7 @@ if __name__ == '__main__':
                 day_str = date_here.strftime('%j')
 
                 input_path_date = os.path.join(input_path, year_str, day_str)
-                print(input_path_date)
+                
                 if os.path.exists(input_path_date):
                     output_path_year = os.path.join(output_path, year_str)
                     if not os.path.exists(output_path_year):
@@ -451,7 +451,7 @@ if __name__ == '__main__':
                         print('*************************************************')
                         print(f'DATE: {date_here}')
 
-                    if args.atm_correcton == 'BALALL':
+                    if args.atm_correction == 'BALALL':
                         corrector.run_process(input_path_date,output_path_jday)
                         continue
 
