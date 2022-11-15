@@ -432,7 +432,7 @@ if __name__ == '__main__':
                 day_str = date_here.strftime('%j')
 
                 input_path_date = os.path.join(input_path, year_str, day_str)
-                
+
                 if os.path.exists(input_path_date):
                     output_path_year = os.path.join(output_path, year_str)
                     if not os.path.exists(output_path_year):
@@ -453,6 +453,9 @@ if __name__ == '__main__':
 
                     if args.atm_correction == 'BALALL':
                         corrector.run_process(input_path_date,output_path_jday)
+                        date_here = date_here + timedelta(hours=24)
+                        if args.verbose:
+                            print('--------------------------------------------------')
                         continue
 
                     ##first we obtain list of param (corrector,input_path,output_path,iszipped)
