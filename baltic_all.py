@@ -1,5 +1,5 @@
 import os
-
+import subprocess
 
 class BALTIC_ALL():
     def __init__(self, fconfig, verbose):
@@ -27,3 +27,23 @@ class BALTIC_ALL():
         # Splitting
         cmd = f'python {self.codepath}s3olcisplit_202211.py -v --qi --lowerleft {output_dir}/{namea}--bal-fr.nc -c {self.codepath}s3olci_202211.yaml -od {output_dir}'
         print(cmd)
+
+        # Changing name
+        name_main = f'{namea}--bal-fr.nc'
+        prename = f'{namea}-'
+        for name in os.listdir(output_dir):
+            if name==name_main:
+                continue
+            if name.startswith(prename):
+                name_out = name.replace('Oa','O')
+                fin = os.path.join(output_dir,name)
+                fout = os.path.join(output_dir,name_out)
+                cmd = f'mv {fin} {fout}'
+                if self.verbose:
+                    print(f'CMD: {cmd}')
+                prog = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
+                out, err = prog.communicate()
+                if err:
+                    print(err)
+
+
