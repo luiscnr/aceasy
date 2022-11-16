@@ -1,10 +1,23 @@
 import os
 import subprocess
+import configparser
 
 class BALTIC_ALL():
     def __init__(self, fconfig, verbose):
         self.verbose = verbose
-        self.codepath = '/home/gosuser/Processing/OC_PROC_EIS202211/s3olciProcessing/'
+        if fconfig is None:
+            fconfig = 'aceasy_config.ini'
+        self.codepath = '/home/gosuser/Processing/OC_PROC_EIS202211/s3olciProcessing/'#default
+        if os.path.exists(fconfig):
+            options = configparser.ConfigParser()
+            options.read(fconfig)
+            if options.has_section('BALALL'):
+                if options.has_option('BALALL', 'code_path'):
+                    self.codepath = options['BALALL']['code_path']
+                    if not self.codepath.endswith('/'):
+                        self.codepath = f'{self.codepath}/'
+
+
 
     def check_runac(self):
         # NO IMPLEMENTED
