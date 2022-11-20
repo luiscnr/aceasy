@@ -170,29 +170,29 @@ class BALTIC_ALL():
     def run_merge(self,prod_path,output_dir):
         yearstr = prod_path.split('/')[-2]
         jjjstr = prod_path.split('/')[-1]
-        # filesa,nfilesa = self.check_nfiles('Oa',prod_path,output_dir)
-        # filesb,nfilesb = self.check_nfiles('Ob',prod_path,output_dir)
-        # if nfilesa < 28:
-        #     print('[INFO] Files S3A are not available. Skyping merge...')
-        #     return
-        # if nfilesb < 28:
-        #     print('[INFO] Files S3B are not available. Skyping merge...')
-        #     return
-        #
-        # #output dir for making merge
+        filesa,nfilesa = self.check_nfiles('Oa',prod_path,output_dir)
+        filesb,nfilesb = self.check_nfiles('Ob',prod_path,output_dir)
+        if nfilesa < 28:
+            print('[INFO] Files S3A are not available. Skyping merge...')
+            return
+        if nfilesb < 28:
+            print('[INFO] Files S3B are not available. Skyping merge...')
+            return
+
+        #output dir for making merge
         dirbase='/DataArchive/OC/OLCI/dailybal202211'
         output_dir_base = self.get_output_directory(dirbase,yearstr,jjjstr)
-        # for filea in filesa:
-        #     cmd = f'cp -a {filea} {output_dir_base}'
-        #     self.launch_cmd(cmd)
-        # for fileb  in filesb:
-        #     cmd = f'cp -a {fileb} {output_dir_base}'
-        #     self.launch_cmd(cmd)
-        # #mergin
-        # datehere = dt.strptime(f'{yearstr}{jjjstr}','%Y%j')
-        # dateheres = datehere.strftime('%Y-%m-%d')
-        # cmd = f'sh {self.codepath}make_merge_olci_202211.sh -d {dateheres} -a bal -r fr -v'
-        # self.launch_cmd(cmd)
+        for filea in filesa:
+            cmd = f'cp -a {filea} {output_dir_base}'
+            self.launch_cmd(cmd)
+        for fileb  in filesb:
+            cmd = f'cp -a {fileb} {output_dir_base}'
+            self.launch_cmd(cmd)
+        #mergin
+        datehere = dt.strptime(f'{yearstr}{jjjstr}','%Y%j')
+        dateheres = datehere.strftime('%Y-%m-%d')
+        cmd = f'sh {self.codepath}make_merge_olci_202211.sh -d {dateheres} -a bal -r fr -v'
+        self.launch_cmd(cmd)
         #copying again
         files, nfiles = self.check_nfiles('O', prod_path, output_dir_base)
         print(nfiles)
