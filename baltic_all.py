@@ -50,7 +50,7 @@ class BALTIC_ALL():
                         self.dos3b = False
                 if options.has_option('BALALL', 'do_merge'):
                     onlyr = options['BALALL']['do_merge']
-                    if onlyr.lower()=='false':
+                    if onlyr.lower()=='true':
                         self.domerge = True
 
 
