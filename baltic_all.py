@@ -154,7 +154,7 @@ class BALTIC_ALL():
                 continue
             if name.startswith(prename_end):
                 nfiles = nfiles + 1
-        if nfiles < 28:
+        if nfiles < 27:
             print('[INFO] Files are not available. Completed')
             return
 
