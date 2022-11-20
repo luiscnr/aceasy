@@ -191,7 +191,7 @@ class BALTIC_ALL():
         #mergin
         datehere = dt.strptime(f'{yearstr}{jjjstr}','%Y%j')
         dateheres = datehere.strftime('%Y-%m-%d')
-        cmd = f'python make_merge_olci_202211.sh -d {dateheres} -a bal -r fr -v'
+        cmd = f'python {self.codepath}make_merge_olci_202211.sh -d {dateheres} -a bal -r fr -v'
         self.launch_cmd(cmd)
         #copying again
         files, nfiles = self.check_nfiles('O', prod_path, output_dir)
