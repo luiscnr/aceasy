@@ -1,4 +1,4 @@
-import os
+import os, stat
 import subprocess
 import configparser
 from datetime import datetime as dt
@@ -10,6 +10,7 @@ class BALTIC_ALL():
             fconfig = 'aceasy_config.ini'
         self.codepath = '/home/gosuser/Processing/OC_PROC_EIS202211/s3olciProcessing/'#default
         self.onlyreformat = False
+        self.domerge = False
         self.doresampling = True
         self.domosaic = True
         self.dosplit = True
@@ -47,6 +48,11 @@ class BALTIC_ALL():
                     onlyr = options['BALALL']['do_s3b']
                     if onlyr.lower()=='false':
                         self.dos3b = False
+                if options.has_option('BALALL', 'do_merge'):
+                    onlyr = options['BALALL']['do_merge']
+                    if onlyr.lower()=='false':
+                        self.domerge = True
+
 
     def check_runac(self):
         # NO IMPLEMENTED
@@ -54,8 +60,14 @@ class BALTIC_ALL():
 
     def run_process(self, prod_path, output_dir):
         if self.onlyreformat:
+            if self.domerge:
+                self.run_merge(prod_path,output_dir)
             self.run_reformat(self,prod_path,output_dir)
             return
+        if self.domerge:
+            self.run_merge(prod_path, output_dir)
+            return
+
         ##Resampling
         if self.doresampling:
             for name in os.listdir(prod_path):
@@ -154,6 +166,74 @@ class BALTIC_ALL():
         self.launch_cmd(cmd)
         cmd = f'/home/gosuser/Processing/OC_PROC_EIS202211/uploaddu/reformatting_file_cmems2_202211.sh -res FR -m NRT -r BAL -f D -p transp -path {output_dir}'
         self.launch_cmd(cmd)
+
+    def run_merge(self,prod_path,output_dir):
+        yearstr = prod_path.split('/')[-2]
+        jjjstr = prod_path.split('/')[-1]
+        filesa,nfilesa = self.check_nfiles('Oa',prod_path,output_dir)
+        filesb,nfilesb = self.check_nfiles('Ob',prod_path,output_dir)
+        if nfilesa < 28:
+            print('[INFO] Files S3A are not available. Skyping merge...')
+            return
+        if nfilesb < 28:
+            print('[INFO] Files S3B are not available. Skyping merge...')
+            return
+
+        #output dir for making merge
+        dirbase='/DataArchive/OC/OLCI/dailybal202211'
+        output_dir_base = self.get_output_directory(dirbase,yearstr,jjjstr)
+        for filea in filesa:
+            cmd = f'cp -a {filea} {output_dir_base}'
+            self.launch_cmd(cmd)
+        for fileb  in filesb:
+            cmd = f'cp -b {fileb} {output_dir_base}'
+            self.launch_cmd(cmd)
+        #mergin
+        datehere = dt.strptime(f'{yearstr}{jjjstr}','%Y%j')
+        dateheres = datehere.strftime('%Y-%m%-d')
+        cmd = f'python make_merge_olci_202211.sh -d {dateheres} -a bal -r fr -v'
+        self.launch_cmd(cmd)
+        #copying again
+        files, nfiles = self.check_nfiles('O', prod_path, output_dir)
+        if nfiles < 28:
+            print('[INFO] Number of merged files lower than 28. Skypping merge')
+            return
+        for file in files:
+            cmd = f'cp -a {file} {output_dir}'
+            self.launch_cmd(cmd)
+        print('COMPLETED')
+
+    def get_output_directory(self,output_path,year_str,day_str):
+        output_path_year = os.path.join(output_path, year_str)
+        if not os.path.exists(output_path_year):
+            st = os.stat(output_path)
+            os.chmod(output_path, st.st_mode | stat.S_IWOTH | stat.S_IWGRP)
+            os.mkdir(output_path_year)
+
+        output_path_jday = os.path.join(output_path_year, day_str)
+        if not os.path.exists(output_path_jday):
+            st = os.stat(output_path_year)
+            os.chmod(output_path_year, st.st_mode | stat.S_IWOTH | stat.S_IWGRP)
+            os.mkdir(output_path_jday)
+            st = os.stat(output_path_jday)
+            os.chmod(output_path_jday, st.st_mode | stat.S_IWOTH | stat.S_IWGRP)
+
+        return output_path_jday
+
+    def check_nfiles(self,ref,prod_path,output_dir):
+        yearstr = prod_path.split('/')[-2]
+        jjjstr = prod_path.split('/')[-1]
+        name_main_end = f'{ref}{yearstr}{jjjstr}--bal-fr.nc'
+        prename_end = f'{ref}{yearstr}{jjjstr}-'
+        files = []
+        nfiles = 0
+        for name in os.listdir(output_dir):
+            if name == name_main_end:
+                continue
+            if name.startswith(prename_end):
+                files.append(os.path.join(output_dir,name))
+                nfiles = nfiles + 1
+        return files,nfiles
 
     def launch_cmd(self,cmd):
         if self.verbose:
