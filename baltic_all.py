@@ -180,8 +180,8 @@ class BALTIC_ALL():
         #     return
         #
         # #output dir for making merge
-        # dirbase='/DataArchive/OC/OLCI/dailybal202211'
-        # output_dir_base = self.get_output_directory(dirbase,yearstr,jjjstr)
+        dirbase='/DataArchive/OC/OLCI/dailybal202211'
+        output_dir_base = self.get_output_directory(dirbase,yearstr,jjjstr)
         # for filea in filesa:
         #     cmd = f'cp -a {filea} {output_dir_base}'
         #     self.launch_cmd(cmd)
@@ -194,7 +194,7 @@ class BALTIC_ALL():
         # cmd = f'sh {self.codepath}make_merge_olci_202211.sh -d {dateheres} -a bal -r fr -v'
         # self.launch_cmd(cmd)
         #copying again
-        files, nfiles = self.check_nfiles('O', prod_path, output_dir)
+        files, nfiles = self.check_nfiles('O', prod_path, output_dir_base)
         print(nfiles)
         if nfiles < 27:
             print('[INFO] Number of merged files lower than 27. Skypping merge')
