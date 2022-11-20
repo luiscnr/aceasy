@@ -13,6 +13,7 @@ class BALTIC_ALL():
         self.doresampling = True
         self.domosaic = True
         self.dosplit = True
+        self.dos3b = True
         if os.path.exists(fconfig):
             options = configparser.ConfigParser()
             options.read(fconfig)
@@ -41,6 +42,11 @@ class BALTIC_ALL():
                     onlyr = options['BALALL']['do_split']
                     if onlyr.lower()=='false':
                         self.dosplit = False
+
+                if options.has_option('BALALL', 'do_s3b'):
+                    onlyr = options['BALALL']['do_s3b']
+                    if onlyr.lower()=='false':
+                        self.dos3b = False
 
     def check_runac(self):
         # NO IMPLEMENTED
@@ -79,6 +85,17 @@ class BALTIC_ALL():
                 cmd = f'python {self.codepath}s3olcimosaic_202211.py -v {output_dir}/{namea}??????--bal-fr.nc -od {output_dir} -of {namea}--bal-fr.nc'
                 self.launch_cmd(cmd)
 
+            if self.dos3b:
+                yearstr = prod_path.split('/')[-2]
+                jjjstr = prod_path.split('/')[-1]
+                nameb = f'Ob{yearstr}{jjjstr}'
+                expected_ofile = os.path.join(output_dir, f'{nameb}--bal-fr.nc')
+                if os.path.exists(expected_ofile):
+                    print(f'[INFO] Output file {expected_ofile} already exist. Continue...')
+                else:
+                    cmd = f'python {self.codepath}s3olcimosaic_202211.py -v {output_dir}/{nameb}??????--bal-fr.nc -od {output_dir} -of {nameb}--bal-fr.nc'
+                    self.launch_cmd(cmd)
+
         # Check splitting
         if self.dosplit:
             name_main_end = f'O{yearstr}{jjjstr}--bal-fr.nc'
@@ -96,19 +113,23 @@ class BALTIC_ALL():
             # Splitting
             cmd = f'python {self.codepath}s3olcisplit_202211.py -v --qi --lowerleft {output_dir}/{namea}--bal-fr.nc -c {self.codepath}s3olci_202211.yaml -od {output_dir}'
             self.launch_cmd(cmd)
+            if self.dos3b:
+                cmd = f'python {self.codepath}s3olcisplit_202211.py -v --qi --lowerleft {output_dir}/{nameb}--bal-fr.nc -c {self.codepath}s3olci_202211.yaml -od {output_dir}'
+                self.launch_cmd(cmd)
 
             # Changing name
-            name_main = f'{namea}--bal-fr.nc'
-            prename = f'{namea}-'
-            for name in os.listdir(output_dir):
-                if name==name_main:
-                    continue
-                if name.startswith(prename):
-                    name_out = name.replace('Oa','O')
-                    fin = os.path.join(output_dir,name)
-                    fout = os.path.join(output_dir,name_out)
-                    cmd = f'mv {fin} {fout}'
-                    self.launch_cmd(cmd)
+            if not self.dos3b:
+                name_main = f'{namea}--bal-fr.nc'
+                prename = f'{namea}-'
+                for name in os.listdir(output_dir):
+                    if name==name_main:
+                        continue
+                    if name.startswith(prename):
+                        name_out = name.replace('Oa','O')
+                        fin = os.path.join(output_dir,name)
+                        fout = os.path.join(output_dir,name_out)
+                        cmd = f'mv {fin} {fout}'
+                        self.launch_cmd(cmd)
 
     def run_reformat(self,prod_path,output_dir):
         yearstr = prod_path.split('/')[-2]
