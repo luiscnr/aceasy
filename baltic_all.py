@@ -168,8 +168,8 @@ class BALTIC_ALL():
         self.launch_cmd(cmd)
 
     def run_merge(self,prod_path,output_dir):
-        # yearstr = prod_path.split('/')[-2]
-        # jjjstr = prod_path.split('/')[-1]
+        yearstr = prod_path.split('/')[-2]
+        jjjstr = prod_path.split('/')[-1]
         # filesa,nfilesa = self.check_nfiles('Oa',prod_path,output_dir)
         # filesb,nfilesb = self.check_nfiles('Ob',prod_path,output_dir)
         # if nfilesa < 28:
