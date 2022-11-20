@@ -186,7 +186,7 @@ class BALTIC_ALL():
             cmd = f'cp -a {filea} {output_dir_base}'
             self.launch_cmd(cmd)
         for fileb  in filesb:
-            cmd = f'cp -b {fileb} {output_dir_base}'
+            cmd = f'cp -a {fileb} {output_dir_base}'
             self.launch_cmd(cmd)
         #mergin
         datehere = dt.strptime(f'{yearstr}{jjjstr}','%Y%j')
@@ -195,7 +195,7 @@ class BALTIC_ALL():
         self.launch_cmd(cmd)
         #copying again
         files, nfiles = self.check_nfiles('O', prod_path, output_dir)
-        if nfiles < 28:
+        if nfiles < 27:
             print('[INFO] Number of merged files lower than 28. Skypping merge')
             return
         for file in files:
