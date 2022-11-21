@@ -184,11 +184,11 @@ def check_path_validity(prod_path, prod_name):
 
     if args.atm_correction == 'BALMLP' and prod_name.endswith('_POLYMER.nc'):
         valid = True
-        return valid,iszipped
+        return valid, iszipped
 
     if args.atm_correction == 'BALALL':
         valid = True
-        return valid,iszipped
+        return valid, iszipped
 
     if os.path.isdir(prod_path) and prod_name.endswith('.SEN3') and prod_name.find('EFR') > 0:
         valid = True
@@ -301,6 +301,45 @@ def optimize_param_list(param_list):
     return param_list_new
 
 
+def get_alternative_path(f, data_alternative_path):
+    sat_time = get_sat_time_from_fname(f)
+    year_str = sat_time.strftime('%Y')
+    day_str = sat_time.strftime('%j')
+    prod_path_altn = search_alternative_prod_path(f, data_alternative_path, year_str, day_str)
+    prod_path_alt = None
+    if prod_path_altn is not None:
+        prod_name_altn = prod_path_altn.split('/')[-1]
+        valid_alt, iszipped_alt = check_path_validity(prod_path_altn, prod_name_altn)
+        if valid_alt:
+            check_geo = check_geo_limits(prod_path_altn, geo_limits, iszipped_alt)
+            if check_geo == 1:
+                prod_path_alt = prod_path_altn
+
+    return prod_path_alt, iszipped_alt
+
+def get_unzipped_path(prod_path,output_path):
+    with zp.ZipFile(prod_path, 'r') as zprod:
+        if args.verbose:
+            print(f'[INFO] Unziping {f} to {output_path}')
+        zprod.extractall(path=output_path)
+    path_prod_u = prod_path.split('/')[-1][0:-4]
+    if not path_prod_u.endswith('.SEN3'):
+        path_prod_u = path_prod_u + '.SEN3'
+    path_prod_u = os.path.join(output_path, path_prod_u)
+    return path_prod_u
+
+def get_sat_time_from_fname(self, fname):
+    val_list = fname.split('_')
+    sat_time = None
+    for v in val_list:
+        try:
+            sat_time = datetime.strptime(v, '%Y%m%dT%H%M%S')
+            break
+        except ValueError:
+            continue
+    return sat_time
+
+
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     print('[INFO] Started')
@@ -349,7 +388,7 @@ if __name__ == '__main__':
     elif args.atm_correction == 'BALMLP':
         corrector = BALTIC_MLP(fconfig, args.verbose)
     elif args.atm_correction == 'BALALL':
-        corrector = BALTIC_ALL(fconfig,args.verbose)
+        corrector = BALTIC_ALL(fconfig, args.verbose)
 
     applyPool = 0
     geo_limits = None
@@ -401,6 +440,16 @@ if __name__ == '__main__':
             check_geo = check_geo_limits(prod_path, geo_limits, False)
             if check_geo == 1:
                 p = corrector.run_process(prod_path, output_path)
+                if not p:
+                    prod_path_alt, iszipped_alt = get_alternative_path(f, data_alternative_path)
+                    print(f'[WARNING] Error in Polymer. Working with alternative path: {prod_path_alt}')
+                    if prod_path_alt is not None:
+                        if iszipped_alt:
+                            prod_path_u = get_unzipped_path(prod_path_alt,output_path)
+                        else:
+                            prod_path_u = prod_path_alt
+                        p = corrector.run_process(prod_path_u, output_path)
+                        delete_unzipped_path(prod_path_u)
             else:
                 print_check_geo_errors(check_geo)
         elif not os.path.isdir(prod_path) and f.endswith('.zip') and f.find('EFR') > 0:
@@ -420,6 +469,16 @@ if __name__ == '__main__':
                     print(f'[INFO] Running atmospheric correction for {path_prod_u}')
                 p = corrector.run_process(path_prod_u, output_path)
                 delete_unzipped_path(path_prod_u)
+                if not p:
+                    prod_path_alt, iszipped_alt = get_alternative_path(f, data_alternative_path)
+                    print(f'[WARNING] Error in Polymer. Working with alternative path: {prod_path_alt}')
+                    if prod_path_alt is not None:
+                        if iszipped_alt:
+                            prod_path_u = get_unzipped_path(prod_path_alt,output_path)
+                        else:
+                            prod_path_u = prod_path_alt
+                        p = corrector.run_process(prod_path_u, output_path)
+                        delete_unzipped_path(prod_path_u)
             else:
                 print_check_geo_errors(check_geo)
         if args.verbose:
@@ -452,7 +511,7 @@ if __name__ == '__main__':
                         print(f'DATE: {date_here}')
 
                     if args.atm_correction == 'BALALL':
-                        corrector.run_process(input_path_date,output_path_jday)
+                        corrector.run_process(input_path_date, output_path_jday)
                         date_here = date_here + timedelta(hours=24)
                         if args.verbose:
                             print('--------------------------------------------------')
