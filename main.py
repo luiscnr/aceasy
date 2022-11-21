@@ -302,7 +302,7 @@ def optimize_param_list(param_list):
 
 
 def get_alternative_path(f, data_alternative_path):
-    sat_time = get_sat_time_from_fname(f)
+    sat_time, sat_time_o = get_start_end_times_from_file_name(f)
     year_str = sat_time.strftime('%Y')
     day_str = sat_time.strftime('%j')
     prod_path_altn = search_alternative_prod_path(f, data_alternative_path, year_str, day_str)
@@ -328,16 +328,7 @@ def get_unzipped_path(prod_path,output_path):
     path_prod_u = os.path.join(output_path, path_prod_u)
     return path_prod_u
 
-def get_sat_time_from_fname(self, fname):
-    val_list = fname.split('_')
-    sat_time = None
-    for v in val_list:
-        try:
-            sat_time = datetime.strptime(v, '%Y%m%dT%H%M%S')
-            break
-        except ValueError:
-            continue
-    return sat_time
+
 
 
 # Press the green button in the gutter to run the script.
