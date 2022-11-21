@@ -158,13 +158,13 @@ class BALTIC_ALL():
             print('[INFO] Files are not available. Completed')
             return
 
-        cmd = f'/home/gosuser/Processing/OC_PROC_EIS202211/uploaddu/reformatting_file_cmems2_202211.sh -res FR -m NRT -r BAL -f D -p reflectance -path {output_dir}'
+        cmd = f'{self.codepath}reformatting_file_cmems2_202211.sh -res FR -m NRT -r BAL -f D -p reflectance -path {output_dir}'
         self.launch_cmd(cmd)
-        cmd = f'/home/gosuser/Processing/OC_PROC_EIS202211/uploaddu/reformatting_file_cmems2_202211.sh -res FR -m NRT -r BAL -f D -p plankton -path {output_dir}'
+        cmd = f'{self.codepath}reformatting_file_cmems2_202211.sh -res FR -m NRT -r BAL -f D -p plankton -path {output_dir}'
         self.launch_cmd(cmd)
-        cmd = f'/home/gosuser/Processing/OC_PROC_EIS202211/uploaddu/reformatting_file_cmems2_202211.sh -res FR -m NRT -r BAL -f D -p optics -path {output_dir}'
+        cmd = f'{self.codepath}reformatting_file_cmems2_202211.sh -res FR -m NRT -r BAL -f D -p optics -path {output_dir}'
         self.launch_cmd(cmd)
-        cmd = f'/home/gosuser/Processing/OC_PROC_EIS202211/uploaddu/reformatting_file_cmems2_202211.sh -res FR -m NRT -r BAL -f D -p transp -path {output_dir}'
+        cmd = f'{self.codepath}reformatting_file_cmems2_202211.sh -res FR -m NRT -r BAL -f D -p transp -path {output_dir}'
         self.launch_cmd(cmd)
 
     def run_merge(self,prod_path,output_dir):
