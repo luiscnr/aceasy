@@ -62,7 +62,7 @@ class BALTIC_ALL():
         if self.onlyreformat:
             if self.domerge:
                 self.run_merge(prod_path,output_dir)
-            self.run_reformat(self,prod_path,output_dir)
+            self.run_reformat(prod_path,output_dir)
             return
         if self.domerge:
             self.run_merge(prod_path, output_dir)
