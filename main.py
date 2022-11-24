@@ -307,6 +307,7 @@ def get_alternative_path(f, data_alternative_path):
     day_str = sat_time.strftime('%j')
     prod_path_altn = search_alternative_prod_path(f, data_alternative_path, year_str, day_str)
     prod_path_alt = None
+    iszipped_alt = False
     if prod_path_altn is not None:
         prod_name_altn = prod_path_altn.split('/')[-1]
         valid_alt, iszipped_alt = check_path_validity(prod_path_altn, prod_name_altn)
@@ -431,7 +432,7 @@ if __name__ == '__main__':
             check_geo = check_geo_limits(prod_path, geo_limits, False)
             if check_geo == 1:
                 p = corrector.run_process(prod_path, output_path)
-                if not p:
+                if not p and data_alternative_path is not None:
                     prod_path_alt, iszipped_alt = get_alternative_path(f, data_alternative_path)
                     print(f'[WARNING] Error in Polymer. Working with alternative path: {prod_path_alt}')
                     if prod_path_alt is not None:
@@ -460,7 +461,7 @@ if __name__ == '__main__':
                     print(f'[INFO] Running atmospheric correction for {path_prod_u}')
                 p = corrector.run_process(path_prod_u, output_path)
                 delete_unzipped_path(path_prod_u)
-                if not p:
+                if not p and data_alternative_path is not None:
                     prod_path_alt, iszipped_alt = get_alternative_path(f, data_alternative_path)
                     print(f'[WARNING] Error in Polymer. Working with alternative path: {prod_path_alt}')
                     if prod_path_alt is not None:
@@ -538,6 +539,7 @@ if __name__ == '__main__':
                             # alternative prod path, it's useful for Polymer if the trim fails
                             prod_path_altn = search_alternative_prod_path(f, data_alternative_path, year_str, day_str)
                             prod_path_alt = None
+                            iszipped_alt = False
                             if prod_path_altn is not None:
                                 prod_name_altn = prod_path_altn.split('/')[-1]
                                 valid_alt, iszipped_alt = check_path_validity(prod_path_altn, prod_name_altn)
