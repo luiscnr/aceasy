@@ -368,6 +368,7 @@ if __name__ == '__main__':
     elif args.atm_correction == 'POLYMER':
         corrector = POLYMER(fconfig, args.verbose)
         suffix = 'POLYMER'
+        print('DEGUG->LINE 371')
     elif args.atm_correction == 'FUB_CSIRO':
         corrector = FUB_CSIRO(fconfig, args.verbose)
         suffix = 'FUB'
@@ -381,6 +382,7 @@ if __name__ == '__main__':
         corrector = BALTIC_MLP(fconfig, args.verbose)
     elif args.atm_correction == 'BALALL':
         corrector = BALTIC_ALL(fconfig, args.verbose)
+
 
     applyPool = 0
     geo_limits = None
@@ -396,7 +398,6 @@ if __name__ == '__main__':
             data_alternative_path = options['GLOBAL']['data_alternative_path'].strip()
             if not os.path.exists(data_alternative_path):
                 data_alternative_path = None
-
     start_date = None
     end_date = None
     if args.start_date and args.end_date:

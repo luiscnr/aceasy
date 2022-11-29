@@ -8,7 +8,7 @@ class BALTIC_ALL():
         self.verbose = verbose
         if fconfig is None:
             fconfig = 'aceasy_config.ini'
-        self.codepath = '/home/gosuser/Processing/OC_PROC_EIS202211/s3olciProcessing/'#default
+        self.codepath = '/home/gosuser/Processing/OC_PROC_EIS202207_NRTNASA_EDS/s3olciProcessing/'#default
         self.onlyreformat = False
         self.domerge = False
         self.doresampling = True
