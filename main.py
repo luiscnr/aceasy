@@ -368,7 +368,6 @@ if __name__ == '__main__':
     elif args.atm_correction == 'POLYMER':
         corrector = POLYMER(fconfig, args.verbose)
         suffix = 'POLYMER'
-        print('DEGUG->LINE 371')
     elif args.atm_correction == 'FUB_CSIRO':
         corrector = FUB_CSIRO(fconfig, args.verbose)
         suffix = 'FUB'

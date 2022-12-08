@@ -172,6 +172,21 @@ class BALTIC_ALL():
         jjjstr = prod_path.split('/')[-1]
         filesa,nfilesa = self.check_nfiles('Oa',prod_path,output_dir)
         filesb,nfilesb = self.check_nfiles('Ob',prod_path,output_dir)
+
+        if nfilesa==28 and nfilesb==0:
+            for filea in filesa:
+                filea_o = filea.replace('Oa20','O20')
+                cmd = f'cp -a {filea} {filea_o}'
+                self.launch_cmd(cmd)
+            return
+        if nfilesb==28 and nfilesa==0:
+            for fileb in filesb:
+                fileb_o = fileb.replace('Oa20','O20')
+                cmd = f'cp -a {fileb} {fileb_o}'
+                self.launch_cmd(cmd)
+            return
+
+
         if nfilesa < 28:
             print('[INFO] Files S3A are not available. Skyping merge...')
             return
