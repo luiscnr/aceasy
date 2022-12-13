@@ -181,7 +181,7 @@ class BALTIC_ALL():
             return
         if nfilesb==28 and nfilesa==0:
             for fileb in filesb:
-                fileb_o = fileb.replace('Oa20','O20')
+                fileb_o = fileb.replace('Ob20','O20')
                 cmd = f'cp -a {fileb} {fileb_o}'
                 self.launch_cmd(cmd)
             return
