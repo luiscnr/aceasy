@@ -318,7 +318,8 @@ def get_alternative_path(f, data_alternative_path):
 
     return prod_path_alt, iszipped_alt
 
-def get_unzipped_path(prod_path,output_path):
+
+def get_unzipped_path(prod_path, output_path):
     with zp.ZipFile(prod_path, 'r') as zprod:
         if args.verbose:
             print(f'[INFO] Unziping {f} to {output_path}')
@@ -328,8 +329,6 @@ def get_unzipped_path(prod_path,output_path):
         path_prod_u = path_prod_u + '.SEN3'
     path_prod_u = os.path.join(output_path, path_prod_u)
     return path_prod_u
-
-
 
 
 # Press the green button in the gutter to run the script.
@@ -382,7 +381,6 @@ if __name__ == '__main__':
     elif args.atm_correction == 'BALALL':
         corrector = BALTIC_ALL(fconfig, args.verbose)
 
-
     applyPool = 0
     geo_limits = None
     data_alternative_path = None
@@ -433,14 +431,16 @@ if __name__ == '__main__':
             if check_geo == 1:
                 p = corrector.run_process(prod_path, output_path)
                 if not p and data_alternative_path is not None:
+                    output_name = f[0:-5] + '_POLYMER.nc'
+                    file_output_orig = os.path.join(output_path, output_name)
                     prod_path_alt, iszipped_alt = get_alternative_path(f, data_alternative_path)
                     print(f'[WARNING] Error in Polymer. Working with alternative path: {prod_path_alt}')
                     if prod_path_alt is not None:
                         if iszipped_alt:
-                            prod_path_u = get_unzipped_path(prod_path_alt,output_path)
+                            prod_path_u = get_unzipped_path(prod_path_alt, output_path)
                         else:
                             prod_path_u = prod_path_alt
-                        p = corrector.run_process(prod_path_u, output_path)
+                        p = corrector.run_process(prod_path_u, file_output_orig)
                         delete_unzipped_path(prod_path_u)
             else:
                 print_check_geo_errors(check_geo)
@@ -462,14 +462,19 @@ if __name__ == '__main__':
                 p = corrector.run_process(path_prod_u, output_path)
                 delete_unzipped_path(path_prod_u)
                 if not p and data_alternative_path is not None:
+
+                    input_name_orig = os.path.basename(path_prod_u)
+                    output_name = input_name_orig[0:-5] + '_POLYMER.nc'
+                    file_output_orig = os.path.join(output_path, output_name)
+
                     prod_path_alt, iszipped_alt = get_alternative_path(f, data_alternative_path)
                     print(f'[WARNING] Error in Polymer. Working with alternative path: {prod_path_alt}')
                     if prod_path_alt is not None:
                         if iszipped_alt:
-                            prod_path_u = get_unzipped_path(prod_path_alt,output_path)
+                            prod_path_u = get_unzipped_path(prod_path_alt, output_path)
                         else:
                             prod_path_u = prod_path_alt
-                        p = corrector.run_process(prod_path_u, output_path)
+                        p = corrector.run_process(prod_path_u, file_output_orig)
                         delete_unzipped_path(prod_path_u)
             else:
                 print_check_geo_errors(check_geo)
