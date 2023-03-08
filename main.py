@@ -2,6 +2,7 @@ import argparse
 import configparser
 import os, stat
 import subprocess
+import sys
 from datetime import datetime
 from datetime import timedelta
 
@@ -330,10 +331,66 @@ def get_unzipped_path(prod_path, output_path):
     path_prod_u = os.path.join(output_path, path_prod_u)
     return path_prod_u
 
+def check():
+    print('CHECKING...')
+    #file_in = '/mnt/c/DATA_LUIS/OCTAC_WORK/BAL_EVOLUTION/MONTHLY_BASE/O2022335365-chl_monthly-bal-fr.nc'
+    file_in = '/mnt/c/DATA_LUIS/OCTAC_WORK/BAL_EVOLUTION/MONTHLY_BASE/O2022335365-kd490_monthly-bal-fr.nc'
+    from netCDF4 import Dataset
+    import numpy as np
+    from datetime import datetime as dt
+    from datetime import timedelta
+    dataset = Dataset(file_in,'a')
+    time_new = dt(2022,12,1,0,0,0)
+    time_new_seconds = int((time_new - dt(1981,1,1,0,0,0)).total_seconds())
+
+    var_time = dataset.variables['time']
+    time_array = np.array(var_time[:])
+    time_array[0] = time_new_seconds
+    var_time[:] = [time_array[:]]
+
+    # var_chl = dataset.variables['CHL']
+    # chl_array = np.array(var_chl)
+    # chl_array[:] = -999.0
+    # var_chl[:] = [chl_array[:]]
+    #
+    # var_chl_count = dataset.variables['CHL_count']
+    # chl_count_array = np.array(var_chl_count)
+    # chl_count_array[:] = 0.0
+    # var_chl_count[:] = [chl_count_array[:]]
+    #
+    # var_chl_error = dataset.variables['CHL_error']
+    # chl_error_array = np.array(var_chl_error)
+    # chl_error_array[:] = -999.0
+    # var_chl_error[:] = [chl_error_array[:]]
+
+    var_chl = dataset.variables['KD490']
+    chl_array = np.array(var_chl)
+    chl_array[:] = -999.0
+    var_chl[:] = [chl_array[:]]
+
+    var_chl_count = dataset.variables['KD490_count']
+    chl_count_array = np.array(var_chl_count)
+    chl_count_array[:] = 0.0
+    var_chl_count[:] = [chl_count_array[:]]
+
+    var_chl_error = dataset.variables['KD490_error']
+    chl_error_array = np.array(var_chl_error)
+    chl_error_array[:] = -999.0
+    var_chl_error[:] = [chl_error_array[:]]
+
+    dataset.start_date = time_new.strftime('%Y-%m-%d')
+    dataset.stop_date = dt(2022,12,31).strftime('%Y-%m-%d')
+
+
+    dataset.close()
+    return True
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     print('[INFO] Started')
+    b = check()
+    if b:
+        sys.exit()
     fconfig = None
     if args.config_file:
         fconfig = args.config_file
