@@ -388,9 +388,9 @@ def check():
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     print('[INFO] Started')
-    b = check()
-    if b:
-        sys.exit()
+    # b = check()
+    # if b:
+    #     sys.exit()
     fconfig = None
     if args.config_file:
         fconfig = args.config_file
