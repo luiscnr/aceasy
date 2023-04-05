@@ -578,10 +578,13 @@ if __name__ == '__main__':
                         prod_path = os.path.join(input_path_date, prod_name)
                         print('---------------')
 
-                        if args.atm_correction == 'BALMLP' and prod_name.endswith('_POLYMER.nc'):
-                            params = [corrector, prod_path, output_path_jday, False, None, False]
-                            param_list.append(params)
-                            continue
+                        if args.atm_correction == 'BALMLP':
+                            if prod_name.endswith('_POLYMER.nc'):
+                                params = [corrector, prod_path, output_path_jday, False, None, False]
+                                param_list.append(params)
+                                continue
+                            else:
+                                continue
 
                         coutput, output_file_path = check_exist_output_file(prod_path, output_path_jday, suffix)
                         if coutput == -1:
