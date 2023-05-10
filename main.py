@@ -212,20 +212,20 @@ def check_path_validity(prod_path, prod_name):
 
 
 def search_alternative_prod_path(f, data_alternative_path, year_str, day_str):
-    print(data_alternative_path)
-    print(f)
-    print(year_str)
-    print(day_str)
+    # print(data_alternative_path)
+    # print(f)
+    # print(year_str)
+    # print(day_str)
     if data_alternative_path is None:
         return None
     output_path = os.path.join(data_alternative_path, year_str, day_str)
     if not os.path.exists(output_path):
         output_path = data_alternative_path
-    print(f'Output path {output_path}' )
+    #print(f'Output path {output_path}' )
     if not os.path.exists(output_path) or not os.path.isdir(output_path):
         return None
     sdate, edate = get_start_end_times_from_file_name(f)
-    print(f'SDate: {sdate} Edate {edate}')
+    #print(f'SDate: {sdate} Edate {edate}')
     if sdate is None or edate is None:
         return None
     sensor = f[0:3]
@@ -234,9 +234,9 @@ def search_alternative_prod_path(f, data_alternative_path, year_str, day_str):
 
         if fout.startswith(sensor) and fout.find('EFR') > 0:
             sdate_o, edate_o = get_start_end_times_from_file_name(fout)
-            print(f'Alternative path: {output_path_jday} Sdate {sdate_o} Edate {edate_o}')
+            #print(f'Alternative path: {output_path_jday} Sdate {sdate_o} Edate {edate_o}')
             if sdate_o is not None and edate_o is not None:
-                print(f'Here: {sdate}>={sdate_o} --- {edate}<={edate_o}')
+                #print(f'Here: {sdate}>={sdate_o} --- {edate}<={edate_o}')
                 if sdate >= sdate_o and edate <= edate_o:
                     return output_path_jday
                 if sdate_o <= sdate <= edate_o < edate:
@@ -666,7 +666,7 @@ if __name__ == '__main__':
                         print('--------------------------------------------------')
                     p = corrector.run_process(prod_path, output_path)
                     if not p:
-                        prod_path_alt = get_alternative_path(f,data_alternative_path)
+                        prod_path_alt, iszipped_alt = get_alternative_path(f,data_alternative_path)
                         if prod_path_alt is not None:
                             if args.verbose:
                                 print(f'[INFO] Running with alternative path: {prod_path_alt}')
