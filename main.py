@@ -215,6 +215,8 @@ def search_alternative_prod_path(f, data_alternative_path, year_str, day_str):
     if data_alternative_path is None:
         return None
     output_path = os.path.join(data_alternative_path, year_str, day_str)
+    if not os.path.exists(output_path):
+        output_path = data_alternative_path
     # print(f'Output path {output_path}' )
     if not os.path.exists(output_path) or not os.path.isdir(output_path):
         return None
@@ -331,17 +333,18 @@ def get_unzipped_path(prod_path, output_path):
     path_prod_u = os.path.join(output_path, path_prod_u)
     return path_prod_u
 
+
 def check():
     print('CHECKING...')
-    #file_in = '/mnt/c/DATA_LUIS/OCTAC_WORK/BAL_EVOLUTION/MONTHLY_BASE/O2022335365-chl_monthly-bal-fr.nc'
+    # file_in = '/mnt/c/DATA_LUIS/OCTAC_WORK/BAL_EVOLUTION/MONTHLY_BASE/O2022335365-chl_monthly-bal-fr.nc'
     file_in = '/mnt/c/DATA_LUIS/OCTAC_WORK/BAL_EVOLUTION/MONTHLY_BASE/O2022335365-kd490_monthly-bal-fr.nc'
     from netCDF4 import Dataset
     import numpy as np
     from datetime import datetime as dt
     from datetime import timedelta
-    dataset = Dataset(file_in,'a')
-    time_new = dt(2022,12,1,0,0,0)
-    time_new_seconds = int((time_new - dt(1981,1,1,0,0,0)).total_seconds())
+    dataset = Dataset(file_in, 'a')
+    time_new = dt(2022, 12, 1, 0, 0, 0)
+    time_new_seconds = int((time_new - dt(1981, 1, 1, 0, 0, 0)).total_seconds())
 
     var_time = dataset.variables['time']
     time_array = np.array(var_time[:])
@@ -379,11 +382,11 @@ def check():
     var_chl_error[:] = [chl_error_array[:]]
 
     dataset.start_date = time_new.strftime('%Y-%m-%d')
-    dataset.stop_date = dt(2022,12,31).strftime('%Y-%m-%d')
-
+    dataset.stop_date = dt(2022, 12, 31).strftime('%Y-%m-%d')
 
     dataset.close()
     return True
+
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
@@ -658,6 +661,12 @@ if __name__ == '__main__':
                     if args.verbose:
                         print('--------------------------------------------------')
                     p = corrector.run_process(prod_path, output_path)
+                    if not p:
+                        prod_path_alt = get_alternative_path(f,data_alternative_path)
+                        if prod_path_alt is not None:
+                            if args.verbose:
+                                print(f'[INFO] Running with alternative path: {prod_path_alt}')
+                            corrector.run_process(prod_path_alt,output_path)
 
     # if args.atm_correction == 'C2RCC':
     #     corrector = C2RCC(fconfig, args.verbose)
