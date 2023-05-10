@@ -666,11 +666,22 @@ if __name__ == '__main__':
                         print('--------------------------------------------------')
                     p = corrector.run_process(prod_path, output_path)
                     if not p:
+                        input_name_orig = os.path.basename(prod_path)
+                        output_name = input_name_orig[0:-5] + '_POLYMER.nc'
+                        file_output_orig = os.path.join(output_path, output_name)
                         prod_path_alt, iszipped_alt = get_alternative_path(f,data_alternative_path)
+
                         if prod_path_alt is not None:
                             if args.verbose:
                                 print(f'[INFO] Running with alternative path: {prod_path_alt}')
-                            corrector.run_process(prod_path_alt,output_path)
+                            if iszipped_alt:
+                                prod_path_u = get_unzipped_path(prod_path_alt, output_path)
+                            else:
+                                prod_path_u = prod_path_alt
+                            p = corrector.run_process(prod_path_u, file_output_orig)
+                            delete_unzipped_path(prod_path_u)
+
+
 
     # if args.atm_correction == 'C2RCC':
     #     corrector = C2RCC(fconfig, args.verbose)
