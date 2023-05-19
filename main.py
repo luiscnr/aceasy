@@ -487,6 +487,11 @@ if __name__ == '__main__':
     if input_path is None:  # single product, for testing
         print('input path is none, pero prod_path es: ',prod_path)
         f = os.path.basename(prod_path)
+        print(f)
+        print(os.path.isdir(prod_path))
+        print(f.endswith('.SEN3'))
+        print(f.find('EFR'))
+
         if args.atm_correction == 'BALMLP' and f.endswith('.nc'):
             p = corrector.run_process(prod_path, output_path)
         elif args.atm_correction == 'BALALL' and os.path.isdir(prod_path):
