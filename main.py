@@ -485,6 +485,7 @@ if __name__ == '__main__':
         print(f'[INFO] Started {args.atm_correction} processor')
 
     if input_path is None:  # single product, for testing
+        print('input path is none, pero prod_path es: ',prod_path)
         f = os.path.basename(prod_path)
         if args.atm_correction == 'BALMLP' and f.endswith('.nc'):
             p = corrector.run_process(prod_path, output_path)
