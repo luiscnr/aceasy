@@ -491,6 +491,7 @@ if __name__ == '__main__':
         elif args.atm_correction == 'BALALL' and os.path.isdir(prod_path):
             p = corrector.run_process(prod_path, output_path)
         elif os.path.isdir(prod_path) and f.endswith('.SEN3') and f.find('EFR') > 0:
+            print('me deberia llegar aqui')
             check_geo = check_geo_limits(prod_path, geo_limits, False)
             if check_geo == 1:
                 p = corrector.run_process(prod_path, output_path)
