@@ -29,6 +29,7 @@ parser.add_argument('-o', "--outputpath", help="Output directory", required=True
 parser.add_argument('-tp', "--temp_path", help="Temporary directory")
 parser.add_argument('-sd', "--start_date", help="Start date (yyyy-mm-dd)")
 parser.add_argument('-ed', "--end_date", help="End date (yyyy-mm-dd")
+parser.add_argument('-wce', "--wce", help="Wild card expression")
 parser.add_argument('-c', "--config_file", help="Configuration file (Default: aceasy_config.ini)")
 parser.add_argument('-ac', "--atm_correction", help="Atmospheric correction",
                     choices=["C2RCC", "POLYMER", "FUB_CSIRO", "ACOLITE", "IDEPIX", "BALMLP", "BALALL"], required=True)
@@ -183,6 +184,10 @@ def check_path_validity(prod_path, prod_name):
     if prod_name is None:
         prod_name = prod_path.split('/')[-1]
 
+    if args.wce:
+        if prod_name.find(args.wce) < 0:
+            return valid, iszipped
+
     if args.atm_correction == 'BALMLP' and prod_name.endswith('_POLYMER.nc'):
         valid = True
         return valid, iszipped
@@ -221,11 +226,11 @@ def search_alternative_prod_path(f, data_alternative_path, year_str, day_str):
     output_path = os.path.join(data_alternative_path, year_str, day_str)
     if not os.path.exists(output_path):
         output_path = data_alternative_path
-    #print(f'Output path {output_path}' )
+    # print(f'Output path {output_path}' )
     if not os.path.exists(output_path) or not os.path.isdir(output_path):
         return None
     sdate, edate = get_start_end_times_from_file_name(f)
-    #print(f'SDate: {sdate} Edate {edate}')
+    # print(f'SDate: {sdate} Edate {edate}')
     if sdate is None or edate is None:
         return None
     sensor = f[0:3]
@@ -234,9 +239,9 @@ def search_alternative_prod_path(f, data_alternative_path, year_str, day_str):
 
         if fout.startswith(sensor) and fout.find('EFR') > 0:
             sdate_o, edate_o = get_start_end_times_from_file_name(fout)
-            #print(f'Alternative path: {output_path_jday} Sdate {sdate_o} Edate {edate_o}')
+            # print(f'Alternative path: {output_path_jday} Sdate {sdate_o} Edate {edate_o}')
             if sdate_o is not None and edate_o is not None:
-                #print(f'Here: {sdate}>={sdate_o} --- {edate}<={edate_o}')
+                # print(f'Here: {sdate}>={sdate_o} --- {edate}<={edate_o}')
                 if sdate >= sdate_o and edate <= edate_o:
                     return output_path_jday
                 if sdate_o <= sdate <= edate_o < edate:
@@ -491,7 +496,6 @@ if __name__ == '__main__':
         elif args.atm_correction == 'BALALL' and os.path.isdir(prod_path):
             p = corrector.run_process(prod_path, output_path)
         elif os.path.isdir(prod_path) and f.endswith('.SEN3') and f.find('EFR') > 0:
-            print('me deberia llegar aqui')
             check_geo = check_geo_limits(prod_path, geo_limits, False)
             if check_geo == 1:
                 p = corrector.run_process(prod_path, output_path)
@@ -670,7 +674,7 @@ if __name__ == '__main__':
                         input_name_orig = os.path.basename(prod_path)
                         output_name = input_name_orig[0:-5] + '_POLYMER.nc'
                         file_output_orig = os.path.join(output_path, output_name)
-                        prod_path_alt, iszipped_alt = get_alternative_path(f,data_alternative_path)
+                        prod_path_alt, iszipped_alt = get_alternative_path(f, data_alternative_path)
 
                         if prod_path_alt is not None:
                             if args.verbose:
@@ -681,8 +685,6 @@ if __name__ == '__main__':
                                 prod_path_u = prod_path_alt
                             p = corrector.run_process(prod_path_u, file_output_orig)
                             delete_unzipped_path(prod_path_u)
-
-
 
     # if args.atm_correction == 'C2RCC':
     #     corrector = C2RCC(fconfig, args.verbose)
