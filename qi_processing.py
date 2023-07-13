@@ -18,8 +18,41 @@ parser.add_argument('-c', "--config_file", help="Configuration file (Default: qi
 #                     choices=["C2RCC", "POLYMER", "FUB_CSIRO", "ACOLITE", "IDEPIX", "BALMLP", "BALALL","QI"], required=True)
 args = parser.parse_args()
 
+def test():
+    file_json = '/mnt/c/DATA_LUIS/OCTAC_WORK/QI/COPY_NEW/product_quality_nb-observations_Plankton_chl-sat_OCEANCOLOUR_BLK_BGC_L3_NRT_009_151_19970916-99999999.json'
+    #file_json = '/mnt/c/DATA_LUIS/OCTAC_WORK/QI/COPY_NEW/product_quality_nb-observations_Plankton_chl-sat_OCEANCOLOUR_BLK_BGC_L3_NRT_009_151_19970916-99999999.json.bkp'
+    import json
+    print(os.path.exists(file_json))
+    #js = json.loads(file_json)
+    #print(type(js))
+    with open(file_json, 'r') as j:
+        js = json.loads(j.read())
+
+    print(type(js))
+    alldata = js['Blacksea']['all_sat']['data']
+    for ad in alldata:
+        print(ad)
+
+    file_nc = '/mnt/c/DATA_LUIS/OCTAC_WORK/QI/2023/193/X2023193-chl-bs-hr.nc'
+    from netCDF4 import Dataset
+    import numpy as np
+    dataset = Dataset(file_nc)
+    varsm = 'SENSORMASK'
+    smask = np.array(dataset.variables[varsm])
+    fillvalue = dataset.variables[varsm].getncattr('_FillValue')
+    arraysm = np.array(dataset.variables[varsm])
+    arraysm = arraysm[arraysm != fillvalue]
+    print(arraysm.shape)
+
+
+    dataset.close()
+
+    return True
 
 def main():
+    # b = test()
+    # if b:
+    #     return
     print('[INFO] Started QI processing')
     fconfig = None
     name_config = 'qiprocessing.ini'
@@ -47,7 +80,8 @@ def main():
     if qiproc.start_region(region):
         date_proc = start_date
         while date_proc<=end_date:
-            qiproc.get_info_date(region,date_proc)
+            #qiproc.get_info_date(region,date_proc)
+            qiproc.update_json_file(region,date_proc)
             date_proc = date_proc + timedelta(hours=24)
 
 
@@ -75,7 +109,7 @@ def get_start_end_dates():
         exit(1)
 
     if args.verbose:
-        print(f'[INFO] Start date: {args.start_date} End date: {args.end_date}')
+        print(f'[INFO] Start date: {start_date} End date: {end_date}')
 
     return start_date,end_date
 
