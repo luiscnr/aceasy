@@ -14,6 +14,7 @@ parser.add_argument('-sd', "--start_date", help="Start date (yyyy-mm-dd)")
 parser.add_argument('-ed', "--end_date", help="End date (yyyy-mm-dd")
 # parser.add_argument('-wce', "--wce", help="Wild card expression")
 parser.add_argument('-c', "--config_file", help="Configuration file (Default: qiprocessing.ini)")
+parser.add_argument('-nrt',"--nrt_mode",help="NRT mode.", action="store_true")
 # parser.add_argument('-ac', "--atm_correction", help="Atmospheric correction",
 #                     choices=["C2RCC", "POLYMER", "FUB_CSIRO", "ACOLITE", "IDEPIX", "BALMLP", "BALALL","QI"], required=True)
 args = parser.parse_args()
@@ -42,7 +43,7 @@ def test():
     fillvalue = dataset.variables[varsm].getncattr('_FillValue')
     arraysm = np.array(dataset.variables[varsm])
     arraysm = arraysm[arraysm != fillvalue]
-    print(arraysm.shape)
+
 
 
     dataset.close()
@@ -74,13 +75,27 @@ def main():
     if args.region:
         region = args.region
 
+    start_date, end_date = get_start_end_dates()
+
+    if args.nrt_mode:
+        qidate = start_date-timedelta(days=1)
+        jsondate = start_date-timedelta(days=2)
+        print(f'[INFO] TXT Date: {qidate}')
+        print(f'[INFO] JSON Date: {jsondate}')
+        qiproc = QI_PROCESSING(fconfig, args.verbose)
+        if qiproc.start_region(region):
+            qiproc.get_info_date(region, qidate)
+            qiproc.update_json_file(region, jsondate)
+        return
+
+
     qiproc = QI_PROCESSING(fconfig,args.verbose)
-    start_date,end_date = get_start_end_dates()
+
 
     if qiproc.start_region(region):
         date_proc = start_date
         while date_proc<=end_date:
-            #qiproc.get_info_date(region,date_proc)
+            qiproc.get_info_date(region,date_proc)
             qiproc.update_json_file(region,date_proc)
             date_proc = date_proc + timedelta(hours=24)
 
@@ -88,7 +103,7 @@ def main():
 
 
 def get_start_end_dates():
-    start_date = (dt.utcnow()-timedelta(hours=24)).replace(hour=0,minute=0,second=0,microsecond=0)
+    start_date = (dt.utcnow()).replace(hour=0,minute=0,second=0,microsecond=0)
     if args.start_date:
         try:
             start_date = dt.strptime(args.start_date, '%Y-%m-%d')
