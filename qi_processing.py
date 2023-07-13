@@ -43,9 +43,13 @@ def main():
 
     qiproc = QI_PROCESSING(fconfig,args.verbose)
     start_date,end_date = get_start_end_dates()
-    print(start_date)
+
     if qiproc.start_region(region):
-        qiproc.get_info_date(region,start_date)
+        date_proc = start_date
+        while date_proc<=end_date:
+            qiproc.get_info_date(region,date_proc)
+            date_proc = date_proc + timedelta(hours=24)
+
 
 
 
