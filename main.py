@@ -32,7 +32,7 @@ parser.add_argument('-ed', "--end_date", help="End date (yyyy-mm-dd")
 parser.add_argument('-wce', "--wce", help="Wild card expression")
 parser.add_argument('-c', "--config_file", help="Configuration file (Default: aceasy_config.ini)")
 parser.add_argument('-ac', "--atm_correction", help="Atmospheric correction",
-                    choices=["C2RCC", "POLYMER", "FUB_CSIRO", "ACOLITE", "IDEPIX", "BALMLP", "BALALL"], required=True)
+                    choices=["C2RCC", "POLYMER", "FUB_CSIRO", "ACOLITE", "IDEPIX", "BALMLP", "BALALL","QI"], required=True)
 args = parser.parse_args()
 
 
@@ -404,19 +404,21 @@ if __name__ == '__main__':
     # if b:
     #     sys.exit()
     fconfig = None
+    name_config = 'aceasy_config.ini'
     if args.config_file:
         fconfig = args.config_file
     else:
-        if os.path.exists('aceasy_config.ini'):
-            fconfig = 'aceasy_config.ini'
-        elif os.path.exists(os.path.join('aceasy', 'aceasy_config.ini')):
-            fconfig = os.path.join('aceasy', 'aceasy_config.ini')
+        if os.path.exists(name_config):
+            fconfig = name_config
+        elif os.path.exists(os.path.join('aceasy', name_config)):
+            fconfig = os.path.join('aceasy', name_config)
     if fconfig is None:
         print(f'[ERROR] Config file is required')
         exit(1)
     if not os.path.exists(fconfig):
         print(f'[ERROR] Config file: {fconfig} does not exist')
         exit(1)
+
     if not args.product and not args.inputpath:
         print(f'[ERROR] Product name or input folder are required')
         exit(1)
