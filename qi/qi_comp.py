@@ -128,10 +128,7 @@ class QI_PROCESSING():
         res.append(pvalid)
 
         for h in hist:
-            if nhist==0:
-                val = 0
-            else:
-                val = (h / nhist) * 100
+            val = (h / nhist) * 100
             res.append(val)
 
         res_str = [str(x) for x in res]
