@@ -121,14 +121,17 @@ class QI_PROCESSING():
 
         # print((np.sum(hist)/self.domaincoverage)*100)
         nhist = np.sum(hist)
-        if self.verbose:
-            print(f'[INFO] NHist: {hist}')
-            print(f'[INFO] Domain coverage: {self.domaincoverage}')
-        pvalid = (nhist / self.domaincoverage) * 100
+        if nhist==0:
+            pvalid = 0
+        else:
+            pvalid = (nhist / self.domaincoverage) * 100
         res.append(pvalid)
 
         for h in hist:
-            val = (h / nhist) * 100
+            if nhist==0:
+                val = 0
+            else:
+                val = (h / nhist) * 100
             res.append(val)
 
         res_str = [str(x) for x in res]
