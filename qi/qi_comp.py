@@ -74,6 +74,7 @@ class QI_PROCESSING():
                     print(f'[INFO] Getting info from file {name_file} for variable {var} (date: {date_here_str})')
 
                 res = self.get_info_from_file(file_data, var)
+
                 res_orig = [dataset, date_here_str] + res
 
                 line = ' '.join(res_orig)
@@ -120,6 +121,9 @@ class QI_PROCESSING():
 
         # print((np.sum(hist)/self.domaincoverage)*100)
         nhist = np.sum(hist)
+        if self.verbose:
+            print(f'[INFO] NHist: {hist}')
+            print(f'[INFO] Domain coverage: {self.domaincoverage}')
         pvalid = (nhist / self.domaincoverage) * 100
         res.append(pvalid)
 
@@ -158,14 +162,12 @@ class QI_PROCESSING():
                     arraysm = np.array(dataset.variables[varsm])
                     arraysm = arraysm.flatten()
 
-
                     indices = np.where(arraysm > 0)
                     ntotal = len(indices[0])
                     indices = np.where(np.bitwise_or(arraysm == 1, arraysm == 3))
                     ns3a = len(indices[0])
                     indices = np.where(np.bitwise_or(arraysm == 2, arraysm == 3))
                     ns3b = len(indices[0])
-
 
                     if not os.path.exists(self.json_file):
                         self.start_json_file(region, date_here_str, ntotal, ns3a, ns3b)
@@ -175,7 +177,7 @@ class QI_PROCESSING():
 
                         rs = region.capitalize()
                         data = js[rs]['all_sat']['data']
-                        data.append([date_here_str,ntotal])
+                        data.append([date_here_str, ntotal])
                         js[rs]['all_sat']['data'] = data
                         data = js[rs]['OLCI_FR_Sentinel-3a']['data']
                         data.append([date_here_str, ns3a])
