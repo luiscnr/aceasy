@@ -47,43 +47,56 @@ class QI_PROCESSING():
         }
 
         self.json_file = None
+        self.final_qi_file = None
 
-    def append_qi_files(self, region, start_date, end_date):
+    def append_qi_files(self, start_date, end_date):
+        print(f'[INFO] Started appending qi files....')
+        if not self.check_date_qi_file(start_date):
+            return
         for nameoutput in self.namesoutput:
-            self.append_qi_files_impl(region, start_date, end_date, nameoutput)
+            self.append_qi_files_impl(start_date, end_date, nameoutput)
+        print(f'[INFO] Appending qi files completed')
 
-    def append_qi_files_impl(self, region, start_date, end_date, nameoutput):
-
-        path_output = os.path.dirname(self.json_file)
-        file_output = os.path.join(path_output, nameoutput)
+    def check_date_qi_file(self, start_date):
+        file_output = self.final_qi_file
         if os.path.exists(file_output):
             import pandas as pd
             df = pd.read_csv(file_output, sep=' ')
             last_date_str = str(df.iloc[-1].at['YearMonthDay'])
-            last_date = dt.strptime(last_date_str,'%Y%m%d')
-            if start_date<=last_date:
+            last_date = dt.strptime(last_date_str, '%Y%m%d')
+            if start_date <= last_date:
                 start_date_str = start_date.strftime('%Y%m%d')
-                print(f'[WARNING] Appeding has not been done as the start date {start_date_str} is before the last date in file {last_date_str}')
-                print(f'[WARNING] For making the appending using this data range, please first remove or rename the output file: {file_output}')
-                return
-
+                print(
+                    f'[WARNING] Appeding has not been done as the start date {start_date_str} is before the last date in file {last_date_str}')
+                print(
+                    f'[WARNING] For making the appending using this data range, please first remove or rename the output file: {file_output}')
+                return False
         else:
-            fout = open(file_output,'w')
+            fout = open(file_output, 'w')
             fout.write(self.first_line)
             fout.close()
+        return True
 
+    def append_qi_files_impl(self, start_date, end_date, nameoutput):
+
+        file_output = self.final_qi_file
         proc_date = start_date
-        fout = open(file_output,'a')
+        fout = open(file_output, 'a')
         while proc_date <= end_date:
             yearstr = proc_date.strftime('%Y')
             jjjstr = proc_date.strftime('%j')
             folder_date = os.path.join(self.dirbase, yearstr, jjjstr)
             file_date = os.path.join(folder_date, nameoutput)
             if os.path.exists(file_date):
-                fr = open(file_date,'r')
-                fr.readline()#firs line, skippped
-                fout.write('\n')
-                fout.write(fr.readline().strip())
+                fr = open(file_date, 'r')
+                for line in fr:
+                    lines = line.strip()
+                    if lines.startswith(self.first_line):
+                        continue
+                    if len(lines) == 0:
+                        continue
+                    fout.write('\n')
+                    fout.write(lines)
                 fr.close()
             proc_date = proc_date + timedelta(hours=24)
         fout.close()
@@ -107,6 +120,9 @@ class QI_PROCESSING():
             fout = os.path.join(folder_date, nameoutput)
             if os.path.exists(fout):
                 os.remove(fout)
+            fouttemp = os.path.join(folder_date, 'product_quality_stats_OCEANCOLOUR_ARC_BGC_L3_MY_009_123.txt')
+            if os.path.exists(fouttemp):
+                os.remove(fouttemp)
 
         for dataset in self.datasets:
             var = self.datasets[dataset]['var']
@@ -114,7 +130,10 @@ class QI_PROCESSING():
             res = self.info_sensor[self.sensor]['resolution']
 
             if self.sensor == 'MULTI_ARC':
-                name_file = f'{prefix}{yearstr}{jjjstr}_{var.lower()}-{region.lower()}-{res}.nc'
+                varh = var.lower()
+                if var.startswith('RRS'):
+                    varh = 'rrs'
+                name_file = f'{prefix}{yearstr}{jjjstr}_{varh}-{region.lower()}-{res}.nc'
             else:
                 name_file = f'{prefix}{yearstr}{jjjstr}-{var.lower()}-{region.lower()}-{res}.nc'
             file_data = os.path.join(folder_date, name_file)
@@ -143,6 +162,7 @@ class QI_PROCESSING():
                         f1 = open(file_out, 'a')
                         f1.write(self.first_line)
                         nout = name_out
+
                     f1.write('\n')
                     f1.write(line)
 
@@ -355,6 +375,19 @@ class QI_PROCESSING():
             print(f'[ERROR] Option jsonfile is not defined in config file: {self.fconfig} for region {region}')
             return False
         self.json_file = self.options[region]['jsonfile'].strip()
+
+        if self.options.has_option(region, 'qifile'):
+            self.final_qi_file = self.options[region]['qifile'].strip()
+        else:
+            folder_final = os.path.dirname(self.json_file)
+            name_final = self.namesoutput[0].split('.')[0]
+            try:
+                name_final = name_final[0:name_final.rindex('_')]
+                self.final_qi_file = os.path.join(folder_final, f'{name_final}.txt')
+            except:
+                print(
+                    f'[ERROR] qi file can not be defined in the config file {self.fconfig}. The first namesoutput should have the format name_param.txt')
+                return False
 
         if not self.options.has_option(region, 'DomainCoverage'):
             print(f'[ERROR] Option DomainCoverage is not defined in config file: {self.fconfig} for region {region}')

@@ -94,7 +94,7 @@ def main():
             date_proc = date_proc + timedelta(hours=24)
 
     if args.append_files:
-        qiproc.append_qi_files(region,start_date,end_date)
+        qiproc.append_qi_files(start_date,end_date)
 
 
 
