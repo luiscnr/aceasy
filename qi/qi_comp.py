@@ -2,8 +2,12 @@ import json
 import os.path
 import configparser
 from netCDF4 import Dataset
+from datetime import timedelta
+from datetime import datetime as dt
 import numpy as np
-import numpy.ma as ma
+import warnings
+
+warnings.filterwarnings("ignore")
 
 
 class QI_PROCESSING():
@@ -35,10 +39,54 @@ class QI_PROCESSING():
             'OLCI': {
                 'prefix': 'O',
                 'resolution': 'fr'
+            },
+            'MULTI_ARC': {
+                'prefix': 'C',
+                'resolution': '4km'
             }
         }
 
         self.json_file = None
+
+    def append_qi_files(self, region, start_date, end_date):
+        for nameoutput in self.namesoutput:
+            self.append_qi_files_impl(region, start_date, end_date, nameoutput)
+
+    def append_qi_files_impl(self, region, start_date, end_date, nameoutput):
+
+        path_output = os.path.dirname(self.json_file)
+        file_output = os.path.join(path_output, nameoutput)
+        if os.path.exists(file_output):
+            import pandas as pd
+            df = pd.read_csv(file_output, sep=' ')
+            last_date_str = str(df.iloc[-1].at['YearMonthDay'])
+            last_date = dt.strptime(last_date_str,'%Y%m%d')
+            if start_date<=last_date:
+                start_date_str = start_date.strftime('%Y%m%d')
+                print(f'[WARNING] Appeding has not been done as the start date {start_date_str} is before the last date in file {last_date_str}')
+                print(f'[WARNING] For making the appending using this data range, please first remove or rename the output file: {file_output}')
+                return
+
+        else:
+            fout = open(file_output,'w')
+            fout.write(self.first_line)
+            fout.close()
+
+        proc_date = start_date
+        fout = open(file_output,'a')
+        while proc_date <= end_date:
+            yearstr = proc_date.strftime('%Y')
+            jjjstr = proc_date.strftime('%j')
+            folder_date = os.path.join(self.dirbase, yearstr, jjjstr)
+            file_date = os.path.join(folder_date, nameoutput)
+            if os.path.exists(file_date):
+                fr = open(file_date,'r')
+                fr.readline()#firs line, skippped
+                fout.write('\n')
+                fout.write(fr.readline().strip())
+                fr.close()
+            proc_date = proc_date + timedelta(hours=24)
+        fout.close()
 
     def get_info_date(self, region, date_here):
         # from datetime import datetime as dt
@@ -48,7 +96,7 @@ class QI_PROCESSING():
         jjjstr = date_here.strftime('%j')
         folder_date = os.path.join(self.dirbase, yearstr, jjjstr)
         if not os.path.exists(folder_date):
-            print(f'[ERROR] No data directory for date: {date_here_str}')
+            print(f'[ERROR] No data directory for date: {date_here_str} Folder date: {folder_date} does not exist')
             return None
 
         nout = None
@@ -64,7 +112,11 @@ class QI_PROCESSING():
             var = self.datasets[dataset]['var']
             prefix = self.info_sensor[self.sensor]['prefix']
             res = self.info_sensor[self.sensor]['resolution']
-            name_file = f'{prefix}{yearstr}{jjjstr}-{var.lower()}-{region.lower()}-{res}.nc'
+
+            if self.sensor == 'MULTI_ARC':
+                name_file = f'{prefix}{yearstr}{jjjstr}_{var.lower()}-{region.lower()}-{res}.nc'
+            else:
+                name_file = f'{prefix}{yearstr}{jjjstr}-{var.lower()}-{region.lower()}-{res}.nc'
             file_data = os.path.join(folder_date, name_file)
             if not os.path.exists(file_data):
                 print(
@@ -121,14 +173,17 @@ class QI_PROCESSING():
 
         # print((np.sum(hist)/self.domaincoverage)*100)
         nhist = np.sum(hist)
-        if nhist==0:
-            pvalid = 0
+
+        if nhist == 0:
+            pvalid = 0.0
         else:
             pvalid = (nhist / self.domaincoverage) * 100
+
         res.append(pvalid)
 
         for h in hist:
             val = (h / nhist) * 100
+
             res.append(val)
 
         res_str = [str(x) for x in res]
@@ -145,10 +200,46 @@ class QI_PROCESSING():
             print(f'[ERROR] No data directory for date: {date_here_str}')
             return None
         for dataset in self.datasets:
+            if dataset.find('plankton') >= 0:  ##MULTI_ARC
+                var = self.datasets[dataset]['var']
+                prefix = self.info_sensor[self.sensor]['prefix']
+                res = self.info_sensor[self.sensor]['resolution']
+                name_file = f'{prefix}{yearstr}{jjjstr}_{var.lower()}-{region.lower()}-{res}.nc'
+                file_data = os.path.join(folder_date, name_file)
+                if not os.path.exists(file_data):
+                    print(
+                        f'[WARING] {name_file} for variable {var} in date {date_here_str} does not exist. Continue anyway')
+                else:
+                    if self.verbose:
+                        print(f'[INFO] Getting json info from file {name_file} (date: {date_here_str})')
+
+                    datasetf = Dataset(file_data)
+                    varsm = 'CHL'
+                    arraysm = np.array(datasetf.variables[varsm])
+                    arraysm = arraysm.flatten()
+                    indices = np.where(arraysm > 0)
+                    ntotal = len(indices[0])
+                    datasetf.close()
+
+                    if not os.path.exists(self.json_file):
+                        self.start_json_file_onlytotal(region, date_here_str, ntotal)
+                    else:
+                        with open(self.json_file, 'r') as j:
+                            js = json.loads(j.read())
+
+                        rs = region.capitalize()
+                        data = js[rs]['all_sat']['data']
+                        data.append([date_here_str, ntotal])
+                        js[rs]['all_sat']['data'] = data
+
+                        with open(self.json_file, "w", encoding='utf8') as outfile:
+                            json.dump(js, outfile, indent=3, ensure_ascii=False)
+
             if dataset.find('chl') >= 0:
                 var = self.datasets[dataset]['var']
                 prefix = self.info_sensor[self.sensor]['prefix']
                 res = self.info_sensor[self.sensor]['resolution']
+
                 name_file = f'{prefix}{yearstr}{jjjstr}-{var.lower()}-{region.lower()}-{res}.nc'
                 file_data = os.path.join(folder_date, name_file)
                 if not os.path.exists(file_data):
@@ -157,9 +248,9 @@ class QI_PROCESSING():
                 else:
                     if self.verbose:
                         print(f'[INFO] Getting json info from file {name_file} (date: {date_here_str})')
-                    dataset = Dataset(file_data)
+                    datasetf = Dataset(file_data)
                     varsm = 'SENSORMASK'
-                    arraysm = np.array(dataset.variables[varsm])
+                    arraysm = np.array(datasetf.variables[varsm])
                     arraysm = arraysm.flatten()
 
                     indices = np.where(arraysm > 0)
@@ -189,7 +280,19 @@ class QI_PROCESSING():
                         with open(self.json_file, "w", encoding='utf8') as outfile:
                             json.dump(js, outfile, indent=3, ensure_ascii=False)
 
-                    dataset.close()
+                    datasetf.close()
+
+    def start_json_file_onlytotal(self, region, date_here_str, ntotal):
+        rs = region.capitalize()
+        js = {
+            rs: {
+                'all_sat': {
+                    'data': [[date_here_str, ntotal]]
+                }
+            }
+        }
+        with open(self.json_file, "w", encoding='utf8') as outfile:
+            json.dump(js, outfile, indent=3, ensure_ascii=False)
 
     def start_json_file(self, region, date_here_str, ntotal, ns3a, ns3b):
         rs = region.capitalize()
