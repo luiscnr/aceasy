@@ -66,6 +66,17 @@ class BalOutputFile:
         # self.EXTRACT.insitu_lat = at['in_situ_lat']
         # self.EXTRACT.insitu_lon = at['in_situ_lon']
 
+    def set_global_attributes_cci(self,ncinfo,source_file):
+        self.OFILE.creation_time = dt.now().strftime("%Y-%m-%dT%H:%M:%SZ")
+        self.OFILE.start_date = ncinfo.start_date
+        self.OFILE.stop_date = ncinfo.stop_date
+        self.OFILE.start_time = ncinfo.start_time
+        self.OFILE.stop_time = ncinfo.stop_time
+        if source_file is not None:
+            self.OFILE.source_file = source_file
+
+
+
     def create_dimensions(self, ny, nx):
         # dimensions
         self.OFILE.createDimension('lat', ny)
@@ -88,27 +99,34 @@ class BalOutputFile:
     def create_lat_long_variables(self, lat, lon):
 
         # latitude
-        satellite_latitude = self.OFILE.createVariable('latitude', 'f4', ('lat', 'lon'), fill_value=-999, zlib=True,
-                                                       complevel=6)
-        satellite_latitude[:, :] = [lat[:, :]]
+        if len(lat.shape)==2:
+            satellite_latitude = self.OFILE.createVariable('latitude', 'f4', ('lat', 'lon'), fill_value=-999, zlib=True,complevel=6)
+            satellite_latitude[:, :] = [lat[:, :]]
+        elif len(lat.shape)==1:
+            satellite_latitude = self.OFILE.createVariable('latitude', 'f4', ('lat',), fill_value=-999, zlib=True,
+                                                           complevel=6)
+            satellite_latitude[:] = [lat[:]]
         satellite_latitude.units = "degrees_north"
         satellite_latitude.long_name = "latitude"
         satellite_latitude.standard_name = "latitude"
 
 
         # longitude
-        satellite_longitude = self.OFILE.createVariable('longitude', 'f4', ('lat', 'lon'), fill_value=-999, zlib=True,
-                                                        complevel=6)
-        satellite_longitude[:, :] = [lon[:, :]]
+        if len(lon.shape) == 2:
+            satellite_longitude = self.OFILE.createVariable('longitude', 'f4', ('lat', 'lon'), fill_value=-999, zlib=True,complevel=6)
+            satellite_longitude[:, :] = [lon[:, :]]
+        elif len(lon.shape) == 1:
+            satellite_longitude = self.OFILE.createVariable('longitude', 'f4', ('lon',), fill_value=-999,
+                                                            zlib=True, complevel=6)
+            satellite_longitude[:] = [lon[:]]
         satellite_longitude.units = "degrees_east"
         satellite_longitude.long_name = "longitude"
         satellite_longitude.standard_name = "longitude"
 
 
     def create_data_variable(self, var_name, array):
-
         var = self.OFILE.createVariable(var_name, 'f4', ('lat', 'lon'), fill_value=-999, zlib=True, complevel=6)
-        var[:, :] = [array[:, :]]
+        var[:] = array[:]
         return var
 
     def create_chla_variable(self, array):

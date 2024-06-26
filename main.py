@@ -15,15 +15,18 @@ from acolite_lois import ACOLITE
 from idepix_lois import IDEPIX
 from baltic_mlp import BALTIC_MLP
 from baltic_all import BALTIC_ALL
+from baltic_202411 import BALTIC_202411_PROCESSOR
+
 import zipfile as zp
 from check_geo import CHECK_GEO
 
 from multiprocessing import Pool
 
-parser = argparse.ArgumentParser(description="Atmospheric correction launcher")
+parser = argparse.ArgumentParser(description="Algorithm launcher")
 
 parser.add_argument("-v", "--verbose", help="Verbose mode.", action="store_true")
 parser.add_argument("-p", "--product", help="Input product (testing)")
+parser.add_argument("-csv","--input_csv", help="Input csv (testing)")
 parser.add_argument('-i', "--inputpath", help="Input directory")
 parser.add_argument('-o', "--outputpath", help="Output directory", required=True)
 parser.add_argument('-tp', "--temp_path", help="Temporary directory")
@@ -32,7 +35,7 @@ parser.add_argument('-ed', "--end_date", help="End date (yyyy-mm-dd")
 parser.add_argument('-wce', "--wce", help="Wild card expression")
 parser.add_argument('-c', "--config_file", help="Configuration file (Default: aceasy_config.ini)")
 parser.add_argument('-ac', "--atm_correction", help="Atmospheric correction",
-                    choices=["C2RCC", "POLYMER", "FUB_CSIRO", "ACOLITE", "IDEPIX", "BALMLP", "BALALL","QI"], required=True)
+                    choices=["C2RCC", "POLYMER", "FUB_CSIRO", "ACOLITE", "IDEPIX", "BALMLP", "BALALL","QI","BAL202411"], required=True)
 args = parser.parse_args()
 
 
@@ -418,15 +421,21 @@ if __name__ == '__main__':
     if not os.path.exists(fconfig):
         print(f'[ERROR] Config file: {fconfig} does not exist')
         exit(1)
+    else:
+        print(f'[INFO] Config file: {fconfig}')
 
-    if not args.product and not args.inputpath:
-        print(f'[ERROR] Product name or input folder are required')
+    if not args.product and not args.inputpath and not args.input_csv:
+        print(f'[ERROR] Product file, input folder or input csv file are required')
         exit(1)
     input_path = None
+    input_csv = None
     if args.inputpath:
         input_path = args.inputpath
     if args.product:
         prod_path = args.product
+    if args.input_csv:
+        input_csv = args.input_csv
+
     if not args.outputpath:
         print(f'[ERROR] Output folder option is required')
         exit(1)
@@ -451,6 +460,8 @@ if __name__ == '__main__':
         corrector = BALTIC_MLP(fconfig, args.verbose)
     elif args.atm_correction == 'BALALL':
         corrector = BALTIC_ALL(fconfig, args.verbose)
+    elif args.atm_correction == 'BAL202411':
+        corrector = BALTIC_202411_PROCESSOR(fconfig,args.verbose)
 
     applyPool = 0
     geo_limits = None
@@ -491,8 +502,16 @@ if __name__ == '__main__':
     if args.verbose:
         print(f'[INFO] Started {args.atm_correction} processor')
 
+    if input_csv is not None: ##csv option, for testing
+        if corrector.allow_csv_test():
+            corrector.run_from_csv_file(input_csv)
+        exit(0)
+
+
     if input_path is None:  # single product, for testing
         f = os.path.basename(prod_path)
+        if args.atm_correction == 'BAL202411' and f.endswith('.nc'):
+            p = corrector.run_process(prod_path, output_path)
         if args.atm_correction == 'BALMLP' and f.endswith('.nc'):
             p = corrector.run_process(prod_path, output_path)
         elif args.atm_correction == 'BALALL' and os.path.isdir(prod_path):
