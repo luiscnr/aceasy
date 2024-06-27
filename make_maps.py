@@ -25,15 +25,15 @@ def main():
         try:
             print(f'[INFO] Input path: {input_path}')
             dataset = Dataset(input_path)
-            if args.output_path:
-                output_path = args.output_path
-            else:
-                output_path = input_path.replace('.nc', '.png')
-            dateherestr = get_date_here_from_file_name(input_path)
-            launch_single_map(dataset,output_path,dateherestr)
         except:
             print(f'[ERROR] Input path is not valid')
             return
+        if args.output_path:
+            output_path = args.output_path
+        else:
+            output_path = input_path.replace('.nc', '.png')
+        dateherestr = get_date_here_from_file_name(input_path)
+        launch_single_map(dataset, output_path, dateherestr)
 
 def launch_multiple_maps(input_dir):
     for name in os.listdir(input_dir):
@@ -43,10 +43,10 @@ def launch_multiple_maps(input_dir):
             try:
                 print(f'[INFO] Input path: {input_path}')
                 dataset = Dataset(input_path)
-                output_path = input_path.replace('.nc', '.png')
-                launch_single_map(dataset, output_path, date_here_str)
             except:
                 continue
+            output_path = input_path.replace('.nc', '.png')
+            launch_single_map(dataset, output_path, date_here_str)
 
 def launch_single_map(dataset,output_path,dateherestr):
 

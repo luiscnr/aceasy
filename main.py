@@ -444,9 +444,9 @@ def do_script_bal_cci():
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     print('[INFO] Started')
-    b = do_script_bal_cci()
-    if b:
-        sys.exit()
+    # b = do_script_bal_cci()
+    # if b:
+    #     sys.exit()
     # b = check()
     # if b:
     #     sys.exit()
