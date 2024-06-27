@@ -79,7 +79,7 @@ def get_date_here_from_file_name(input_path):
     date_here_str =None
     if name.startswith('M') and name.endswith('BAL202411.nc'):
         try:
-            date_here = dt.strptime(name[1:7],'%Y%j')
+            date_here = dt.strptime(name[1:8],'%Y%j')
             date_here_str = date_here.strftime('%Y-%m-%d')
         except:
             pass
