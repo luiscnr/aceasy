@@ -36,6 +36,8 @@ def compute_diff():
         file_new = os.path.join(dir_base_new,name)
         dir_old = os.path.join(dir_base_old,date_here.strftime('%Y'),date_here.strftime('%j'))
         file_old = os.path.join(dir_old,f'C{date1}-chl-bal-hr.nc')
+        if not os.path.exists(file_old) or not os.path.exists(file_new):
+            continue
         print(file_new)
         print(file_old)
 
