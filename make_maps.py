@@ -17,7 +17,77 @@ parser.add_argument("-i", "--input_path", help="Input path", required=True)
 parser.add_argument("-o", "--output_path", help="Output path")
 args = parser.parse_args()
 
+def compute_diff():
+    from datetime import datetime as dt
+    from datetime import timedelta
+    dir_base_new = '/store3/OC/CCI_v2017/daily_v202411'
+    format_name = 'M$DATE1$.0000.bal.all_products.CCI.$DATE2$0000.v0.$DATE1$0000.data_BAL202411.nc'
+    dir_base_old = '/store3/OC/CCI_v2017/daily_v202207'
+    dir_base_dif = '/store3/OC/CCI_v2017/daily_diff'
+    date_here  =dt(2018,6,1)
+    end_date = dt(2018,9,30)
+    while date_here<=end_date:
+        print('-------------------------------------------------------------------')
+        print(date_here)
+        date1 = date_here.strftime('%Y%j')
+        date2 = date_here.strftime('%d%b%y')
+        name = format_name.replace('$DATE1$', date1)
+        name = name.replace('$DATE2$', date2)
+        file_new = os.path.join(dir_base_new,name)
+        dir_old = os.path.join(dir_base_old,date_here.strftime('%Y'),date_here.strftime('%j'))
+        file_old = os.path.join(dir_old,f'C{date1}-chl-bal-hr.nc')
+        print(file_new)
+        print(file_old)
+
+        dataset_old = Dataset(file_old)
+        chl_old = dataset_old.variables['CHL'][:]
+        dataset_old.close()
+
+        dataset_new = Dataset(file_new)
+        chl_new = dataset_new.variables['CHL'][:]
+        lat_array = dataset_new.variables['latitude'][:]
+        lon_array = dataset_new.variables['longitude'][:]
+
+        chl_dif = chl_old-chl_new
+        coverage = np.zeros(chl_old.shape)
+        coverage[~chl_old.mask]=coverage[~chl_old.mask]+1
+        coverage[~chl_new.mask]=coverage[~chl_new.mask]+1
+
+        file_out = os.path.join(dir_base_dif,f'Diff_{date1}.nc')
+        nc_out = Dataset(file_out,'w')
+
+        # copy dimensions
+        for name, dimension in dataset_new.dimensions.items():
+            nc_out.createDimension(
+                name, (len(dimension) if not dimension.isunlimited() else None))
+
+
+        nc_out.createVariable('latitude', 'f4', ('lat',), fill_value=-999.0, zlib=True,complevel=6)
+        nc_out['latitude'][:] = lat_array
+        nc_out.createVariable('longitude', 'f4', ('lon',), fill_value=-999.0, zlib=True, complevel=6)
+        nc_out['longitude'][:] = lon_array
+        nc_out.createVariable('chl_old', 'f4', ('lat','lon'), fill_value=-999.0, zlib=True, complevel=6)
+        nc_out['chl_old'][:] = chl_old
+        nc_out.createVariable('chl_new', 'f4', ('lat', 'lon'), fill_value=-999.0, zlib=True, complevel=6)
+        nc_out['chl_new'][:] = chl_new
+        nc_out.createVariable('chl_dif', 'f4', ('lat', 'lon'), fill_value=-999.0, zlib=True, complevel=6)
+        nc_out['chl_dif'][:] = chl_dif
+        nc_out.createVariable('coverage', 'i4', ('lat', 'lon'), fill_value=-999.0, zlib=True, complevel=6)
+        nc_out['coverage'][:] = coverage
+
+
+        nc_out.close()
+        dataset_new.close()
+
+
+        date_here = date_here + timedelta(hours=24)
+    return True
+
 def main():
+
+    if compute_diff():
+        return
+
     input_path = args.input_path
 
     if os.path.isdir(input_path):
