@@ -36,6 +36,7 @@ parser.add_argument('-wce', "--wce", help="Wild card expression")
 parser.add_argument('-c', "--config_file", help="Configuration file (Default: aceasy_config.ini)")
 parser.add_argument('-ac', "--atm_correction", help="Atmospheric correction",
                     choices=["C2RCC", "POLYMER", "FUB_CSIRO", "ACOLITE", "IDEPIX", "BALMLP", "BALALL","QI","BAL202411"], required=True)
+parser.add_argument('-type',"--type_product",help="Type product for BAL202411",default="cci",choices=["cci","polymer","olci_l3"])
 args = parser.parse_args()
 
 
@@ -548,13 +549,27 @@ if __name__ == '__main__':
 
     if input_csv is not None: ##csv option, for testing
         if corrector.allow_csv_test():
-            corrector.run_from_csv_file(input_csv)
+            if output_path=='default':
+                output_path = input_csv[:-4]+'_'+args.atm_correction+'.csv'
+            else:
+                if not output_path.endswith('.csv'):
+                    print(f'[ERROR] Output path shoud be a CSV file')
+                    exit(-1)
+                else:
+                    if not os.path.isdir(os.path.dirname(output_path)):
+                        print(f'[ERROR] Output directory {os.path.dirname(output_path)} is not a valid directory')
+                        exit(-1)
+            #print(output_path)
+            corrector.run_from_csv_file(input_csv,output_path)
         exit(0)
 
 
     if input_path is None:  # single product, for testing
         f = os.path.basename(prod_path)
-        if args.atm_correction == 'BAL202411' and f.endswith('.nc'):
+        if args.atm_correction == 'BAL202411':
+            if args.type_product:
+                corrector.product_type = args.type_product
+                print(f'[INFO] Setting product type for BAL202411 processor to: {args.type_product}')
             p = corrector.run_process(prod_path, output_path)
         if args.atm_correction == 'BALMLP' and f.endswith('.nc'):
             p = corrector.run_process(prod_path, output_path)

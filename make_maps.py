@@ -6,7 +6,9 @@ import matplotlib.ticker as mticker
 import cartopy.crs as ccrs
 import cartopy
 from datetime import datetime as dt
-
+import numpy as np
+import matplotlib as mpl
+import matplotlib.colors as colors
 
 parser = argparse.ArgumentParser(description="Make maps launcher")
 
@@ -54,11 +56,17 @@ def launch_single_map(dataset,output_path,dateherestr):
 
     lat_array = dataset.variables['latitude'][:]
     lon_array = dataset.variables['longitude'][:]
-    data = dataset.variables['CHL']
+    data = dataset.variables['CHL'][:]
 
+    data_stats = np.ma.compressed(data)
+
+    min_chla = np.percentile(data_stats,1)
+    max_chla = np.percentile(data_stats,99)
+
+
+    ##chl-a
     fig,ax = start_full_figure()
-
-    h = ax.pcolormesh(lon_array,lat_array,data,norm=LogNorm(vmin=0.001, vmax=100))
+    h = ax.pcolormesh(lon_array,lat_array,data,norm=LogNorm(vmin=min_chla, vmax=max_chla))
     cbar = fig.colorbar(h,cax = None, ax = ax, use_gridspec = True, fraction=0.03,format="$%.2f$")
     cbar.ax.tick_params(labelsize=15)
     units = r'mg m$^-$$^3$'
@@ -67,8 +75,68 @@ def launch_single_map(dataset,output_path,dateherestr):
     if dateherestr is not None:
         title = f'{title} - {dateherestr}'
     ax.set_title(title, fontsize=20)
-    fig.savefig(output_path, dpi=300, bbox_inches='tight')
+    output_path_here = os.path.join(os.path.dirname(output_path), f'Img_Chla_{dateherestr}.png')
+    fig.savefig(output_path_here, dpi=300, bbox_inches='tight')
     plt.close(fig)
+
+    #cdf flag
+    cdf_mlp3b = dataset.variables['CDF_MLP3B'][:]
+    cdf_mlp4b = dataset.variables['CDF_MLP4B'][:]
+    cdf_mlp5b = dataset.variables['CDF_MLP5B'][:]
+    cdf_mask_mlp3b = np.ma.where(cdf_mlp3b >= 0.001,2,0)
+    cdf_mask_mlp4b = np.ma.where(cdf_mlp4b >= 0.001,4,0)
+    cdf_mask_mlp5b = np.ma.where(cdf_mlp5b >= 0.001,8,0)
+    cdf_flag_multiple = cdf_mask_mlp3b+cdf_mask_mlp4b+cdf_mask_mlp5b
+    cdf_flag_multiple[cdf_flag_multiple == 0] = 1
+
+    cdf_mlp3b = np.ma.masked_less(cdf_mlp3b, 0.001)
+    cdf_mlp4b = np.ma.masked_less(cdf_mlp4b, 0.001)
+    cdf_mlp5b = np.ma.masked_less(cdf_mlp5b, 0.001)
+    cdf_sum = cdf_mlp3b + cdf_mlp4b + cdf_mlp5b
+    weight_mlp3b = np.ma.divide(cdf_mlp3b, cdf_sum)
+    weight_mlp4b = np.ma.divide(cdf_mlp4b, cdf_sum)
+    weight_mlp5b = np.ma.divide(cdf_mlp5b, cdf_sum)
+    #weight_sum = weight_mlp3b+weight_mlp4b+weight_mlp5b
+
+    weight_arrays = [ weight_mlp3b, weight_mlp4b, weight_mlp5b]
+    titles = ['Weight CDF MLP3B','Weight CDF MLP4B','Weight CDF MLP5B']
+    ##weight arrays
+    for idx in range(len(weight_arrays)):
+        fig, ax = start_full_figure()
+        array = weight_arrays[idx]
+        print(array.shape,type(array),np.ma.count_masked(array))
+        h = ax.pcolormesh(lon_array, lat_array,array,cmap = mpl.colormaps['jet'],vmin=0,vmax=1)
+        cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03, format="$%.2f$")
+        cbar.ax.tick_params(labelsize=15)
+        cbar.set_label(label=f'Weight', size=15)
+        title = titles[idx]
+        if dateherestr is not None:
+            title = f'{title} - {dateherestr}'
+        ax.set_title(title, fontsize=20)
+        name = title.replace(' ','_')
+        output_path_here = os.path.join(os.path.dirname(output_path), f'Img_{name}_.png')
+        fig.savefig(output_path_here, dpi=300, bbox_inches='tight')
+        plt.close(fig)
+
+
+    ##flag multiple
+    fig, ax = start_full_figure()
+    bounds = [1, 2, 4, 6, 8, 10, 12, 14, 15]
+    norm = colors.BoundaryNorm(boundaries=bounds, ncolors=9)
+    h = ax.pcolormesh(lon_array, lat_array, cdf_flag_multiple,norm = norm, cmap = mpl.colormaps['Set1'])
+    cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03,format="$%.2f$")
+    cbar.ax.tick_params(labelsize=15)
+    cbar.set_label(label=f'CDF Flag Multiple', size=15)
+    title = f'CDF Flag Multiple'
+    if dateherestr is not None:
+        title = f'{title} - {dateherestr}'
+    ax.set_title(title, fontsize=20)
+    output_path_here = os.path.join(os.path.dirname(output_path),f'Img_FlagMultiple_{dateherestr}.png')
+    fig.savefig(output_path_here, dpi=300, bbox_inches='tight')
+    plt.close(fig)
+
+
+
     dataset.close()
 
 

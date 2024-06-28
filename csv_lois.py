@@ -20,6 +20,17 @@ class CSV_FILE:
             print(f'[WARNING] No valid RRS columns identified in file {path_csv}')
         self.max_diff_wl = 5
 
+        self.df_out = None
+
+    def start_copy_output(self):
+        self.df_out = self.df.copy()
+
+    def add_column_to_output(self,col_name,data):
+        self.df_out[col_name] = data
+
+    def save_output(self,file_out):
+        self.df_out.to_csv(file_out,sep=';')
+
     def get_rrs_spectra(self,wl_list_here,apply_band_shift):
         if len(self.wl_list)==0:
             return None
