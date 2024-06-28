@@ -46,6 +46,7 @@ def compute_diff():
         dataset_old = Dataset(file_old)
         chl_old = dataset_old.variables['CHL'][:]
         chl_old = chl_old.squeeze()
+        chl_old = np.flipud(chl_old)
         dataset_old.close()
 
         dataset_new = Dataset(file_new)
@@ -86,8 +87,34 @@ def compute_diff():
         date_here = date_here + timedelta(hours=24)
     return True
 
+def tal():
+    file_diff = '/mnt/c/DATA_LUIS/OCTAC_WORK/MATCH-UPS_ANALYSIS_2024/BAL/CODE_DAVIDE_2024/Diff_2018272.nc'
+    input_nc = Dataset(file_diff)
+
+    chl_new = input_nc.variables['chl_new'][:]
+    chl_old = input_nc.variables['chl_old'][:]
+    print(chl_old.shape,type(chl_old))
+
+    chl_old_n = np.flipud(chl_old)
+    print(type(chl_old_n))
+
+    input_nc.close()
+
+
+    # file_out = '/mnt/c/DATA_LUIS/OCTAC_WORK/MATCH-UPS_ANALYSIS_2024/BAL/CODE_DAVIDE_2024/Diff_2018272_out.nc'
+    # import shutil
+    # shutil.copy(file_diff,file_out)
+    # dataset_out = Dataset(file_out,'a')
+    # dataset_out.createVariable('old_n','f4',('lat','lon'),fill_value=-999, zlib=True, complevel=6)
+    # dataset_out['old_n'][:] = chl_old_n
+    # dataset_out.close()
+
+
+
+    return True
 
 def main():
+
     if compute_diff():
         return
 
