@@ -57,7 +57,7 @@ def compute_diff():
         chl_dif = chl_old - chl_new
         coverage = np.zeros(chl_old.shape)
         coverage[~chl_old.mask] = coverage[~chl_old.mask] + 1
-        coverage[~chl_new.mask] = coverage[~chl_new.mask] + 1
+        coverage[~chl_new.mask] = coverage[~chl_new.mask] + 2
 
 
         file_out = os.path.join(dir_base_dif, f'Diff_{date1}.nc')
