@@ -45,6 +45,7 @@ def compute_diff():
 
         dataset_old = Dataset(file_old)
         chl_old = dataset_old.variables['CHL'][:]
+        chl_old = chl_old.squeeze()
         dataset_old.close()
 
         dataset_new = Dataset(file_new)
