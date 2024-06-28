@@ -1,4 +1,4 @@
-import argparse,os
+import argparse, os
 from netCDF4 import Dataset
 from matplotlib import pyplot as plt
 from matplotlib.colors import LogNorm
@@ -17,6 +17,7 @@ parser.add_argument("-i", "--input_path", help="Input path", required=True)
 parser.add_argument("-o", "--output_path", help="Output path")
 args = parser.parse_args()
 
+
 def compute_diff():
     from datetime import datetime as dt
     from datetime import timedelta
@@ -24,19 +25,20 @@ def compute_diff():
     format_name = 'M$DATE1$.0000.bal.all_products.CCI.$DATE2$0000.v0.$DATE1$0000.data_BAL202411.nc'
     dir_base_old = '/store3/OC/CCI_v2017/daily_v202207'
     dir_base_dif = '/store3/OC/CCI_v2017/daily_diff'
-    date_here  =dt(2018,6,1)
-    end_date = dt(2018,9,30)
-    while date_here<=end_date:
+    date_here = dt(2018, 6, 1)
+    end_date = dt(2018, 9, 30)
+    while date_here <= end_date:
         print('-------------------------------------------------------------------')
         print(date_here)
         date1 = date_here.strftime('%Y%j')
         date2 = date_here.strftime('%d%b%y')
         name = format_name.replace('$DATE1$', date1)
         name = name.replace('$DATE2$', date2)
-        file_new = os.path.join(dir_base_new,name)
-        dir_old = os.path.join(dir_base_old,date_here.strftime('%Y'),date_here.strftime('%j'))
-        file_old = os.path.join(dir_old,f'C{date1}-chl-bal-hr.nc')
+        file_new = os.path.join(dir_base_new, name)
+        dir_old = os.path.join(dir_base_old, date_here.strftime('%Y'), date_here.strftime('%j'))
+        file_old = os.path.join(dir_old, f'C{date1}-chl-bal-hr.nc')
         if not os.path.exists(file_old) or not os.path.exists(file_new):
+            date_here = date_here + timedelta(hours=24)
             continue
         print(file_new)
         print(file_old)
@@ -50,25 +52,25 @@ def compute_diff():
         lat_array = dataset_new.variables['latitude'][:]
         lon_array = dataset_new.variables['longitude'][:]
 
-        chl_dif = chl_old-chl_new
+        chl_dif = chl_old - chl_new
         coverage = np.zeros(chl_old.shape)
-        coverage[~chl_old.mask]=coverage[~chl_old.mask]+1
-        coverage[~chl_new.mask]=coverage[~chl_new.mask]+1
+        coverage[~chl_old.mask] = coverage[~chl_old.mask] + 1
+        coverage[~chl_new.mask] = coverage[~chl_new.mask] + 1
 
-        file_out = os.path.join(dir_base_dif,f'Diff_{date1}.nc')
-        nc_out = Dataset(file_out,'w')
+
+        file_out = os.path.join(dir_base_dif, f'Diff_{date1}.nc')
+        nc_out = Dataset(file_out, 'w')
 
         # copy dimensions
         for name, dimension in dataset_new.dimensions.items():
             nc_out.createDimension(
                 name, (len(dimension) if not dimension.isunlimited() else None))
 
-
-        nc_out.createVariable('latitude', 'f4', ('lat',), fill_value=-999.0, zlib=True,complevel=6)
+        nc_out.createVariable('latitude', 'f4', ('lat',), fill_value=-999.0, zlib=True, complevel=6)
         nc_out['latitude'][:] = lat_array
         nc_out.createVariable('longitude', 'f4', ('lon',), fill_value=-999.0, zlib=True, complevel=6)
         nc_out['longitude'][:] = lon_array
-        nc_out.createVariable('chl_old', 'f4', ('lat','lon'), fill_value=-999.0, zlib=True, complevel=6)
+        nc_out.createVariable('chl_old', 'f4', ('lat', 'lon'), fill_value=-999.0, zlib=True, complevel=6)
         nc_out['chl_old'][:] = chl_old
         nc_out.createVariable('chl_new', 'f4', ('lat', 'lon'), fill_value=-999.0, zlib=True, complevel=6)
         nc_out['chl_new'][:] = chl_new
@@ -77,16 +79,14 @@ def compute_diff():
         nc_out.createVariable('coverage', 'i4', ('lat', 'lon'), fill_value=-999.0, zlib=True, complevel=6)
         nc_out['coverage'][:] = coverage
 
-
         nc_out.close()
         dataset_new.close()
-
 
         date_here = date_here + timedelta(hours=24)
     return True
 
-def main():
 
+def main():
     if compute_diff():
         return
 
@@ -109,9 +109,10 @@ def main():
         dateherestr = get_date_here_from_file_name(input_path)
         launch_single_map(dataset, output_path, dateherestr)
 
+
 def launch_multiple_maps(input_dir):
     for name in os.listdir(input_dir):
-        input_path = os.path.join(input_dir,name)
+        input_path = os.path.join(input_dir, name)
         date_here_str = get_date_here_from_file_name(input_path)
         if date_here_str is not None:
             try:
@@ -122,8 +123,8 @@ def launch_multiple_maps(input_dir):
             output_path = input_path.replace('.nc', '.png')
             launch_single_map(dataset, output_path, date_here_str)
 
-def launch_single_map(dataset,output_path,dateherestr):
 
+def launch_single_map(dataset, output_path, dateherestr):
     print(f'[INFO] Output path: {output_path}')
 
     lat_array = dataset.variables['latitude'][:]
@@ -145,7 +146,6 @@ def launch_single_map(dataset,output_path,dateherestr):
     ax.set_title(title, fontsize=20)
     fig.savefig(output_path, dpi=300, bbox_inches='tight')
     plt.close(fig)
-
 
     ##chl-a
     # fig,ax = start_full_figure()
@@ -220,27 +220,24 @@ def launch_single_map(dataset,output_path,dateherestr):
     # fig.savefig(output_path_here, dpi=300, bbox_inches='tight')
     # plt.close(fig)
 
-
-
     dataset.close()
-
 
     print(f'[INFO] Completed')
 
+
 def get_date_here_from_file_name(input_path):
     name = os.path.basename(input_path)
-    date_here_str =None
+    date_here_str = None
     if name.startswith('M') and name.endswith('BAL202411.nc'):
         try:
-            date_here = dt.strptime(name[1:8],'%Y%j')
+            date_here = dt.strptime(name[1:8], '%Y%j')
             date_here_str = date_here.strftime('%Y-%m-%d')
         except:
             pass
     return date_here_str
 
+
 def start_full_figure():
-
-
     # start figure and axes
 
     fig, ax = plt.subplots(subplot_kw=dict(projection=ccrs.PlateCarree()))
@@ -249,7 +246,7 @@ def start_full_figure():
 
     # coastlines
     ax.add_feature(cartopy.feature.LAND, zorder=0, edgecolor='black', linewidth=0.5)
-    #ax.coastlines(resolution='10m')
+    # ax.coastlines(resolution='10m')
 
     # Prep circular boundary
     # r_extent = self.area_def.area_extent[1]
@@ -269,7 +266,7 @@ def start_full_figure():
     gl.top_labels = False
     gl.xlabel_style = {'size': 15}
     gl.ylabel_style = {'size': 15}
-    #plt.draw()
+    # plt.draw()
     # for ea in gl.label_artists:
     #     txt = ea.get_text()
     #     pos = ea.get_position()
@@ -287,6 +284,7 @@ def start_full_figure():
     #         ea.set_visible(False)
 
     return fig, ax
+
 
 if __name__ == '__main__':
     main()
