@@ -101,11 +101,11 @@ def compare_old_new():
     date_here = dt(2018, 6, 1)
     end_date = dt(2018, 9, 30)
 
-    weight_mlp3b_total = np.ma.zeros((1147,1185))
+    weight_mlp3b_total = np.ma.zeros((1147, 1185))
     weight_mlp4b_total = np.ma.zeros((1147, 1185))
     weight_mlp5b_total = np.ma.zeros((1147, 1185))
-    n_cdf_total = np.ma.zeros((1147,1185))
-    n_nocdf_total = np.ma.zeros((1147,1185))
+    n_cdf_total = np.ma.zeros((1147, 1185))
+    n_nocdf_total = np.ma.zeros((1147, 1185))
     file_out = '/store3/OC/CCI_v2017/daily_v202411/CoverageNew.nc'
     nc_out = None
     while date_here <= end_date:
@@ -140,7 +140,6 @@ def compare_old_new():
                 nc_out.createVariable('longitude', 'f4', ('lon',), fill_value=-999.0, zlib=True, complevel=6)
                 nc_out['longitude'][:] = lon_array
 
-
             dataset.close()
             cdf_mask_mlp3b = np.ma.where(cdf_mlp3b >= 0.001, 2, 0)
             cdf_mask_mlp4b = np.ma.where(cdf_mlp4b >= 0.001, 4, 0)
@@ -162,8 +161,8 @@ def compare_old_new():
             weight_mlp3b_total[weight_mlp3b > 0] = weight_mlp3b_total[weight_mlp3b > 0] + weight_mlp3b[weight_mlp3b > 0]
             weight_mlp4b_total[weight_mlp4b > 0] = weight_mlp4b_total[weight_mlp4b > 0] + weight_mlp4b[weight_mlp4b > 0]
             weight_mlp5b_total[weight_mlp5b > 0] = weight_mlp5b_total[weight_mlp5b > 0] + weight_mlp4b[weight_mlp5b > 0]
-            n_cdf_total[flag_multiple>=2] = n_cdf_total[flag_multiple>=2]+1
-            n_nocdf_total[flag_multiple == 1] = n_nocdf_total[flag_multiple ==1] + 1
+            n_cdf_total[cdf_flag_multiple >= 2] = n_cdf_total[cdf_flag_multiple >= 2] + 1
+            n_nocdf_total[cdf_flag_multiple == 1] = n_nocdf_total[cdf_flag_multiple == 1] + 1
 
             values_new = chla_new[coverage == 3].flatten()
             values_old = chla_old[coverage == 3].flatten()
@@ -178,29 +177,29 @@ def compare_old_new():
     fw.close()
 
     ##coverage file
-    weight_mlp3b_total = np.ma.masked_equal(weight_mlp3b_total,0)
-    weight_mlp4b_total = np.ma.masked_equal(weight_mlp4b_total,0)
-    weight_mlp5b_total = np.ma.masked_equal(weight_mlp5b_total,0)
+    weight_mlp3b_total = np.ma.masked_equal(weight_mlp3b_total, 0)
+    weight_mlp4b_total = np.ma.masked_equal(weight_mlp4b_total, 0)
+    weight_mlp5b_total = np.ma.masked_equal(weight_mlp5b_total, 0)
     n_total = n_cdf_total + n_nocdf_total
-    n_cdf_total = np.ma.masked_equal(n_cdf_total,0)
-    n_nocdf_total = np.ma.masked_equal(n_nocdf_total,0)
+    n_cdf_total = np.ma.masked_equal(n_cdf_total, 0)
+    n_nocdf_total = np.ma.masked_equal(n_nocdf_total, 0)
     n_total = np.ma.masked_equal(n_total, 0)
-    coverage_cdf = (n_cdf_total/n_total)*100
+    coverage_cdf = (n_cdf_total / n_total) * 100
     coverage_no_cdf = (n_nocdf_total / n_total) * 100
     coverage_cdf_mlp3 = (weight_mlp3b_total / n_cdf_total) * 100
     coverage_cdf_mlp4 = (weight_mlp4b_total / n_cdf_total) * 100
     coverage_cdf_mlp5 = (weight_mlp5b_total / n_cdf_total) * 100
-    coverage_total_mlp3 = ((weight_mlp3b_total+n_nocdf_total) / n_total) * 100
+    coverage_total_mlp3 = ((weight_mlp3b_total + n_nocdf_total) / n_total) * 100
     variable_list = {
         'weight_mlp3b_total': weight_mlp3b_total,
         'weight_mlp4b_total': weight_mlp4b_total,
         'weight_mlp5b_total': weight_mlp5b_total,
         'n_total': n_total,
-        'n_cdf_total':n_cdf_total,
+        'n_cdf_total': n_cdf_total,
         'n_nocdf_total': n_nocdf_total,
-        'coverage_cdf':coverage_cdf,
-        'coverage_nocdf':coverage_no_cdf,
-        'coverage_cdf_mlp3':coverage_cdf_mlp3,
+        'coverage_cdf': coverage_cdf,
+        'coverage_nocdf': coverage_no_cdf,
+        'coverage_cdf_mlp3': coverage_cdf_mlp3,
         'coverage_cdf_mlp4': coverage_cdf_mlp4,
         'coverage_cdf_mlp5': coverage_cdf_mlp5,
         'coverage_total_mlp3': coverage_total_mlp3,
@@ -210,7 +209,6 @@ def compare_old_new():
         nc_out.createVariable(name_var, 'f4', ('lat', 'lon'), fill_value=-999.0, zlib=True, complevel=6)
         nc_out[name_var][:] = array
     nc_out.close()
-
 
     return True
 
