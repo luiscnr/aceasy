@@ -499,8 +499,8 @@ def plot_coverage():
     return True
 
 def main():
-    if plot_coverage():
-        return
+    # if plot_coverage():
+    #     return
     # if compare_old_new_v2():
     #     return
     # if compute_diff():
