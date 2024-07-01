@@ -421,50 +421,71 @@ def plot_coverage():
     fig.savefig(file_out, dpi=300, bbox_inches='tight')
     plt.close(fig)
 
-    coverage_variables = ['coverage_mlp3','coverage_mlp4','coverage_mlp5']
-    titles = ['Coverage MLP 3 bands','Coverage MLP 4 bands','Coverage MLP 5 bands']
-    for variable,title in zip(coverage_variables,titles):
-        coverage = dataset.variables[variable][:]
+    # coverage_variables = ['coverage_mlp3','coverage_mlp4','coverage_mlp5']
+    # titles = ['Coverage MLP 3 bands','Coverage MLP 4 bands','Coverage MLP 5 bands']
+    # for variable,title in zip(coverage_variables,titles):
+    #     coverage = dataset.variables[variable][:]
+    #     fig, ax = start_full_figure()
+    #     h = ax.pcolormesh(lon_array, lat_array, coverage, vmin=0, vmax=100, cmap=mpl.colormaps['jet'])
+    #     cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03, format="$%.2f$")
+    #     cbar.ax.tick_params(labelsize=15)
+    #     cbar.set_label(label=f'Coverage(%)', size=15)
+    #     ax.set_title(title)
+    #     file_out = os.path.join(os.path.dirname(file_coverage), f'{variable.upper()}.png')
+    #     fig.savefig(file_out, dpi=300, bbox_inches='tight')
+    #     plt.close(fig)
+
+
+
+
+    variables = ['mrpd_cdf','mrpd_nocdf','mrpd','mrpd_cdf_complete']
+    titles = [f'Mean RPD (%) - Only CDF', f'Mean RPD (%) - Only NO CDF',f'Mean RPD (%) - All data',f'Mean RPD(%) - Only CDF Complete']
+    for variable,title in zip(variables,titles):
+        array = dataset.variables[variable][:]
+
+        #ranged color maps
+        bounds = [-1000,-50,-40,-30,-20,-10,-5,0,5,10,20,30,40,50,1000]
+        norm = colors.BoundaryNorm(boundaries=bounds, ncolors=len(bounds)+1)
+        cmap_r = mpl.colormaps['jet'].resampled(len(bounds)+1)
+        #continous color maps
+        cmap_c = mpl.colormaps['jet']
         fig, ax = start_full_figure()
-        h = ax.pcolormesh(lon_array, lat_array, coverage, vmin=0, vmax=100, cmap=mpl.colormaps['jet'])
+        #continued
+        #h = ax.pcolormesh(lon_array, lat_array, array, vmin=-50, vmax=50, cmap=cmap_c)
+        #range
+        h = ax.pcolormesh(lon_array, lat_array,array, norm =  norm, cmap=cmap_r)
+
         cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03, format="$%.2f$")
         cbar.ax.tick_params(labelsize=15)
-        cbar.set_label(label=f'Coverage(%)', size=15)
+        cbar.set_label(label=f'RPD(%)', size=15)
         ax.set_title(title)
         file_out = os.path.join(os.path.dirname(file_coverage), f'{variable.upper()}.png')
         fig.savefig(file_out, dpi=300, bbox_inches='tight')
         plt.close(fig)
 
+    variables = ['mapd_cdf', 'mapd_nocdf', 'mapd','mapd_cdf_complete']
+    titles = [f'Mean APD (%) - Only CDF', f'Mean APD (%) - Only NO CDF', f'Mean APD (%) - All data',f'Mean APD(%) - Only CDF Complete']
+    for variable, title in zip(variables, titles):
+        array = dataset.variables[variable][:]
+        # ranged color maps
+        bounds = [0, 5, 10, 20, 30, 40, 50, 1000]
+        norm = colors.BoundaryNorm(boundaries=bounds, ncolors=len(bounds) + 1)
+        cmap_r = mpl.colormaps['jet'].resampled(len(bounds) + 1)
+        # continous color maps
+        cmap_c = mpl.colormaps['jet']
+        fig, ax = start_full_figure()
+        # continued
+        # h = ax.pcolormesh(lon_array, lat_array, array, vmin=-50, vmax=50, cmap=cmap_c)
+        # range
+        h = ax.pcolormesh(lon_array, lat_array, array, norm=norm, cmap=cmap_r)
 
-
-
-    # variables = ['mrpd_cdf','mrpd_nocdf','mrpd','mrpd_cdf_complete']
-    # titles = [f'Mean RPD (%) - Only CDF', f'Mean RPD (%) - Only NO CDF',f'Mean RPD (%) - All data',f'Mean RPD(%) - Only CDF Complete']
-    # for variable,title in zip(variables,titles):
-    #     array = dataset.variables[variable][:]
-    #     fig, ax = start_full_figure()
-    #     h = ax.pcolormesh(lon_array, lat_array,array, vmin=-50, vmax=50, cmap=mpl.colormaps['jet'])
-    #     cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03, format="$%.2f$")
-    #     cbar.ax.tick_params(labelsize=15)
-    #     cbar.set_label(label=f'RPD(%)', size=15)
-    #     ax.set_title(title)
-    #     file_out = os.path.join(os.path.dirname(file_coverage), f'{variable.upper()}.png')
-    #     fig.savefig(file_out, dpi=300, bbox_inches='tight')
-    #     plt.close(fig)
-    #
-    # variables = ['mapd_cdf', 'mapd_nocdf', 'mapd','mapd_cdf_complete']
-    # titles = [f'Mean APD (%) - Only CDF', f'Mean APD (%) - Only NO CDF', f'Mean APD (%) - All data',f'Mean APD(%) - Only CDF Complete']
-    # for variable, title in zip(variables, titles):
-    #     array = dataset.variables[variable][:]
-    #     fig, ax = start_full_figure()
-    #     h = ax.pcolormesh(lon_array, lat_array, array, cmap=mpl.colormaps['jet'], vmin=0,vmax=50)
-    #     cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03, format="$%.2f$")
-    #     cbar.ax.tick_params(labelsize=15)
-    #     cbar.set_label(label=f'APD(%)', size=15)
-    #     ax.set_title(title)
-    #     file_out = os.path.join(os.path.dirname(file_coverage), f'{variable.upper()}.png')
-    #     fig.savefig(file_out, dpi=300, bbox_inches='tight')
-    #     plt.close(fig)
+        cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03, format="$%.2f$")
+        cbar.ax.tick_params(labelsize=15)
+        cbar.set_label(label=f'APD(%)', size=15)
+        ax.set_title(title)
+        file_out = os.path.join(os.path.dirname(file_coverage), f'{variable.upper()}.png')
+        fig.savefig(file_out, dpi=300, bbox_inches='tight')
+        plt.close(fig)
 
 
 
@@ -478,8 +499,8 @@ def plot_coverage():
     return True
 
 def main():
-    # if plot_coverage():
-    #     return
+    if plot_coverage():
+        return
     # if compare_old_new_v2():
     #     return
     # if compute_diff():
@@ -771,6 +792,9 @@ def launch_single_map(dataset, output_path, dateherestr):
     # dataset.close()
 
     #multiple plot
+    file_out = os.path.join(os.path.dirname(output_path), f'Img_DayAll_{dateherestr}.png')
+    if os.path.exist(file_out):
+        return
     fig, ax = plt.subplots(2, 3, figsize=(15, 6), frameon=True, gridspec_kw={'wspace': 0, 'hspace': 0})
     from matplotlib import image as img
     files_img = [[f'Img_Chla_{dateherestr}.png',f'Img_FlagMultiple_{dateherestr}.png',f'Img_FlagCyano_{dateherestr}.png'],
@@ -783,8 +807,8 @@ def launch_single_map(dataset, output_path, dateherestr):
             ax[irow, icol].set_xticks([])
             ax[irow, icol].set_yticks([])
     fig.tight_layout()
-    file_out = os.path.join(os.path.dirname(output_path), f'Img_DayAll_{dateherestr}.png')
     plt.savefig(file_out, dpi=300, bbox_inches='tight', facecolor='white')
+    plt.close(fig)
 
 
     print(f'[INFO] Completed')
