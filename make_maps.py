@@ -793,7 +793,7 @@ def launch_single_map(dataset, output_path, dateherestr):
 
     #multiple plot
     file_out = os.path.join(os.path.dirname(output_path), f'Img_DayAll_{dateherestr}.png')
-    if os.path.exist(file_out):
+    if os.path.exists(file_out):
         return
     fig, ax = plt.subplots(2, 3, figsize=(15, 6), frameon=True, gridspec_kw={'wspace': 0, 'hspace': 0})
     from matplotlib import image as img
