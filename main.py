@@ -402,7 +402,8 @@ def check():
 
 def do_script_bal_cci():
     print('HERE')
-    base = 'python /store/COP2-OC-TAC/BAL_Evolutions/slurmscripts_202411/aceasy/main.py -ac BAL202411 -p /store3/OC/CCI_v2017/V6/$NAME$ -o /store3/OC/CCI_v2017/daily_v202411 -v'
+    #base = 'python /store/COP2-OC-TAC/BAL_Evolutions/slurmscripts_202411/aceasy/main.py -ac BAL202411 -p /store3/OC/CCI_v2017/V6/$NAME$ -o /store3/OC/CCI_v2017/daily_v202411 -v'
+    base = 'python /store/COP2-OC-TAC/BAL_Evolutions/slurmscripts_202411/aceasy/main.py -ac BAL202411 -type olci_l3 -p /store/COP2-OC-TAC/BAL_Evolutions/POLYMERWHPC/2018/$NAME$ -o /store3/OC/CCI_v2017/daily_olci_v202411 -v'
     #M2015308.0000.bal.all_products.CCI.04Nov150000.v0.20153080000.data.nc
     format_name = 'M$DATE1$.0000.bal.all_products.CCI.$DATE2$0000.v0.$DATE1$0000.data.nc'
     from datetime import datetime as dt
@@ -415,14 +416,15 @@ def do_script_bal_cci():
     start_date = dt(2018,6,1)
     end_date = dt(2018,9,30)
     date_here = start_date
-    file_out = '/mnt/c/DATA_LUIS/OCTAC_WORK/MATCH-UPS_ANALYSIS_2024/BAL/temp.txt'
+    file_out = '/mnt/c/DATA_LUIS/OCTAC_WORK/MATCH-UPS_ANALYSIS_2024/BAL/temp_olci.txt'
     fw = open(file_out,'w')
     while date_here<=end_date:
         date_here =date_here + timedelta(hours=24)
-        date1 = date_here.strftime('%Y%j')
-        date2 = date_here.strftime('%d%b%y')
-        name = format_name.replace('$DATE1$', date1)
-        name = name.replace('$DATE2$', date2)
+        # date1 = date_here.strftime('%Y%j')
+        # date2 = date_here.strftime('%d%b%y')
+        # name = format_name.replace('$DATE1$', date1)
+        # name = name.replace('$DATE2$', date2)
+        name =date_here.strftime('%j')
         src = base.replace('$NAME$', name)
         fw.write('\n')
         fw.write(src)
@@ -444,7 +446,7 @@ def do_script_bal_cci():
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    # print('[INFO] Started')
+    print('[INFO] Started')
     # b = do_script_bal_cci()
     # if b:
     #     sys.exit()
