@@ -513,6 +513,8 @@ def main():
 
 def launch_multiple_maps(input_dir):
     for name in os.listdir(input_dir):
+        if not name.endswith('.nc'):
+            continue
         input_path = os.path.join(input_dir, name)
         date_here_str = get_date_here_from_file_name(input_path)
 
