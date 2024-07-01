@@ -129,7 +129,146 @@ def compute_diff():
     return True
 
 
-def compare_old_new():
+##using complete diff files, local
+def compare_old_new_v2():
+    from datetime import datetime as dt
+    from datetime import timedelta
+    dir_daily_diff = '/mnt/c/DATA_LUIS/OCTAC_WORK/MATCH-UPS_ANALYSIS_2024/BAL/CODE_DAVIDE_2024/daily_diff'
+    file_out = '/mnt/c/DATA_LUIS/OCTAC_WORK/MATCH-UPS_ANALYSIS_2024/BAL/CODE_DAVIDE_2024/CoverageNew_v2.nc'
+    date_here = dt(2018, 6, 1)
+    end_date = dt(2018, 9, 30)
+
+    sum_rpd_cdf = np.ma.zeros((1147, 1185))
+    sum_apd_cdf = np.ma.zeros((1147, 1185))
+    n_cdf_total = np.ma.zeros((1147, 1185))
+
+    sum_rpd_nocdf = np.ma.zeros((1147, 1185))
+    sum_apd_nocdf = np.ma.zeros((1147, 1185))
+    n_nocdf_total = np.ma.zeros((1147, 1185))
+
+    sum_rpd = np.ma.zeros((1147, 1185))
+    sum_apd = np.ma.zeros((1147, 1185))
+    n_total = np.ma.zeros((1147, 1185))
+
+    sum_rpd_cdf_complete = np.ma.zeros((1147, 1185))
+    sum_apd_cdf_complete = np.ma.zeros((1147, 1185))
+    n_cdf_complete_total = np.ma.zeros((1147, 1185))
+
+    sum_weight_mpl3 = np.ma.zeros((1147, 1185))
+    sum_weight_mpl4 = np.ma.zeros((1147, 1185))
+    sum_weight_mpl5 = np.ma.zeros((1147, 1185))
+
+
+    nc_out = None
+    while date_here <= end_date:
+
+        date = date_here.strftime('%Y%j')
+        file_diff = os.path.join(dir_daily_diff,f'Diff_Completed_{date}.nc')
+        #print(file_diff)
+        if not os.path.exists(file_diff):
+            date_here = date_here + timedelta(hours=24)
+            continue
+        print('-------------------------------------------------------------------')
+        print(date_here)
+        dataset = Dataset(file_diff)
+        if nc_out is None:
+            print('Starting nc_out')
+            nc_out = Dataset(file_out, 'w')
+            # copy dimensions
+            for name, dimension in dataset.dimensions.items():
+                nc_out.createDimension(name, (len(dimension) if not dimension.isunlimited() else None))
+            lat_array = dataset.variables['latitude'][:]
+            lon_array = dataset.variables['longitude'][:]
+            nc_out.createVariable('latitude', 'f4', ('lat',), fill_value=-999.0, zlib=True, complevel=6)
+            nc_out['latitude'][:] = lat_array
+            nc_out.createVariable('longitude', 'f4', ('lon',), fill_value=-999.0, zlib=True, complevel=6)
+            nc_out['longitude'][:] = lon_array
+
+
+        flag_multiple = dataset.variables['cdf_flag_multiple'][:]
+        chl_rpd = dataset.variables['chl_rpd'][:]
+        chl_apd = dataset.variables['chl_apd'][:]
+
+        sum_rpd_cdf[flag_multiple >= 2] = sum_rpd_cdf[flag_multiple >= 2] + chl_rpd[flag_multiple >= 2]
+        sum_apd_cdf[flag_multiple >= 2] = sum_apd_cdf[flag_multiple >= 2] + chl_apd[flag_multiple >= 2]
+        n_cdf_total[flag_multiple >= 2] = n_cdf_total[flag_multiple >= 2] + 1
+
+        sum_rpd_nocdf[flag_multiple == 1] = sum_rpd_nocdf[flag_multiple == 1] + chl_rpd[flag_multiple == 1]
+        sum_apd_nocdf[flag_multiple == 1] = sum_apd_nocdf[flag_multiple == 1] + chl_apd[flag_multiple == 1]
+        n_nocdf_total[flag_multiple == 1] = n_nocdf_total[flag_multiple == 1] + 1
+
+        sum_rpd[flag_multiple >= 1] = sum_rpd[flag_multiple >= 1] + chl_rpd[flag_multiple >= 1]
+        sum_apd[flag_multiple >= 1] = sum_apd[flag_multiple >= 1] + chl_apd[flag_multiple >= 1]
+        n_total[flag_multiple >= 1] = n_total[flag_multiple >= 1] + 1
+
+        sum_rpd_cdf_complete[flag_multiple == 14] = sum_rpd_cdf_complete[flag_multiple == 14] + chl_rpd[flag_multiple == 14]
+        sum_apd_cdf_complete[flag_multiple == 14] = sum_apd_cdf_complete[flag_multiple == 14] + chl_apd[flag_multiple == 14]
+        n_cdf_complete_total[flag_multiple == 14] = n_cdf_complete_total[flag_multiple == 14] + 1
+
+        weight_mpl3 = dataset.variables['weight_mlp_3b'][:]
+        sum_weight_mpl3 = sum_weight_mpl3 + np.ma.filled(weight_mpl3,0)
+
+        weight_mpl4 = dataset.variables['weight_mlp_4b'][:]
+        sum_weight_mpl4 = sum_weight_mpl4 + np.ma.filled(weight_mpl4, 0)
+
+        weight_mpl5 = dataset.variables['weight_mlp_5b'][:]
+        sum_weight_mpl5 = sum_weight_mpl5 + np.ma.filled(weight_mpl5, 0)
+
+
+        dataset.close()
+        date_here = date_here + timedelta(hours=24)
+
+    n_cdf_total = np.ma.masked_equal(n_cdf_total, 0)
+    n_nocdf_total = np.ma.masked_equal(n_nocdf_total, 0)
+    n_total = np.ma.masked_equal(n_total, 0)
+    n_cdf_complete_total = np.ma.masked_equal(n_cdf_complete_total,0)
+    coverage_cdf = (n_cdf_total / n_total) * 100
+    coverage_no_cdf = (n_nocdf_total / n_total) * 100
+
+    mrpd_cdf = sum_rpd_cdf/n_cdf_total
+    mapd_cdf = sum_apd_cdf/n_cdf_total
+    mrpd_nocdf = sum_rpd_nocdf / n_nocdf_total
+    mapd_nocdf = sum_apd_nocdf / n_nocdf_total
+    mrpd = sum_rpd/n_total
+    mapd = sum_apd/n_total
+    mrpd_cdf_complete = sum_rpd_cdf_complete / n_cdf_complete_total
+    mapd_cdf_complete = sum_apd_cdf_complete / n_cdf_complete_total
+
+    coverage_mlp3 = (sum_weight_mpl3 / n_cdf_total) * 100
+    coverage_mlp4 = (sum_weight_mpl4 / n_cdf_total) * 100
+    coverage_mlp5 = (sum_weight_mpl5 / n_cdf_total) * 100
+
+
+    variable_list = {
+        'n_total': n_total,
+        'n_cdf_total': n_cdf_total,
+        'n_nocdf_total': n_nocdf_total,
+        'coverage_cdf': coverage_cdf,
+        'coverage_nocdf': coverage_no_cdf,
+        'mrpd_cdf': mrpd_cdf,
+        'mapd_cdf': mapd_cdf,
+        'mrpd_nocdf': mrpd_nocdf,
+        'mapd_nocdf': mapd_nocdf,
+        'mrpd': mrpd,
+        'mapd': mapd,
+        'mrpd_cdf_complete': mrpd_cdf_complete,
+        'mapd_cdf_complete': mapd_cdf_complete,
+        'coverage_mlp3':coverage_mlp3,
+        'coverage_mlp4': coverage_mlp4,
+        'coverage_mlp5': coverage_mlp5,
+    }
+    for name_var in variable_list.keys():
+        array = variable_list[name_var]
+        nc_out.createVariable(name_var, 'f4', ('lat', 'lon'), fill_value=-999.0, zlib=True, complevel=6)
+        nc_out[name_var][:] = array
+    nc_out.close()
+
+
+
+
+    return True
+##using incomplete diff files
+def compare_old_new_v1():
     from datetime import datetime as dt
     from datetime import timedelta
     dir_base_new = '/store3/OC/CCI_v2017/daily_v202411'
@@ -253,7 +392,7 @@ def compare_old_new():
     return True
 
 def plot_coverage():
-    file_coverage = '/mnt/c/DATA_LUIS/OCTAC_WORK/MATCH-UPS_ANALYSIS_2024/BAL/CODE_DAVIDE_2024/CoverageNew.nc'
+    file_coverage = '/mnt/c/DATA_LUIS/OCTAC_WORK/MATCH-UPS_ANALYSIS_2024/BAL/CODE_DAVIDE_2024/CoverageNew_v2.nc'
     dataset = Dataset(file_coverage)
     lat_array = dataset.variables['latitude'][:]
     lon_array = dataset.variables['longitude'][:]
@@ -282,16 +421,69 @@ def plot_coverage():
     fig.savefig(file_out, dpi=300, bbox_inches='tight')
     plt.close(fig)
 
+    coverage_variables = ['coverage_mlp3','coverage_mlp4','coverage_mlp5']
+    titles = ['Coverage MLP 3 bands','Coverage MLP 4 bands','Coverage MLP 5 bands']
+    for variable,title in zip(coverage_variables,titles):
+        coverage = dataset.variables[variable][:]
+        fig, ax = start_full_figure()
+        h = ax.pcolormesh(lon_array, lat_array, coverage, vmin=0, vmax=100, cmap=mpl.colormaps['jet'])
+        cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03, format="$%.2f$")
+        cbar.ax.tick_params(labelsize=15)
+        cbar.set_label(label=f'Coverage(%)', size=15)
+        ax.set_title(title)
+        file_out = os.path.join(os.path.dirname(file_coverage), f'{variable.upper()}.png')
+        fig.savefig(file_out, dpi=300, bbox_inches='tight')
+        plt.close(fig)
+
+
+
+
+    # variables = ['mrpd_cdf','mrpd_nocdf','mrpd','mrpd_cdf_complete']
+    # titles = [f'Mean RPD (%) - Only CDF', f'Mean RPD (%) - Only NO CDF',f'Mean RPD (%) - All data',f'Mean RPD(%) - Only CDF Complete']
+    # for variable,title in zip(variables,titles):
+    #     array = dataset.variables[variable][:]
+    #     fig, ax = start_full_figure()
+    #     h = ax.pcolormesh(lon_array, lat_array,array, vmin=-50, vmax=50, cmap=mpl.colormaps['jet'])
+    #     cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03, format="$%.2f$")
+    #     cbar.ax.tick_params(labelsize=15)
+    #     cbar.set_label(label=f'RPD(%)', size=15)
+    #     ax.set_title(title)
+    #     file_out = os.path.join(os.path.dirname(file_coverage), f'{variable.upper()}.png')
+    #     fig.savefig(file_out, dpi=300, bbox_inches='tight')
+    #     plt.close(fig)
+    #
+    # variables = ['mapd_cdf', 'mapd_nocdf', 'mapd','mapd_cdf_complete']
+    # titles = [f'Mean APD (%) - Only CDF', f'Mean APD (%) - Only NO CDF', f'Mean APD (%) - All data',f'Mean APD(%) - Only CDF Complete']
+    # for variable, title in zip(variables, titles):
+    #     array = dataset.variables[variable][:]
+    #     fig, ax = start_full_figure()
+    #     h = ax.pcolormesh(lon_array, lat_array, array, cmap=mpl.colormaps['jet'], vmin=0,vmax=50)
+    #     cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03, format="$%.2f$")
+    #     cbar.ax.tick_params(labelsize=15)
+    #     cbar.set_label(label=f'APD(%)', size=15)
+    #     ax.set_title(title)
+    #     file_out = os.path.join(os.path.dirname(file_coverage), f'{variable.upper()}.png')
+    #     fig.savefig(file_out, dpi=300, bbox_inches='tight')
+    #     plt.close(fig)
+
+
+
+
+
+
+
+
+
     dataset.close()
     return True
 
 def main():
     # if plot_coverage():
     #     return
-    # if compare_old_new():
+    # if compare_old_new_v2():
     #     return
-    if compute_diff():
-        return
+    # if compute_diff():
+    #     return
 
     input_path = args.input_path
 
@@ -474,114 +666,114 @@ def launch_single_map(dataset, output_path, dateherestr):
     # fig.savefig(output_path, dpi=300, bbox_inches='tight')
     # plt.close(fig)
 
-    # ##chl-a
-    # fig,ax = start_full_figure()
-    # min_chla = np.percentile(data_stats, 1)
-    # max_chla = np.percentile(data_stats, 99)
-    # h = ax.pcolormesh(lon_array,lat_array,data,norm=LogNorm(vmin=min_chla, vmax=max_chla))
-    # cbar = fig.colorbar(h,cax = None, ax = ax, use_gridspec = True, fraction=0.03,format="$%.2f$")
-    # cbar.ax.tick_params(labelsize=15)
-    # units = r'mg m$^-$$^3$'
-    # cbar.set_label(label=f'CHL ({units})', size=15)
-    # title = f'Chlorophyll a concentration ({units})'
-    # if dateherestr is not None:
-    #     title = f'{title} - {dateherestr}'
-    # ax.set_title(title, fontsize=20)
-    # output_path_here = os.path.join(os.path.dirname(output_path), f'Img_Chla_{dateherestr}.png')
-    # fig.savefig(output_path_here, dpi=300, bbox_inches='tight')
-    # plt.close(fig)
-    #
-    # #cdf flag
-    # cdf_mlp3b = dataset.variables['CDF_MLP3B'][:]
-    # cdf_mlp4b = dataset.variables['CDF_MLP4B'][:]
-    # cdf_mlp5b = dataset.variables['CDF_MLP5B'][:]
-    # cdf_mask_mlp3b = np.ma.where(cdf_mlp3b >= 0.001,2,0)
-    # cdf_mask_mlp4b = np.ma.where(cdf_mlp4b >= 0.001,4,0)
-    # cdf_mask_mlp5b = np.ma.where(cdf_mlp5b >= 0.001,8,0)
-    # cdf_flag_multiple = np.ma.filled(cdf_mask_mlp3b,0)+np.ma.filled(cdf_mask_mlp4b,0)+np.ma.filled(cdf_mask_mlp5b,0)
-    # cdf_flag_multiple[cdf_flag_multiple == 0] = 1
-    # cdf_flag_multiple = np.ma.array(cdf_flag_multiple,mask=(cdf_mlp3b.mask*cdf_mask_mlp4b.mask*cdf_mask_mlp5b.mask))
-    #
-    # cdf_mlp3b = np.ma.masked_less(cdf_mlp3b, 0.001)
-    # cdf_mlp4b = np.ma.masked_less(cdf_mlp4b, 0.001)
-    # cdf_mlp5b = np.ma.masked_less(cdf_mlp5b, 0.001)
-    # cdf_sum = np.ma.filled(cdf_mlp3b,0) + np.ma.filled(cdf_mlp4b,0) + np.ma.filled(cdf_mlp5b,0)
-    # weight_mlp3b = np.ma.divide(cdf_mlp3b, cdf_sum)
-    # weight_mlp4b = np.ma.divide(cdf_mlp4b, cdf_sum)
-    # weight_mlp5b = np.ma.divide(cdf_mlp5b, cdf_sum)
-    #
-    #
-    #
-    # weight_arrays = [weight_mlp3b, weight_mlp4b, weight_mlp5b]
-    # titles = ['Weight CDF MLP3B','Weight CDF MLP4B','Weight CDF MLP5B']
-    # ##weight arrays
-    # for idx in range(len(weight_arrays)):
-    #     fig, ax = start_full_figure()
-    #     array = weight_arrays[idx]
-    #     h = ax.pcolormesh(lon_array, lat_array,array,cmap = mpl.colormaps['jet'],vmin=0,vmax=1)
-    #     cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03, format="$%.2f$")
-    #     cbar.ax.tick_params(labelsize=15)
-    #     cbar.set_label(label=f'Weight', size=15)
-    #     title = titles[idx]
-    #     if dateherestr is not None:
-    #         title = f'{title} - {dateherestr}'
-    #     ax.set_title(title, fontsize=20)
-    #     name = title.replace(' ','_')
-    #     output_path_here = os.path.join(os.path.dirname(output_path), f'Img_{name}_.png')
-    #     fig.savefig(output_path_here, dpi=300, bbox_inches='tight')
-    #     plt.close(fig)
-    #
-    #
-    # ##flag multiple
-    # fig, ax = start_full_figure()
-    # bounds = [1, 2, 4, 6, 8, 10, 12, 14, 15]
-    # norm = colors.BoundaryNorm(boundaries=bounds, ncolors=9)
-    # h = ax.pcolormesh(lon_array, lat_array, cdf_flag_multiple,norm = norm, cmap = mpl.colormaps['Set1'])
-    # cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03,format="$%.2f$")
-    # cbar.ax.tick_params(labelsize=15)
-    # cbar.set_label(label=f'CDF Flag Multiple', size=15)
-    # title = f'CDF Flag Multiple'
-    # if dateherestr is not None:
-    #     title = f'{title} - {dateherestr}'
-    # ax.set_title(title, fontsize=20)
-    # output_path_here = os.path.join(os.path.dirname(output_path),f'Img_FlagMultiple_{dateherestr}.png')
-    # fig.savefig(output_path_here, dpi=300, bbox_inches='tight')
-    # plt.close(fig)
-    #
-    # ##flag_cyano
-    # rrs555 = dataset.variables['RRS560'][:]
-    # rrs670 = dataset.variables['RRS665'][:]
-    # rrs555 = rrs555 * np.pi
-    # rrs670 = rrs670 * np.pi
-    # mask_cyano = np.zeros(rrs670.shape)
-    # mask_cyano[rrs555 > 4.25e-3] = mask_cyano[rrs555 > 4.25e-3] + 1
-    # mask_cyano[rrs670 > 1.22e-3] = mask_cyano[rrs670 > 1.22e-3] + 2
-    # mask_cyano = np.ma.array(mask_cyano,mask = cdf_flag_multiple.mask)
-    # fig, ax = start_full_figure()
-    # bounds = [0, 1, 2, 3, 4]
-    # norm = colors.BoundaryNorm(boundaries=bounds, ncolors=5)
-    # newcolors = ['blue','red','green','purple']
-    # newcmp = ListedColormap(newcolors)
-    # h = ax.pcolormesh(lon_array, lat_array, mask_cyano, norm=norm, cmap=newcmp)
-    # cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03, format="$%.2f$")
-    # cbar.ax.tick_params(labelsize=15)
-    # cbar.set_label(label=f'Flag Cyano', size=15)
-    # title = f'Cyanobacterial flag'
-    # if dateherestr is not None:
-    #     title = f'{title} - {dateherestr}'
-    # ax.set_title(title, fontsize=20)
-    # output_path_here = os.path.join(os.path.dirname(output_path), f'Img_FlagCyano_{dateherestr}.png')
-    # fig.savefig(output_path_here, dpi=300, bbox_inches='tight')
-    # plt.close(fig)
-    #
-    # dataset.close()
+    ##chl-a
+    fig,ax = start_full_figure()
+    min_chla = np.percentile(data_stats, 1)
+    max_chla = np.percentile(data_stats, 99)
+    h = ax.pcolormesh(lon_array,lat_array,data,norm=LogNorm(vmin=min_chla, vmax=max_chla))
+    cbar = fig.colorbar(h,cax = None, ax = ax, use_gridspec = True, fraction=0.03,format="$%.2f$")
+    cbar.ax.tick_params(labelsize=15)
+    units = r'mg m$^-$$^3$'
+    cbar.set_label(label=f'CHL ({units})', size=15)
+    title = f'Chlorophyll a concentration ({units})'
+    if dateherestr is not None:
+        title = f'{title} - {dateherestr}'
+    ax.set_title(title, fontsize=20)
+    output_path_here = os.path.join(os.path.dirname(output_path), f'Img_Chla_{dateherestr}.png')
+    fig.savefig(output_path_here, dpi=300, bbox_inches='tight')
+    plt.close(fig)
+
+    #cdf flag
+    cdf_mlp3b = dataset.variables['CDF_MLP3B'][:]
+    cdf_mlp4b = dataset.variables['CDF_MLP4B'][:]
+    cdf_mlp5b = dataset.variables['CDF_MLP5B'][:]
+    cdf_mask_mlp3b = np.ma.where(cdf_mlp3b >= 0.001,2,0)
+    cdf_mask_mlp4b = np.ma.where(cdf_mlp4b >= 0.001,4,0)
+    cdf_mask_mlp5b = np.ma.where(cdf_mlp5b >= 0.001,8,0)
+    cdf_flag_multiple = np.ma.filled(cdf_mask_mlp3b,0)+np.ma.filled(cdf_mask_mlp4b,0)+np.ma.filled(cdf_mask_mlp5b,0)
+    cdf_flag_multiple[cdf_flag_multiple == 0] = 1
+    cdf_flag_multiple = np.ma.array(cdf_flag_multiple,mask=(cdf_mlp3b.mask*cdf_mask_mlp4b.mask*cdf_mask_mlp5b.mask))
+
+    cdf_mlp3b = np.ma.masked_less(cdf_mlp3b, 0.001)
+    cdf_mlp4b = np.ma.masked_less(cdf_mlp4b, 0.001)
+    cdf_mlp5b = np.ma.masked_less(cdf_mlp5b, 0.001)
+    cdf_sum = np.ma.filled(cdf_mlp3b,0) + np.ma.filled(cdf_mlp4b,0) + np.ma.filled(cdf_mlp5b,0)
+    weight_mlp3b = np.ma.divide(cdf_mlp3b, cdf_sum)
+    weight_mlp4b = np.ma.divide(cdf_mlp4b, cdf_sum)
+    weight_mlp5b = np.ma.divide(cdf_mlp5b, cdf_sum)
+
+
+
+    weight_arrays = [weight_mlp3b, weight_mlp4b, weight_mlp5b]
+    titles = ['Weight CDF MLP3B','Weight CDF MLP4B','Weight CDF MLP5B']
+    ##weight arrays
+    for idx in range(len(weight_arrays)):
+        fig, ax = start_full_figure()
+        array = weight_arrays[idx]
+        h = ax.pcolormesh(lon_array, lat_array,array,cmap = mpl.colormaps['jet'],vmin=0,vmax=1)
+        cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03, format="$%.2f$")
+        cbar.ax.tick_params(labelsize=15)
+        cbar.set_label(label=f'Weight', size=15)
+        title = titles[idx]
+        if dateherestr is not None:
+            title = f'{title} - {dateherestr}'
+        ax.set_title(title, fontsize=20)
+        name = title.replace(' ','_')
+        output_path_here = os.path.join(os.path.dirname(output_path), f'Img_{name}_.png')
+        fig.savefig(output_path_here, dpi=300, bbox_inches='tight')
+        plt.close(fig)
+
+
+    ##flag multiple
+    fig, ax = start_full_figure()
+    bounds = [1, 2, 4, 6, 8, 10, 12, 14, 15]
+    norm = colors.BoundaryNorm(boundaries=bounds, ncolors=9)
+    h = ax.pcolormesh(lon_array, lat_array, cdf_flag_multiple,norm = norm, cmap = mpl.colormaps['Set1'])
+    cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03,format="$%.2f$")
+    cbar.ax.tick_params(labelsize=15)
+    cbar.set_label(label=f'CDF Flag Multiple', size=15)
+    title = f'CDF Flag Multiple'
+    if dateherestr is not None:
+        title = f'{title} - {dateherestr}'
+    ax.set_title(title, fontsize=20)
+    output_path_here = os.path.join(os.path.dirname(output_path),f'Img_FlagMultiple_{dateherestr}.png')
+    fig.savefig(output_path_here, dpi=300, bbox_inches='tight')
+    plt.close(fig)
+
+    ##flag_cyano
+    rrs555 = dataset.variables['RRS560'][:]
+    rrs670 = dataset.variables['RRS665'][:]
+    rrs555 = rrs555 * np.pi
+    rrs670 = rrs670 * np.pi
+    mask_cyano = np.zeros(rrs670.shape)
+    mask_cyano[rrs555 > 4.25e-3] = mask_cyano[rrs555 > 4.25e-3] + 1
+    mask_cyano[rrs670 > 1.22e-3] = mask_cyano[rrs670 > 1.22e-3] + 2
+    mask_cyano = np.ma.array(mask_cyano,mask = cdf_flag_multiple.mask)
+    fig, ax = start_full_figure()
+    bounds = [0, 1, 2, 3, 4]
+    norm = colors.BoundaryNorm(boundaries=bounds, ncolors=5)
+    newcolors = ['blue','red','green','purple']
+    newcmp = ListedColormap(newcolors)
+    h = ax.pcolormesh(lon_array, lat_array, mask_cyano, norm=norm, cmap=newcmp)
+    cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03, format="$%.2f$")
+    cbar.ax.tick_params(labelsize=15)
+    cbar.set_label(label=f'Flag Cyano', size=15)
+    title = f'Cyanobacterial flag'
+    if dateherestr is not None:
+        title = f'{title} - {dateherestr}'
+    ax.set_title(title, fontsize=20)
+    output_path_here = os.path.join(os.path.dirname(output_path), f'Img_FlagCyano_{dateherestr}.png')
+    fig.savefig(output_path_here, dpi=300, bbox_inches='tight')
+    plt.close(fig)
+
+    dataset.close()
 
     ##multiple plot
     fig, ax = plt.subplots(2, 3, figsize=(15, 6), frameon=True, gridspec_kw={'wspace': 0, 'hspace': 0})
     from matplotlib import image as img
     files_img = [[f'Img_Chla_{dateherestr}.png',f'Img_FlagMultiple_{dateherestr}.png',f'Img_FlagCyano_{dateherestr}.png'],
                  [f'Img_Weight_CDF_MLP3B_-_{dateherestr}_.png',f'Img_Weight_CDF_MLP4B_-_{dateherestr}_.png',f'Img_Weight_CDF_MLP5B_-_{dateherestr}_.png']]
-    print(files_img)
+    #print(files_img)
 
     for irow in range(2):
         for icol in range(3):
