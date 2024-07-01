@@ -667,21 +667,21 @@ def launch_single_map(dataset, output_path, dateherestr):
     # plt.close(fig)
 
     ##chl-a
-    fig,ax = start_full_figure()
-    min_chla = np.percentile(data_stats, 1)
-    max_chla = np.percentile(data_stats, 99)
-    h = ax.pcolormesh(lon_array,lat_array,data,norm=LogNorm(vmin=min_chla, vmax=max_chla))
-    cbar = fig.colorbar(h,cax = None, ax = ax, use_gridspec = True, fraction=0.03,format="$%.2f$")
-    cbar.ax.tick_params(labelsize=15)
-    units = r'mg m$^-$$^3$'
-    cbar.set_label(label=f'CHL ({units})', size=15)
-    title = f'Chlorophyll a concentration ({units})'
-    if dateherestr is not None:
-        title = f'{title} - {dateherestr}'
-    ax.set_title(title, fontsize=20)
-    output_path_here = os.path.join(os.path.dirname(output_path), f'Img_Chla_{dateherestr}.png')
-    fig.savefig(output_path_here, dpi=300, bbox_inches='tight')
-    plt.close(fig)
+    # fig,ax = start_full_figure()
+    # min_chla = np.percentile(data_stats, 1)
+    # max_chla = np.percentile(data_stats, 99)
+    # h = ax.pcolormesh(lon_array,lat_array,data,norm=LogNorm(vmin=min_chla, vmax=max_chla))
+    # cbar = fig.colorbar(h,cax = None, ax = ax, use_gridspec = True, fraction=0.03,format="$%.2f$")
+    # cbar.ax.tick_params(labelsize=15)
+    # units = r'mg m$^-$$^3$'
+    # cbar.set_label(label=f'CHL ({units})', size=15)
+    # title = f'Chlorophyll a concentration ({units})'
+    # if dateherestr is not None:
+    #     title = f'{title} - {dateherestr}'
+    # ax.set_title(title, fontsize=20)
+    # output_path_here = os.path.join(os.path.dirname(output_path), f'Img_Chla_{dateherestr}.png')
+    # fig.savefig(output_path_here, dpi=300, bbox_inches='tight')
+    # plt.close(fig)
 
     #cdf flag
     cdf_mlp3b = dataset.variables['CDF_MLP3B'][:]
@@ -707,21 +707,21 @@ def launch_single_map(dataset, output_path, dateherestr):
     weight_arrays = [weight_mlp3b, weight_mlp4b, weight_mlp5b]
     titles = ['Weight CDF MLP3B','Weight CDF MLP4B','Weight CDF MLP5B']
     ##weight arrays
-    # for idx in range(len(weight_arrays)):
-    #     fig, ax = start_full_figure()
-    #     array = weight_arrays[idx]
-    #     h = ax.pcolormesh(lon_array, lat_array,array,cmap = mpl.colormaps['jet'],vmin=0,vmax=1)
-    #     cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03, format="$%.2f$")
-    #     cbar.ax.tick_params(labelsize=15)
-    #     cbar.set_label(label=f'Weight', size=15)
-    #     title = titles[idx]
-    #     if dateherestr is not None:
-    #         title = f'{title} - {dateherestr}'
-    #     ax.set_title(title, fontsize=20)
-    #     name = title.replace(' ','_')
-    #     output_path_here = os.path.join(os.path.dirname(output_path), f'Img_{name}_.png')
-    #     fig.savefig(output_path_here, dpi=300, bbox_inches='tight')
-    #     plt.close(fig)
+    for idx in range(len(weight_arrays)):
+        fig, ax = start_full_figure()
+        array = weight_arrays[idx]
+        h = ax.pcolormesh(lon_array, lat_array,array,cmap = mpl.colormaps['jet'],vmin=0,vmax=1)
+        cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03, format="$%.2f$")
+        cbar.ax.tick_params(labelsize=15)
+        cbar.set_label(label=f'Weight', size=15)
+        title = titles[idx]
+        if dateherestr is not None:
+            title = f'{title} - {dateherestr}'
+        ax.set_title(title, fontsize=20)
+        name = title.replace(' ','_')
+        output_path_here = os.path.join(os.path.dirname(output_path), f'Img_{name}_.png')
+        fig.savefig(output_path_here, dpi=300, bbox_inches='tight')
+        plt.close(fig)
 
 
     ##flag multiple
