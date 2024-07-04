@@ -26,7 +26,7 @@ parser = argparse.ArgumentParser(description="Algorithm launcher")
 
 parser.add_argument("-v", "--verbose", help="Verbose mode.", action="store_true")
 parser.add_argument("-p", "--product", help="Input product (testing)")
-parser.add_argument("-csv","--input_csv", help="Input csv (testing)")
+parser.add_argument("-csv", "--input_csv", help="Input csv (testing)")
 parser.add_argument('-i', "--inputpath", help="Input directory")
 parser.add_argument('-o', "--outputpath", help="Output directory", required=True)
 parser.add_argument('-tp', "--temp_path", help="Temporary directory")
@@ -35,8 +35,13 @@ parser.add_argument('-ed', "--end_date", help="End date (yyyy-mm-dd")
 parser.add_argument('-wce', "--wce", help="Wild card expression")
 parser.add_argument('-c', "--config_file", help="Configuration file (Default: aceasy_config.ini)")
 parser.add_argument('-ac', "--atm_correction", help="Atmospheric correction",
-                    choices=["C2RCC", "POLYMER", "FUB_CSIRO", "ACOLITE", "IDEPIX", "BALMLP", "BALALL","QI","BAL202411"], required=True)
-parser.add_argument('-type',"--type_product",help="Type product for BAL202411",default="cci",choices=["cci","polymer","olci_l3"])
+                    choices=["C2RCC", "POLYMER", "FUB_CSIRO", "ACOLITE", "IDEPIX", "BALMLP", "BALALL", "QI",
+                             "BAL202411"], required=True)
+parser.add_argument('-type', "--type_product", help="Type product for Baltic_2024", default="cci",
+                    choices=["cci", "polymer", "olci_l3"])
+parser.add_argument('-type_polymer', "--type_product_polymer", help="Type product for POLYMER", default="cci",
+                    choices=["olci_l3", "s2_msi"])
+
 args = parser.parse_args()
 
 
@@ -67,6 +72,7 @@ def run_parallel_corrector(params):
 
     valid_input, iszipped_input = check_path_validity(path_product_input, None)
     if valid_input and not iszipped_input:
+        print(path_product_input,output_file)
         b = corrector.run_process(path_product_input, output_file)
 
         ##ERROR,WORKING WITH ALTERNATIVE PATH
@@ -108,6 +114,48 @@ def delete_unzipped_path(path_prod_u):
     cmd = f'rmdir {path_prod_u}'
     prog = subprocess.Popen(cmd, shell=True, stderr=subprocess.PIPE)
     out, err = prog.communicate()
+
+
+def get_input_path_folder(input_path, date_here, input_path_organization):
+    if input_path_organization is None:
+        return input_path
+    input_path_date = input_path
+    for fdate in input_path_organization.split('/'):
+        input_path_date = os.path.join(input_path_date, date_here.strftime(fdate.strip()))
+
+    return input_path_date
+    # year_str = date_here.strftime('%Y')
+    # day_str = date_here.strftime('%j')
+    # input_path_date = os.path.join(input_path, year_str, day_str)
+
+
+def get_output_path_jday(output_path, date_here):
+    year_str = date_here.strftime('%Y')
+    day_str = date_here.strftime('%j')
+    output_path_year = os.path.join(output_path, year_str)
+    if not os.path.exists(output_path_year):
+        st = os.stat(output_path)
+        os.chmod(output_path, st.st_mode | stat.S_IWOTH | stat.S_IWGRP)
+        os.mkdir(output_path_year)
+
+    output_path_jday = os.path.join(output_path_year, day_str)
+    if not os.path.exists(output_path_jday):
+        st = os.stat(output_path_year)
+        os.chmod(output_path_year, st.st_mode | stat.S_IWOTH | stat.S_IWGRP)
+        os.mkdir(output_path_jday)
+        st = os.stat(output_path_jday)
+        os.chmod(output_path_jday, st.st_mode | stat.S_IWOTH | stat.S_IWGRP)
+    return output_path_jday
+
+
+def get_input_path_cci_default(input_path, date_here):
+    format_name = 'M$DATE1$.0000.bal.all_products.CCI.$DATE2$0000.v0.$DATE1$0000.data.nc'
+    date1 = date_here.strftime('%Y%j')
+    date2 = date_here.strftime('%d%b%y')
+    name = format_name.replace('$DATE1$', date1)
+    name = name.replace('$DATE2$', date2)
+    input_file = os.path.join(input_path, name)
+    return input_file
 
 
 def get_geo_limits(option):
@@ -199,6 +247,13 @@ def check_path_validity(prod_path, prod_name):
     if args.atm_correction == 'BALALL':
         valid = True
         return valid, iszipped
+
+    if args.atm_correction == 'BAL202411':
+        if args.type_product=='cci' and prod_name.endswith('.nc'):
+            valid = True
+        else:
+            valid = False
+        return valid,iszipped
 
     if os.path.isdir(prod_path) and prod_name.endswith('.SEN3') and prod_name.find('EFR') > 0:
         valid = True
@@ -400,31 +455,32 @@ def check():
     dataset.close()
     return True
 
+
 def do_script_bal_cci():
     print('HERE')
-    #base = 'python /store/COP2-OC-TAC/BAL_Evolutions/slurmscripts_202411/aceasy/main.py -ac BAL202411 -p /store3/OC/CCI_v2017/V6/$NAME$ -o /store3/OC/CCI_v2017/daily_v202411 -v'
+    # base = 'python /store/COP2-OC-TAC/BAL_Evolutions/slurmscripts_202411/aceasy/main.py -ac BAL202411 -p /store3/OC/CCI_v2017/V6/$NAME$ -o /store3/OC/CCI_v2017/daily_v202411 -v'
     base = 'python /store/COP2-OC-TAC/BAL_Evolutions/slurmscripts_202411/aceasy/main.py -ac BAL202411 -type olci_l3 -p /store/COP2-OC-TAC/BAL_Evolutions/POLYMERWHPC/2018/$NAME$ -o /store3/OC/CCI_v2017/daily_olci_v202411 -v'
-    #M2015308.0000.bal.all_products.CCI.04Nov150000.v0.20153080000.data.nc
+    # M2015308.0000.bal.all_products.CCI.04Nov150000.v0.20153080000.data.nc
     format_name = 'M$DATE1$.0000.bal.all_products.CCI.$DATE2$0000.v0.$DATE1$0000.data.nc'
     from datetime import datetime as dt
     file_csv = '/mnt/c/DATA_LUIS/OCTAC_WORK/MATCH-UPS_ANALYSIS_2024/BAL/CSV_MATCH-UPS/MULTI/Baltic_CHLA_Valid_AllSources_1997-2023_FINAL_extracts_rrs_chl_3x3_filtered_match-ups.csv'
     import pandas as pd
     import numpy as np
-    df = pd.read_csv(file_csv,sep=';')
+    df = pd.read_csv(file_csv, sep=';')
     dates = np.array(df['DATE'])
     dates_unique = np.unique(dates)
-    start_date = dt(2018,6,1)
-    end_date = dt(2018,9,30)
+    start_date = dt(2018, 6, 1)
+    end_date = dt(2018, 9, 30)
     date_here = start_date
     file_out = '/mnt/c/DATA_LUIS/OCTAC_WORK/MATCH-UPS_ANALYSIS_2024/BAL/temp_olci.txt'
-    fw = open(file_out,'w')
-    while date_here<=end_date:
-        date_here =date_here + timedelta(hours=24)
+    fw = open(file_out, 'w')
+    while date_here <= end_date:
+        date_here = date_here + timedelta(hours=24)
         # date1 = date_here.strftime('%Y%j')
         # date2 = date_here.strftime('%d%b%y')
         # name = format_name.replace('$DATE1$', date1)
         # name = name.replace('$DATE2$', date2)
-        name =date_here.strftime('%j')
+        name = date_here.strftime('%j')
         src = base.replace('$NAME$', name)
         fw.write('\n')
         fw.write(src)
@@ -443,6 +499,37 @@ def do_script_bal_cci():
 
     fw.close()
     return True
+
+def get_dates_from_arg():
+    from datetime import datetime as dt
+    from datetime import timedelta
+    start_date = None
+    end_date = None
+    if args.start_date:
+        try:
+            start_date = dt.strptime(args.start_date, '%Y-%m-%d')
+        except:
+            try:
+                tdelta = int(args.start_date)
+                start_date = dt.now() + timedelta(days=tdelta)
+                start_date = start_date.replace(hour=12, minute=0, second=0, microsecond=0)
+            except:
+                print(f'[ERROR] Start date {args.start_date} is not in the correct format: YYYY-mm-dd or integer')
+    if args.end_date:
+        try:
+            end_date = dt.strptime(args.end_date, '%Y-%m-%d')
+        except:
+            try:
+                tdelta = int(args.end_date)
+                end_date = dt.now() + timedelta(days=tdelta)
+                end_date = end_date.replace(hour=12, minute=0, second=0, microsecond=0)
+            except:
+                print(f'[ERROR] End date {args.end_date} is not in the correct format: YYYY-mm-dd or integer')
+    if args.start_date and not args.end_date:
+        end_date = start_date
+
+    return start_date, end_date
+
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
@@ -493,6 +580,9 @@ if __name__ == '__main__':
         suffix = 'C2RCC'
     elif args.atm_correction == 'POLYMER':
         corrector = POLYMER(fconfig, args.verbose)
+        if args.type_product_polymer:
+            corrector.product_type = args.type_product_polymer
+
         suffix = 'POLYMER'
     elif args.atm_correction == 'FUB_CSIRO':
         corrector = FUB_CSIRO(fconfig, args.verbose)
@@ -508,11 +598,13 @@ if __name__ == '__main__':
     elif args.atm_correction == 'BALALL':
         corrector = BALTIC_ALL(fconfig, args.verbose)
     elif args.atm_correction == 'BAL202411':
-        corrector = BALTIC_202411_PROCESSOR(fconfig,args.verbose)
+        corrector = BALTIC_202411_PROCESSOR(fconfig, args.verbose)
 
     applyPool = 0
     geo_limits = None
     data_alternative_path = None
+    input_path_organization = '%Y/%j'
+
     options = configparser.ConfigParser()
     options.read(fconfig)
     if options.has_section('GLOBAL'):
@@ -524,35 +616,47 @@ if __name__ == '__main__':
             data_alternative_path = options['GLOBAL']['data_alternative_path'].strip()
             if not os.path.exists(data_alternative_path):
                 data_alternative_path = None
+        if options.has_option('GLOBAL', 'input_path_organization'):
+            input_path_organization = options['GLOBAL']['input_path_organization']
+            if input_path_organization.lower() == 'none':
+                input_path_organization = None
     start_date = None
     end_date = None
-    if args.start_date and args.end_date:
-        try:
-            start_date = datetime.strptime(args.start_date, '%Y-%m-%d')
-        except ValueError:
-            print(f'[ERROR] Start date: {args.start_date} should be in format: yyyy-mm-dd')
-            exit(1)
-        try:
-            end_date = datetime.strptime(args.end_date, '%Y-%m-%d')
-        except ValueError:
-            print(f'[ERROR] End date: {args.end_date} should be in format: yyyy-mm-dd')
-            exit(1)
-        if start_date > end_date:
-            print(f'[ERROR] End date should be equal or greater than start date')
+    # check if dates from args should be used
+    start_date = None
+    end_date = None
+    if args.start_date:
+        start_date, end_date = get_dates_from_arg()
+        if start_date is None or end_date is None:
             exit(1)
 
-        if args.verbose:
-            print(f'[INFO] Start date: {args.start_date} End date: {args.end_date}')
+    # if args.start_date and args.end_date:
+    #     try:
+    #         start_date = datetime.strptime(args.start_date, '%Y-%m-%d')
+    #     except ValueError:
+    #         print(f'[ERROR] Start date: {args.start_date} should be in format: yyyy-mm-dd')
+    #         exit(1)
+    #     try:
+    #         end_date = datetime.strptime(args.end_date, '%Y-%m-%d')
+    #     except ValueError:
+    #         print(f'[ERROR] End date: {args.end_date} should be in format: yyyy-mm-dd')
+    #         exit(1)
+    #     if start_date > end_date:
+    #         print(f'[ERROR] End date should be equal or greater than start date')
+    #         exit(1)
+    #
+    #     if args.verbose:
+    #         print(f'[INFO] Start date: {args.start_date} End date: {args.end_date}')
 
     if not corrector.check_runac():
         exit(1)
     if args.verbose:
         print(f'[INFO] Started {args.atm_correction} processor')
 
-    if input_csv is not None: ##csv option, for testing
+    if input_csv is not None:  ##csv option, for testing
         if corrector.allow_csv_test():
-            if output_path=='default':
-                output_path = input_csv[:-4]+'_'+args.atm_correction+'.csv'
+            if output_path == 'default':
+                output_path = input_csv[:-4] + '_' + args.atm_correction + '.csv'
             else:
                 if not output_path.endswith('.csv'):
                     print(f'[ERROR] Output path shoud be a CSV file')
@@ -561,12 +665,14 @@ if __name__ == '__main__':
                     if not os.path.isdir(os.path.dirname(output_path)):
                         print(f'[ERROR] Output directory {os.path.dirname(output_path)} is not a valid directory')
                         exit(-1)
-            #print(output_path)
-            corrector.run_from_csv_file(input_csv,output_path)
+            # print(output_path)
+            corrector.run_from_csv_file(input_csv, output_path)
         exit(0)
 
-
     if input_path is None:  # single product, for testing
+        if not os.path.exists(prod_path):
+            print(f'[ERROR] Product path: {prod_path} does not exist')
+            exit(-1)
         f = os.path.basename(prod_path)
         if args.atm_correction == 'BAL202411':
             if args.type_product:
@@ -632,28 +738,16 @@ if __name__ == '__main__':
         if args.verbose:
             print('--------------------------------------------------')
     else:  ##WORKING WITH FOLDERS
+        if start_date is None and end_date is None:
+            print(f'[ERROR] Start date need to be correctly defined.')
+            exit(-1)
         if start_date is not None and end_date is not None:  # formato year/jjj
             date_here = start_date
             while date_here <= end_date:
-                year_str = date_here.strftime('%Y')
-                day_str = date_here.strftime('%j')
-
-                input_path_date = os.path.join(input_path, year_str, day_str)
-
+                # input_path_date = os.path.join(input_path, year_str, day_str)
+                input_path_date = get_input_path_folder(input_path, date_here, input_path_organization)
                 if os.path.exists(input_path_date):
-                    output_path_year = os.path.join(output_path, year_str)
-                    if not os.path.exists(output_path_year):
-                        st = os.stat(output_path)
-                        os.chmod(output_path, st.st_mode | stat.S_IWOTH | stat.S_IWGRP)
-                        os.mkdir(output_path_year)
-
-                    output_path_jday = os.path.join(output_path_year, day_str)
-                    if not os.path.exists(output_path_jday):
-                        st = os.stat(output_path_year)
-                        os.chmod(output_path_year, st.st_mode | stat.S_IWOTH | stat.S_IWGRP)
-                        os.mkdir(output_path_jday)
-                        st = os.stat(output_path_jday)
-                        os.chmod(output_path_jday, st.st_mode | stat.S_IWOTH | stat.S_IWGRP)
+                    output_path_jday = get_output_path_jday(output_path, date_here)
                     if args.verbose:
                         print('*************************************************')
                         print(f'DATE: {date_here}')
@@ -665,9 +759,23 @@ if __name__ == '__main__':
                             print('--------------------------------------------------')
                         continue
 
+                    if args.atm_correction == 'BAL202411':
+                        if args.type_product:
+                            corrector.product_type = args.type_product
+                            print(f'[INFO] Setting product type for BAL202411 processor to: {args.type_product}')
+
                     ##first we obtain list of param (corrector,input_path,output_path,iszipped)
                     param_list = []
+                    if args.atm_correction == 'BAL202411' and corrector.product_type == 'cci':
+                        ##single product name
+                        prod_path = get_input_path_cci_default(input_path, date_here)
+                        if os.path.exists(prod_path):
+                            params = [corrector, prod_path, output_path_jday, False, None, False]
+                            param_list.append(params)
+
                     for f in os.listdir(input_path_date):
+                        if args.atm_correction == 'BAL202411' and corrector.product_type == 'cci':
+                            continue
                         prod_name = f
                         prod_path = os.path.join(input_path_date, prod_name)
                         print('---------------')
@@ -696,7 +804,7 @@ if __name__ == '__main__':
 
                         if check_geo == 1:
                             # alternative prod path, it's useful for Polymer if the trim fails
-                            prod_path_altn = search_alternative_prod_path(f, data_alternative_path, year_str, day_str)
+                            prod_path_altn = search_alternative_prod_path(f, data_alternative_path, date_here.strftime('%Y'), date_here.strftime('%j'))
                             prod_path_alt = None
                             iszipped_alt = False
                             if prod_path_altn is not None:

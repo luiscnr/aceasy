@@ -79,15 +79,37 @@ class BALTIC_202411:
         chl_cdf[chl_cdf.mask] = bsc_3['chl'][chl_cdf.mask]
         cdf_ens[cdf_ens.mask] = -999
 
+        #flag_cdf
+        cdf = np.ma.masked_where(cdf<0,cdf)
+        cdf = np.ma.masked_invalid(cdf)
+        cdf_mask_mlp3b = np.ma.where(cdf[:,0] >= 0.001,2,0)
+        cdf_mask_mlp4b = np.ma.where(cdf[:,1] >= 0.001,4,0)
+        cdf_mask_mlp5b = np.ma.where(cdf[:,2] >= 0.001,8,0)
+        cdf_flag_multiple = np.ma.filled(cdf_mask_mlp3b,0)+np.ma.filled(cdf_mask_mlp4b,0)+np.ma.filled(cdf_mask_mlp5b,0)
+        cdf_flag_multiple[cdf_flag_multiple == 0] = 1
+        cdf_flag_multiple = np.ma.array(cdf_flag_multiple,mask=(cdf[:,0].mask*cdf[:,1].mask*cdf[:,2].mask))
+
+        cdf_mlp3b = np.ma.masked_less(cdf[:,0], 0.001)
+        cdf_mlp4b = np.ma.masked_less(cdf[:,1], 0.001)
+        cdf_mlp5b = np.ma.masked_less(cdf[:,2], 0.001)
+        cdf_sum = np.ma.filled(cdf_mlp3b,0) + np.ma.filled(cdf_mlp4b,0) + np.ma.filled(cdf_mlp5b,0)
+        weight_mlp3b = np.ma.divide(cdf_mlp3b, cdf_sum)
+        weight_mlp4b = np.ma.divide(cdf_mlp4b, cdf_sum)
+        weight_mlp5b = np.ma.divide(cdf_mlp5b, cdf_sum)
+
         res = {
             'chl': chl_cdf,
             'cdf_avg': cdf_ens,
-            'cdf_mlp3b': cdf[:,0],
+            'cdf_flag_multiple': cdf_flag_multiple,
+            'cdf_mlp3b': cdf[:, 0],
             'cdf_mlp4b': cdf[:, 1],
             'cdf_mlp5b': cdf[:, 2],
-            'chl_mlp3b': chl[:,0],
+            'chl_mlp3b': chl[:, 0],
             'chl_mlp4b': chl[:, 1],
             'chl_mlp5b': chl[:, 2],
+            'weight_mlp3b': weight_mlp3b,
+            'weight_mlp4b': weight_mlp4b,
+            'weight_mlp5b': weight_mlp5b
         }
 
         return res

@@ -37,6 +37,7 @@ class POLYMER:
                 'apply': False
             }
         }
+        self.product_type = 's3_olci'
         if os.path.exists(fconfig):
             options = configparser.ConfigParser()
             options.read(fconfig)

@@ -66,14 +66,17 @@ class BalOutputFile:
         # self.EXTRACT.insitu_lat = at['in_situ_lat']
         # self.EXTRACT.insitu_lon = at['in_situ_lon']
 
-    def set_global_attributes_cci(self,ncinfo,source_file):
-        self.OFILE.creation_time = dt.now().strftime("%Y-%m-%dT%H:%M:%SZ")
-        self.OFILE.start_date = ncinfo.start_date
-        self.OFILE.stop_date = ncinfo.stop_date
-        self.OFILE.start_time = ncinfo.start_time
-        self.OFILE.stop_time = ncinfo.stop_time
-        if source_file is not None:
-            self.OFILE.source_file = source_file
+    def set_global_attributes_cci(self,varattr):
+        if varattr is not None:
+            if 'GLOBAL' in varattr.keys():
+                print(varattr['GLOBAL'])
+                for at in varattr['GLOBAL']:
+                    self.OFILE.setncattr(at,varattr['GLOBAL'][at])
+        self.OFILE.creation_date = dt.utcnow().strftime("%a %b %d %Y")
+        self.OFILE.creation_time = dt.utcnow().strftime("%H:%M:%S")
+
+
+
 
 
 
@@ -100,32 +103,39 @@ class BalOutputFile:
 
         # latitude
         if len(lat.shape)==2:
-            satellite_latitude = self.OFILE.createVariable('latitude', 'f4', ('lat', 'lon'), fill_value=-999, zlib=True,complevel=6)
+            satellite_latitude = self.OFILE.createVariable('lat', 'f4', ('lat', 'lon'), fill_value=-999, zlib=True,complevel=6)
             satellite_latitude[:, :] = [lat[:, :]]
         elif len(lat.shape)==1:
-            satellite_latitude = self.OFILE.createVariable('latitude', 'f4', ('lat',), fill_value=-999, zlib=True,
+            satellite_latitude = self.OFILE.createVariable('lat', 'f4', ('lat',), fill_value=-999, zlib=True,
                                                            complevel=6)
             satellite_latitude[:] = [lat[:]]
         satellite_latitude.units = "degrees_north"
         satellite_latitude.long_name = "latitude"
         satellite_latitude.standard_name = "latitude"
+        satellite_latitude.axis = "Y"
 
 
         # longitude
         if len(lon.shape) == 2:
-            satellite_longitude = self.OFILE.createVariable('longitude', 'f4', ('lat', 'lon'), fill_value=-999, zlib=True,complevel=6)
+            satellite_longitude = self.OFILE.createVariable('lon', 'f4', ('lat', 'lon'), fill_value=-999, zlib=True,complevel=6)
             satellite_longitude[:, :] = [lon[:, :]]
         elif len(lon.shape) == 1:
-            satellite_longitude = self.OFILE.createVariable('longitude', 'f4', ('lon',), fill_value=-999,
+            satellite_longitude = self.OFILE.createVariable('lon', 'f4', ('lon',), fill_value=-999,
                                                             zlib=True, complevel=6)
             satellite_longitude[:] = [lon[:]]
         satellite_longitude.units = "degrees_east"
         satellite_longitude.long_name = "longitude"
         satellite_longitude.standard_name = "longitude"
+        satellite_longitude.axis="X"
 
 
     def create_data_variable(self, var_name, array):
         var = self.OFILE.createVariable(var_name, 'f4', ('lat', 'lon'), fill_value=-999, zlib=True, complevel=6)
+        var[:] = array[:]
+        return var
+
+    def create_flag_variable(self, var_name, array):
+        var = self.OFILE.createVariable(var_name, 'i2', ('lat', 'lon'), fill_value=-999, zlib=True, complevel=6)
         var[:] = array[:]
         return var
 
@@ -142,13 +152,18 @@ class BalOutputFile:
         var.comment = "Brando VE, Sammartino M, Colella S, Bracaglia M, Di Cicco A, D’Alimonte D, Kajiyama T, Kaitala S and Attila J (2021). Phytoplankton Bloom Dynamics in the Baltic Sea Using a Consistently Reprocessed Time Series of Multi-Sensor Reflectance and Novel Chlorophyll-a Retrievals. Remote Sens. 13:3071. doi: 10.3390/rs13163071"
         var.source = "OLCI - POLYMER v.4.14 Atmospheric Correction Processor - BAL MLP Ensemble"
 
-    def create_rrs_variable(self, array, varname, wl, varattr):
+
+
+    def create_rrs_variable(self, array, varname, wl, varattr,product_type):
         var= self.create_data_variable(varname,array)
         var.coordinates = "lat long"
         var.band_name = varname.lower()
         wlstr = varname[3:].replace('_','.')
-        var.long_name = f'Remote Sensing Reflectance at {wlstr}'
-        var.central_wavelength = wl
+        if product_type=='cci':
+            var.long_name = f'Multi-sensor Remote Sensing Reflectance at {wlstr} nm (Rrs_{wlstr})'
+        else:
+            var.long_name = f'Remote Sensing Reflectance at {wlstr}'
+            var.central_wavelength = wl
         if varattr is not None:
             if 'RRS' in varattr.keys():
                 for at in varattr['RRS']:
@@ -190,6 +205,13 @@ class BalOutputFile:
                 for at in varattr[varname]:
                     var.setncattr(at,varattr[varname][at])
 
+    def create_var_flag_general(self, array, varname, varattr):
+        var = self.create_flag_variable(varname, array)
+        var.coordinates = "lat long"
+        if varattr is not None:
+            if varname in varattr.keys():
+                for at in varattr[varname]:
+                    var.setncattr(at, varattr[varname][at])
 
     def close_file(self):
         self.OFILE.close()

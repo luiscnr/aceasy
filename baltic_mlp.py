@@ -164,6 +164,7 @@ class BALTIC_MLP():
                         iop_here[valid_mask] = iop[:, n]
                         all_arrays[self.iop_var[n]][yini - startY:yend - startY,
                         xini - startX:xend - startX] = iop_here[:, :]
+
                     # kd, using 490 and 555 bands
                     kd_res = self.compute_kd(rrs_data[:, 1], rrs_data[:, 3])
                     kd_here = np.empty(valid_mask.shape)
