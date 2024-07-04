@@ -455,7 +455,8 @@ class BALTIC_202411_PROCESSOR():
             ncoutput.set_global_attributes(ncinput)
         if self.product_type == 'cci':
             ncoutput.set_global_attributes_cci(self.varattr)
-
+            print('')
+            
         array_chl = all_arrays['CHL']
         ny = array_chl.shape[0]
         nx = array_chl.shape[1]
