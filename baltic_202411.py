@@ -1,4 +1,7 @@
 import os.path
+
+import pytz
+
 from baltic202411.bal_202411 import BALTIC_202411
 from baltic_mlp import BALTIC_MLP
 from csv_lois import CSV_FILE
@@ -166,6 +169,8 @@ class BALTIC_202411_PROCESSOR():
             print(f'[INFO] Starting water processing')
 
         ncinput = Dataset(prod_path)
+        from datetime import datetime as dt
+        date_file = dt.utcfromtimestamp(ncinput.variables['time'][0]).replace(tzinfo=pytz.UTC)
 
         # info bands
         if self.product_type == 'polymer':
@@ -280,7 +285,7 @@ class BALTIC_202411_PROCESSOR():
             print(f'[INFO] Water processing completed')
             print(f'[INFO] Generating output file: {fileout}')
 
-        self.create_file(fileout, ncinput, all_arrays, startY, endY + 1, startX, endX + 1)
+        self.create_file(fileout, ncinput, all_arrays, startY, endY + 1, startX, endX + 1, date_file)
 
     def allow_csv_test(self):
         return True
@@ -437,7 +442,7 @@ class BALTIC_202411_PROCESSOR():
 
         return rrsdata, iop
 
-    def create_file(self, fileout, ncinput, all_arrays, yini, yend, xini, xend):
+    def create_file(self, fileout, ncinput, all_arrays, yini, yend, xini, xend, date_file):
 
         if self.verbose:
             print(f'[INFO] Writting output file: {fileout}')
@@ -455,8 +460,7 @@ class BALTIC_202411_PROCESSOR():
             ncoutput.set_global_attributes(ncinput)
         if self.product_type == 'cci':
             ncoutput.set_global_attributes_cci(self.varattr)
-            print('')
-            
+
         array_chl = all_arrays['CHL']
         ny = array_chl.shape[0]
         nx = array_chl.shape[1]
@@ -483,7 +487,7 @@ class BALTIC_202411_PROCESSOR():
         elif len(ncinput.variables[var_lon_name].dimensions) == 1:
             array_lon = np.array(ncinput.variables[var_lon_name][xini:xend])
 
-        if self.product_type=='cci':
+        if self.product_type == 'cci':
             array_lat = np.flip(array_lat)
 
         ncoutput.create_lat_long_variables(array_lat, array_lon)
@@ -538,7 +542,79 @@ class BALTIC_202411_PROCESSOR():
                 ncoutput.create_var_flag_general(array_here, ovar, self.varattr)
             else:
                 ncoutput.create_var_general(array_here, ovar, self.varattr)
-
         ncoutput.close_file()
+
         if self.verbose:
             print(f'[INFO]    File {fileout} was created')
+
+        ncref = Dataset(fileout)
+
+        variables = ['lat', 'lon', 'CHL', 'CYANOBLOOM']
+        output_file_chla = os.path.join(os.path.dirname(fileout), f'C{date_file.strftime("%Y%j")}-chl-bal-hr.nc')
+        if self.verbose:
+            print(f'[INFO] Creating CHL file: {output_file_chla}')
+        self.create_copy_final_file(ncref, variables, date_file, output_file_chla)
+
+        variables = ['lat', 'lon', 'MICRO', 'NANO', 'PICO', 'CRYPTO', 'DIATO', 'DINO', 'GREEN', 'PROKAR']
+        output_file_pft = os.path.join(os.path.dirname(fileout), f'C{date_file.strftime("%Y%j")}-pft-bal-hr.nc')
+        if self.verbose:
+            print(f'[INFO] Creating PFT file: {output_file_pft}')
+        self.create_copy_final_file(ncref, variables, date_file, output_file_pft)
+
+        ncref.close()
+
+    def create_copy_final_file(self, ncref, variables, date_file, output_file):
+        ncout = Dataset(output_file, 'w', format='NETCDF4')
+
+        # copy global attributes all at once via dictionary
+        ncout.setncatts(ncref.__dict__)
+
+        # copy dimensions
+        for name, dimension in ncref.dimensions.items():
+            ncout.createDimension(name, (len(dimension) if not dimension.isunlimited() else None))
+
+        # create time variable
+        time_var = ncout.createVariable('time', 'i4', ('time',), zlib=True, complevel=6)
+        time_var.long_name = "reference time"
+        time_var.standard_name = "time"
+        time_var.axis = "T"
+        time_var.calendar = "Gregorian"
+        time_var.units = "seconds since 1981-01-01 00:00:00"
+        time_var[0] = np.int32(date_file.timestamp())
+
+        # other variables
+        # copy variables
+        for name, variable in ncref.variables.items():
+            if name not in variables:
+                continue
+            fill_value = None
+            if '_FillValue' in list(variable.ncattrs()):
+                fill_value = variable._FillValue
+
+            datatype = variable.datatype
+            if name == 'CYANOBLOOM':
+                datatype = 'i4'
+                fill_value = -999
+            #print(name, datatype, fill_value)
+
+            if name == 'lat' or name == 'lon':
+                dimensions = variable.dimensions
+            else:
+                dimensions = ('time', 'lat', 'lon')
+
+            ncout.createVariable(name, datatype, dimensions, fill_value=fill_value, zlib=True, complevel=6)
+
+            # copy variable attributes
+            for at in variable.ncattrs():
+                if at == '_FillValue': continue
+                ncout[name].setncattr(at, variable.getncattr(at))
+
+            # copy variable data
+            if name == 'lat' or name == 'lon':
+                ncout[name][:] = ncref[name][:]
+            elif name == 'CYANOBLOOM':
+                ncout[name][0, :, :] = np.int32(ncref[name][:, :])
+            else:
+                ncout[name][0, :, :] = ncref[name][:, :]
+
+        ncout.close()

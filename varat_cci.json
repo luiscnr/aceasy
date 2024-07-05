@@ -191,7 +191,7 @@
 "comment":"",
 "start_time":"08:00:00 UTC",
 "stop_time":"14:00:00 UTC",
-"file_quality_index = 0S, // short
+"file_quality_index": 0,
 "Citation":" ",
 "naming_authority":"CMEMS",
 "distribution_statement":"See CMEMS Data License",
@@ -200,10 +200,10 @@
 "stop_date":"2023-06-01",
 "creation_date":"Tue Mar 26 2024",
 "creation_time":"11:03:55 UTC",
-"westernmost_longitude = 9.25f, // float
-"easternmost_longitude = 30.25f, // float
-"southernmost_latitude = 53.25f, // float
-"northernmost_latitude = 65.85f, // float
+"westernmost_longitude":9.25, 
+"easternmost_longitude":30.25, 
+"southernmost_latitude":53.25, 
+"northernmost_latitude": 65.85, 
 "grid_resolution":"1 Km",
 "product_version":"v02",
 "site_name":" ",
