@@ -237,6 +237,7 @@ class BALTIC_202411_PROCESSOR():
 
                     input_rrs, iop, cyano_info = self.get_valid_rrs_cci(ncinput, valid_mask, nvalid, yini, yend, xini,
                                                                         xend)
+
                     res_algorithm = self.bal_proc.compute_ensemble(input_rrs)
 
                     for key in cyano_info.keys():

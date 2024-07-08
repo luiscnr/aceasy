@@ -60,8 +60,13 @@ class BALTIC_202411:
         chl = np.array([bsc_3['chl'], bsc_4['chl'], bsc_5['chl']]).transpose()
         cdf = np.array([bsc_3['cdf'], bsc_4['cdf'], bsc_5['cdf']]).transpose()
 
+        if len(cdf.shape) == 1 and cdf.shape[0] == 3:
+            print('[WARNING] Reshaping cdf to avoid errors')
+            cdf = cdf.reshape((1, 3))
+
         # Masking values lower or equal than given thershold
         cdf_masked = np.ma.masked_where(cdf<=self.thresh_cdf,cdf)
+
 
         # dot product
         chl_cdf_inner = np.ma.sum(np.ma.multiply(chl,cdf_masked),axis=1)
@@ -80,6 +85,8 @@ class BALTIC_202411:
         cdf_ens[cdf_ens.mask] = -999
 
         #flag_cdf
+
+
         cdf = np.ma.masked_where(cdf<0,cdf)
         cdf = np.ma.masked_invalid(cdf)
         cdf_mask_mlp3b = np.ma.where(cdf[:,0] >= 0.001,2,0)

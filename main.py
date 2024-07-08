@@ -548,7 +548,7 @@ def do_check_coverage():
     file_log = '/store3/OC/CCI_v2017/daily_v202411/coverage_errors.log'
     fw = open(file_out, 'w')
     fw.write('Date;NChl-a;AvgChla;NCyano;AvgCyano')
-    flog = open(file_log,'w')
+    flog = open(file_log, 'w')
     flog.write('LOG COVERAGE')
     start_date = dt(1997, 9, 4)
     end_date = dt(2023, 12, 31)
@@ -561,15 +561,16 @@ def do_check_coverage():
         date2 = date_here.strftime('%d%b%y')
         name = format_name.replace('$DATE1$', date1)
         name = name.replace('$DATE2$', date2)
-        file_orig = os.path.join(dir_orig,name)
+        file_orig = os.path.join(dir_orig, name)
         if os.path.exists(file_orig):
-            file_daily = os.path.join(dir_daily,date_here.strftime('%Y'),date_here.strftime('%j'),f'C{date1}-chl-bal-hr.nc')
+            file_daily = os.path.join(dir_daily, date_here.strftime('%Y'), date_here.strftime('%j'),
+                                      f'C{date1}-chl-bal-hr.nc')
             if os.path.exists(file_daily):
                 try:
                     dataset = Dataset(file_daily)
                     chl = dataset.variables['CHL'][:]
-                    n_chl =np.ma.count(chl)
-                    avg_chl = np.ma.mean(chl[:]) if n_chl>0 else 0
+                    n_chl = np.ma.count(chl)
+                    avg_chl = np.ma.mean(chl[:]) if n_chl > 0 else 0
                     cyanobloom = dataset.variables['CYANOBLOOM'][:]
                     n_cyano = np.ma.count(cyanobloom)
                     avg_cyano = np.ma.mean(cyanobloom[:]) if n_cyano > 0 else 0
@@ -586,12 +587,13 @@ def do_check_coverage():
     fw.close()
     flog.close()
 
+
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     print('[INFO] Started')
-    b = do_check_coverage()
-    if b:
-        sys.exit()
+    # b = do_check_coverage()
+    # if b:
+    #     sys.exit()
     # b = do_script_bal_cci()
     # if b:
     #     sys.exit()
