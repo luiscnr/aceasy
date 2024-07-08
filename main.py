@@ -72,7 +72,7 @@ def run_parallel_corrector(params):
 
     valid_input, iszipped_input = check_path_validity(path_product_input, None)
     if valid_input and not iszipped_input:
-        print(path_product_input,output_file)
+        print(path_product_input, output_file)
         b = corrector.run_process(path_product_input, output_file)
 
         ##ERROR,WORKING WITH ALTERNATIVE PATH
@@ -249,11 +249,11 @@ def check_path_validity(prod_path, prod_name):
         return valid, iszipped
 
     if args.atm_correction == 'BAL202411':
-        if args.type_product=='cci' and prod_name.endswith('.nc'):
+        if args.type_product == 'cci' and prod_name.endswith('.nc'):
             valid = True
         else:
             valid = False
-        return valid,iszipped
+        return valid, iszipped
 
     if os.path.isdir(prod_path) and prod_name.endswith('.SEN3') and prod_name.find('EFR') > 0:
         valid = True
@@ -458,13 +458,14 @@ def check():
 
 def do_script_bal_cci():
     print('HERE')
-    base = 'python /store/COP2-OC-TAC/BAL_Evolutions/slurmscripts_202411/aceasy/main.py -ac BAL202411 -p /store3/OC/CCI_v2017/V6/$NAME$ -o /store3/OC/CCI_v2017/daily_v202411/PFT_Images -v'
-    # base = 'python /store/COP2-OC-TAC/BAL_Evolutions/slurmscripts_202411/aceasy/main.py -ac BAL202411 -type olci_l3 -p /store/COP2-OC-TAC/BAL_Evolutions/POLYMERWHPC/2018/$NAME$ -o /store3/OC/CCI_v2017/daily_olci_v202411 -v'
+    # base = 'python /store/COP2-OC-TAC/BAL_Evolutions/slurmscripts_202411/aceasy/main.py -ac BAL202411 -p /store3/OC/CCI_v2017/V6/$NAME$ -o /store3/OC/CCI_v2017/daily_v202411/PFT_Images -v'
+    base = 'python /store/COP2-OC-TAC/BAL_Evolutions/slurmscripts_202411/aceasy/main.py -ac BAL202411 -type olci_l3 -p /store/COP2-OC-TAC/BAL_Evolutions/POLYMERWHPC/$NAME$ -o /store3/OC/CCI_v2017/daily_olci_v202411 -v'
     # M2015308.0000.bal.all_products.CCI.04Nov150000.v0.20153080000.data.nc
     format_name = 'M$DATE1$.0000.bal.all_products.CCI.$DATE2$0000.v0.$DATE1$0000.data.nc'
     from datetime import datetime as dt
-    #file_csv = '/mnt/c/DATA_LUIS/OCTAC_WORK/MATCH-UPS_ANALYSIS_2024/BAL/CSV_MATCH-UPS/MULTI/Baltic_CHLA_Valid_AllSources_1997-2023_FINAL_extracts_rrs_chl_3x3_filtered_match-ups.csv'
-    file_csv = '/mnt/c/DATA_LUIS/OCTAC_WORK/MATCH-UPS_ANALYSIS_2024/BAL/CODE_DAVIDE_2024/Date_BAL_per_MatchupPFT_releaseNov2024_PER_LUIS.csv'
+    # file_csv = '/mnt/c/DATA_LUIS/OCTAC_WORK/MATCH-UPS_ANALYSIS_2024/BAL/CSV_MATCH-UPS/MULTI/Baltic_CHLA_Valid_AllSources_1997-2023_FINAL_extracts_rrs_chl_3x3_filtered_match-ups.csv'
+    # file_csv = '/mnt/c/DATA_LUIS/OCTAC_WORK/MATCH-UPS_ANALYSIS_2024/BAL/CODE_DAVIDE_2024/Date_BAL_per_MatchupPFT_releaseNov2024_PER_LUIS.csv'
+    file_csv = '/mnt/c/DATA_LUIS/OCTAC_WORK/MATCH-UPS_ANALYSIS_2024/BAL/CODE_DAVIDE_2024/Dates_OLCI.csv'
     import pandas as pd
     import numpy as np
     df = pd.read_csv(file_csv, sep=';')
@@ -473,7 +474,7 @@ def do_script_bal_cci():
     # start_date = dt(2018, 6, 1)
     # end_date = dt(2018, 9, 30)
     # date_here = start_date
-    file_out = '/mnt/c/DATA_LUIS/OCTAC_WORK/MATCH-UPS_ANALYSIS_2024/BAL/temp_pft.txt'
+    file_out = '/mnt/c/DATA_LUIS/OCTAC_WORK/MATCH-UPS_ANALYSIS_2024/BAL/temp_olci_2.txt'
     fw = open(file_out, 'w')
     # while date_here <= end_date:
     #     date_here = date_here + timedelta(hours=24)
@@ -487,20 +488,24 @@ def do_script_bal_cci():
     #     fw.write(src)
 
     for d in dates_unique:
+        date_here = dt.strptime(d, '%Y-%m-%d')
+        ##cci
+        # date1 = date_here.strftime('%Y%j')
+        # date2 = date_here.strftime('%d%b%y')
+        # name = format_name.replace('$DATE1$',date1)
+        # name = name.replace('$DATE2$',date2)
 
-        #date_here = dt(2015,11,4)
-        date_here = dt.strptime(d,'%Y-%m-%d')
-        date1 = date_here.strftime('%Y%j')
-        date2 = date_here.strftime('%d%b%y')
-        name = format_name.replace('$DATE1$',date1)
-        name = name.replace('$DATE2$',date2)
-        src = base.replace('$NAME$',name)
+        ##olci
+        name = date_here.strftime('%Y/%j')
+
+        src = base.replace('$NAME$', name)
         print(src)
         fw.write('\n')
         fw.write(src)
 
     fw.close()
     return True
+
 
 def get_dates_from_arg():
     from datetime import datetime as dt
@@ -533,9 +538,60 @@ def get_dates_from_arg():
     return start_date, end_date
 
 
+def do_check_coverage():
+    print('CHECK COVERAGE')
+    format_name = 'M$DATE1$.0000.bal.all_products.CCI.$DATE2$0000.v0.$DATE1$0000.data.nc'
+    from datetime import datetime as dt
+    from netCDF4 import Dataset
+    import numpy as np
+    file_out = '/store3/OC/CCI_v2017/daily_v202411/coverage.csv'
+    file_log = '/store3/OC/CCI_v2017/daily_v202411/coverage_errors.log'
+    fw = open(file_out, 'w')
+    fw.write('Date;NChl-a;AvgChla;NCyano;AvgCyano')
+    flog = open(file_log,'w')
+    flog.write('LOG COVERAGE')
+    start_date = dt(1997, 9, 4)
+    end_date = dt(2023, 12, 31)
+    date_here = start_date
+    dir_orig = '/store3/OC/CCI_v2017/V6'
+    dir_daily = '/store3/OC/CCI_v2017/daily_v202411'
+    while date_here <= end_date:
+        date_here = date_here + timedelta(hours=24)
+        date1 = date_here.strftime('%Y%j')
+        date2 = date_here.strftime('%d%b%y')
+        name = format_name.replace('$DATE1$', date1)
+        name = name.replace('$DATE2$', date2)
+        file_orig = os.path.join(dir_orig,name)
+        if os.path.exists(file_orig):
+            file_daily = os.path.join(dir_daily,date_here.strftime('%Y'),date_here.strftime('%j'),f'C{date1}-chl-bal-hr.nc')
+            if os.path.exists(file_daily):
+                try:
+                    dataset = Dataset(file_daily)
+                    chl = dataset.variables['CHL'][:]
+                    n_chl =np.ma.count(chl)
+                    avg_chl = np.ma.mean(chl[:]) if n_chl>0 else 0
+                    cyanobloom = dataset.variables['CYANOBLOOM'][:]
+                    n_cyano = np.ma.count(cyanobloom)
+                    avg_cyano = np.ma.mean(cyanobloom[:]) if n_cyano > 0 else 0
+                    line = f'{date_here.strftime("%Y-%m-%d")};{n_chl};{avg_chl};{n_cyano};{avg_cyano}'
+                    fw.write('\n')
+                    fw.write(line)
+                    dataset.close()
+                except:
+                    flog.write('\n')
+                    flog.write(f'[ERROR] {date_here.strftime("%Y-%m-%d")}: Error in file: {file_daily}')
+            else:
+                flog.write('\n')
+                flog.write(f'[ERROR] {date_here.strftime("%Y-%m-%d")}: File {file_daily} is not available')
+    fw.close()
+    flog.close()
+
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    # print('[INFO] Started')
+    print('[INFO] Started')
+    b = do_check_coverage()
+    if b:
+        sys.exit()
     # b = do_script_bal_cci()
     # if b:
     #     sys.exit()
@@ -806,7 +862,9 @@ if __name__ == '__main__':
 
                         if check_geo == 1:
                             # alternative prod path, it's useful for Polymer if the trim fails
-                            prod_path_altn = search_alternative_prod_path(f, data_alternative_path, date_here.strftime('%Y'), date_here.strftime('%j'))
+                            prod_path_altn = search_alternative_prod_path(f, data_alternative_path,
+                                                                          date_here.strftime('%Y'),
+                                                                          date_here.strftime('%j'))
                             prod_path_alt = None
                             iszipped_alt = False
                             if prod_path_altn is not None:

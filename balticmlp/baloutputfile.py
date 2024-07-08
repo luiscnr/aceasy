@@ -69,7 +69,7 @@ class BalOutputFile:
     def set_global_attributes_cci(self,varattr):
         if varattr is not None:
             if 'GLOBAL' in varattr.keys():
-                print(varattr['GLOBAL'])
+                #print(varattr['GLOBAL'])
                 for at in varattr['GLOBAL']:
                     self.OFILE.setncattr(at,varattr['GLOBAL'][at])
         self.OFILE.creation_date = dt.utcnow().strftime("%a %b %d %Y")
