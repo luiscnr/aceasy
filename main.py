@@ -596,8 +596,9 @@ def do_check_coverage():
 def mv_polymer_sources():
     from datetime import datetime as dt
     dir_output = '/store3/OC/OLCI_POLYMER'
-    dir_sources_1 = '/store/COP2-OC-TAC/BAL_Evolutions/POLYMER'
-    dir_sources_2 = '/store/COP2-OC-TAC/BAL_Evolutions/POLYMERHPC'
+    dir_sources_1 = '/store/COP2-OC-TAC/BAL_Evolutions/POLYMER_WATER'
+    dir_sources_2 = '/store/COP2-OC-TAC/BAL_Evolutions/POLYMER_WATERN'
+    dir_sources_3 = '/store/COP2-OC-TAC/BAL_Evolutions/POLYMERWHPC'
     date_here = dt(2016,4,26)
     end_date = dt(2023,12,31)
     year_ref = 1900
@@ -606,25 +607,45 @@ def mv_polymer_sources():
         year = date_here.year
         if year!=year_ref:
             if fw is not None: fw.close()
-            fout = os.path.join(dir_output,f'mv_{year}.sh')
+            fout = os.path.join(dir_output,f'mvpw_{year}.slurm')
             fw = open(fout,'w')
+            fw.write('# !/bin/bash')
+            fw.write('\n')
+            fw.write('# SBATCH --nodes=1')
+            fw.write('\n')
+            fw.write('# SBATCH --ntasks=1')
+            fw.write('\n')
+            fw.write('# SBATCH -p octac_rep')
+            fw.write('\n')
+            fw.write('# SBATCH --mail-type=BEGIN,END,FAIL')
+            fw.write('\n')
+            fw.write('# SBATCH --mail-user=luis.gonzalezvilas@artov.ismar.cnr.it')
+            fw.write('\n')
             year_ref = year
         yyyy = date_here.strftime('%Y')
         jjj = date_here.strftime('%j')
         dir_day_1 = os.path.join(dir_sources_1,yyyy,jjj)
         dir_day_2 = os.path.join(dir_sources_2,yyyy,jjj)
+        dir_day_3 = os.path.join(dir_sources_3, yyyy, jjj)
         file_list = []
         if os.path.exists(dir_day_1):
             for name in os.listdir(dir_day_1):
-                if name.endswith('POLYMER.nc'):
+                if name.endswith('POLYMER_MLP.nc'):
                     file = os.path.join(dir_day_1,name)
                     if file not in file_list:
                         file_list.append(file)
 
         if os.path.exists(dir_day_2):
             for name in os.listdir(dir_day_2):
-                if name.endswith('POLYMER.nc'):
+                if name.endswith('POLYMER_MLP.nc'):
                     file = os.path.join(dir_day_2,name)
+                    if file not in file_list:
+                        file_list.append(file)
+
+        if os.path.exists(dir_day_3):
+            for name in os.listdir(dir_day_3):
+                if name.endswith('POLYMER_MLP.nc'):
+                    file = os.path.join(dir_day_3, name)
                     if file not in file_list:
                         file_list.append(file)
 
