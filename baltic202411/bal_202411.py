@@ -85,8 +85,6 @@ class BALTIC_202411:
         cdf_ens[cdf_ens.mask] = -999
 
         #flag_cdf
-
-
         cdf = np.ma.masked_where(cdf<0,cdf)
         cdf = np.ma.masked_invalid(cdf)
         cdf_mask_mlp3b = np.ma.where(cdf[:,0] >= 0.001,2,0)
