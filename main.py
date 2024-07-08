@@ -565,6 +565,8 @@ def do_check_coverage():
         if os.path.exists(file_orig):
             file_daily = os.path.join(dir_daily, date_here.strftime('%Y'), date_here.strftime('%j'),
                                       f'C{date1}-chl-bal-hr.nc')
+            file_pft = os.path.join(dir_daily, date_here.strftime('%Y'), date_here.strftime('%j'),
+                                      f'C{date1}-pft-bal-hr.nc')
             if os.path.exists(file_daily):
                 try:
                     dataset = Dataset(file_daily)
@@ -584,6 +586,10 @@ def do_check_coverage():
             else:
                 flog.write('\n')
                 flog.write(f'[ERROR] {date_here.strftime("%Y-%m-%d")}: File {file_daily} is not available')
+
+            if not os.path.exists(file_pft):
+                flog.write('\n')
+                flog.write(f'[ERROR] {date_here.strftime("%Y-%m-%d")}: File {file_daily} is not available')
     fw.close()
     flog.close()
 
@@ -591,9 +597,9 @@ def do_check_coverage():
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     print('[INFO] Started')
-    # b = do_check_coverage()
-    # if b:
-    #     sys.exit()
+    b = do_check_coverage()
+    if b:
+        sys.exit()
     # b = do_script_bal_cci()
     # if b:
     #     sys.exit()
