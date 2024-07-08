@@ -631,8 +631,10 @@ def mv_polymer_sources():
         if len(file_list)>0:
             dir_output_year = os.path.join(dir_output,yyyy)
             dir_output_jday = os.path.join(dir_output_year,jjj)
-            os.mkdir(dir_output_year)
-            os.mkdir(dir_output_jday)
+            if not os.path.exists(dir_output_year):
+                os.mkdir(dir_output_year)
+            if not os.path.exists(dir_output_jday):
+                os.mkdir(dir_output_jday)
             for file in file_list:
                 fw.write('\n')
                 name_f = file.split('/')[-1]
