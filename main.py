@@ -593,10 +593,63 @@ def do_check_coverage():
     fw.close()
     flog.close()
 
+def mv_polymer_sources():
+    from datetime import datetime as dt
+    dir_output = '/store3/OC/OLCI_POLYMER'
+    dir_sources_1 = '/store/COP2-OC-TAC/BAL_Evolutions/POLYMER'
+    dir_sources_2 = '/store/COP2-OC-TAC/BAL_Evolutions/POLYMERHPC'
+    date_here = dt(2016,4,26)
+    end_date = dt(2023,12,31)
+    year_ref = 1900
+    fw = None
+    while date_here <= end_date:
+        year = date_here.year
+        if year!=year_ref:
+            if fw is not None: fw.close()
+            fout = os.path.join(dir_output,f'mv_{year}.sh')
+            fw = open(fout,'w')
+            year_ref = year
+        yyyy = date_here.strftime('%Y')
+        jjj = date_here.strftime('%j')
+        dir_day_1 = os.path.join(dir_sources_1,yyyy,jjj)
+        dir_day_2 = os.path.join(dir_sources_2,yyyy,jjj)
+        file_list = []
+        if os.path.exists(dir_day_1):
+            for name in os.listdir(dir_day_1):
+                if name.endswith('POLYMER.nc'):
+                    file = os.path.join(dir_day_1,name)
+                    if file not in file_list:
+                        file_list.append(file)
+
+        if os.path.exists(dir_day_2):
+            for name in os.listdir(dir_day_2):
+                if name.endswith('POLYMER.nc'):
+                    file = os.path.join(dir_day_2,name)
+                    if file not in file_list:
+                        file_list.append(file)
+
+        if len(file_list)>0:
+            dir_output_year = os.path.join(dir_output,yyyy)
+            dir_output_jday = os.path.join(dir_output_year,jjj)
+            os.mkdir(dir_output_year)
+            os.mkdir(dir_output_jday)
+            for file in file_list:
+                fw.write('\n')
+                name_f = file.split('/')[-1]
+                file_output = os.path.join(dir_output_jday,name_f)
+                line = f'mv {file} {file_output}'
+                fw.write(line)
+
+        date_here = date_here + timedelta(hours=24)
+
+    fw.close()
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     print('[INFO] Started')
+    b = mv_polymer_sources()
+    if b:
+        sys.exit()
     # b = do_check_coverage()
     # if b:
     #     sys.exit()
