@@ -8,6 +8,7 @@ from csv_lois import CSV_FILE
 from netCDF4 import Dataset
 import numpy as np
 import BSC_QAA.bsc_qaa_EUMETSAT as bsc_qaa
+from balticmlp import polymerflag
 import json
 
 
@@ -27,6 +28,8 @@ class BALTIC_202411_PROCESSOR():
         self.wlbands_chla_polymer = ['Rw443', 'Rw490', 'Rw510', 'Rw560', 'Rw665']
         self.wlbands_chla_cci = ['Rrs_443', 'Rrs_490', 'Rrs_510', 'Rrs_560', 'Rrs_665']
         self.wlbands_chla_olci_l3 = ['rrs442_5', 'rrs490', 'rrs510', 'rrs560', 'rrs665']
+
+        self.rrsbands_polymer = self.bal_proc_old.rrsbands
 
         ##input bands
         # 443, 490, 510, 555, 670
@@ -67,6 +70,22 @@ class BALTIC_202411_PROCESSOR():
 
     def check_runac(self):
         return self.bal_proc.VALID
+
+    def set_product_type(self,product_type):
+        self.product_type = product_type
+        sdir = os.path.abspath(os.path.dirname(__file__))
+        if self.product_type=='polymer':
+            name_json = 'varat.json'
+        else:
+            name_json =  'varat_cci.json'
+        foptions = os.path.join(sdir, name_json)
+        if not os.path.exists(foptions):
+            path2info = os.path.join(os.path.dirname(sdir))
+            foptions = os.path.join(path2info, name_json)
+        if os.path.exists(foptions):
+            f = open(foptions, "r")
+            self.varattr = json.load(f)
+            f.close()
 
     def run_process_multiple_files(self, prod_path, output_dir):
         if self.product_type != 'olci_l3':
@@ -170,7 +189,30 @@ class BALTIC_202411_PROCESSOR():
 
         ncinput = Dataset(prod_path)
         from datetime import datetime as dt
-        date_file = dt.utcfromtimestamp(ncinput.variables['time'][0]).replace(tzinfo=pytz.UTC)
+        date_file = None
+        if self.product_type=='polymer':
+            self.tileX = 500
+            self.tileY = 500
+            if 'start_time' in ncinput.ncattrs():
+                start_time_str = ncinput.start_time
+                try:
+                    date_file = dt.strptime(start_time_str,'%Y-%m-%d %H:%M:%S')
+                except:
+                    start_time_str = os.path.basename(prod_path).split('_')[7]
+                    try:
+                        date_file = dt.strptime(start_time_str, '%Y%m%dT%H%M%S')
+                    except:
+                        pass
+
+        if self.product_type=='cci':
+            date_file = dt.utcfromtimestamp(ncinput.variables['time'][0]).replace(tzinfo=pytz.UTC)
+
+        if date_file is None:
+            print(f'[ERROR] Date file could not be set.')
+            return
+        else:
+            print(f'[INFO] Date file: {date_file.strftime("%Y-%m-%d")}')
+            print(f'[INFO] Tile size: {self.tileY} x {self.tileX}')
 
         # info bands
         if self.product_type == 'polymer':
@@ -187,7 +229,7 @@ class BALTIC_202411_PROCESSOR():
         # flag object
         if self.product_type == 'polymer':
             flag_band = ncinput.variables['bitmask']
-            # flagging = polymerflag.Class_Flags_Polymer(flag_band) TO IMPLEMENT
+            flagging = polymerflag.Class_Flags_Polymer(flag_band)
 
         # image limits
         if self.product_type == 'polymer':
@@ -221,22 +263,29 @@ class BALTIC_202411_PROCESSOR():
         # computing chla and other variables for each tile
         for y in range(startY, endY, self.tileY):
             ycheck = y - startY
-            if self.verbose and (ycheck == 0 or ((ycheck % self.tileY) == 0)):
-                print(f'[INFO] Processing line {ycheck}/{ny}')
+            # if self.verbose and (ycheck == 0 or ((ycheck % self.tileY) == 0)):
+            #     print(f'[INFO] Processing line {ycheck}/{ny}')
             for x in range(startX, endX, self.tileX):
+                xcheck = x - startX
+                #if self.verbose and (xcheck == 0 or ((xcheck % self.tileX) == 0)):
+                print(f'[INFO] Processing tile {ycheck}/{ny} - {xcheck}/{nx}')
                 yini = y
                 yend = y + self.tileY
                 if yend > endY: yend = endY + 1
                 xini = x
                 xend = x + self.tileX
                 if xend > endX: xend = endX + 1
+                nvalid = 0
                 if self.product_type == 'cci':
                     nvalid, valid_mask = self.get_valid_cci_mask(ncinput, yini, yend, xini, xend)
+                if self.product_type == 'polymer':
+                    nvalid, valid_mask = self.get_valid_polymer_mask(flagging, ncinput, yini, yend, xini, xend)
 
                 if nvalid > 0:
-
-                    input_rrs, iop, cyano_info = self.get_valid_rrs_cci(ncinput, valid_mask, nvalid, yini, yend, xini,
-                                                                        xend)
+                    if self.product_type == 'cci':
+                        input_rrs, iop, cyano_info = self.get_valid_rrs_cci(ncinput, valid_mask, nvalid, yini, yend, xini,xend)
+                    if self.product_type == 'polymer':
+                        input_rrs, iop, cyano_info = self.get_valid_rrs_polymer(ncinput, valid_mask, nvalid, yini, yend,xini, xend)
 
                     res_algorithm = self.bal_proc.compute_ensemble(input_rrs)
 
@@ -347,7 +396,6 @@ class BALTIC_202411_PROCESSOR():
                 self.central_wl_chla = []
 
     def retrieve_info_wlbands_olci_l3(self, prod_path, olci_date_str):
-
         for band in self.wlbands_chla_olci_l3:
             input_file = os.path.join(prod_path, f'O{olci_date_str}-{band}-bal-fr.nc')
             if os.path.exists(input_file):
@@ -356,6 +404,8 @@ class BALTIC_202411_PROCESSOR():
             else:
                 self.central_wavelength = {}
                 self.central_wl_chla = []
+
+
 
     def get_valid_olci_l3_mask(self, yini, yend, xini, xend):
         array_mask = None
@@ -388,6 +438,13 @@ class BALTIC_202411_PROCESSOR():
 
         return nvalid, array_mask
 
+    def get_valid_polymer_mask(self, flagging, ncpolymer, yini, yend, xini, xend):
+        satellite_flag_band = np.array(ncpolymer.variables['bitmask'][yini:yend, xini:xend])
+        flag_mask = flagging.MaskGeneral(satellite_flag_band)
+        valid_mask = flag_mask == 0
+        nvalid = valid_mask.sum()
+        return nvalid, valid_mask
+
     def get_valid_rrs_cci(self, ncinput, valid_mask, nvalid, yini, yend, xini, xend):
 
         nbands = len(self.wl_chla)
@@ -396,6 +453,44 @@ class BALTIC_202411_PROCESSOR():
             band = ncinput.variables[wlband][0, yini:yend, xini:xend]
             # band_valid  = band[valid_mask==1]
             rrsdata[iband, :] = band[valid_mask == 1].flatten()
+
+        iop = None
+        if self.applyBandShifting:
+            rrsdata_out, iop = bsc_qaa.bsc_qaa(rrsdata, self.central_wl_chla, self.wl_chla)
+            rrsdata = rrsdata_out.transpose()
+        else:
+            rrsdata = rrsdata.transpose()
+
+        ##ciano_mask
+        # 'RRS555', 'RRS670', 'FLAG_CYANO'
+        index555 = self.wl_chla.index(555)  # index555 es 3
+        index670 = self.wl_chla.index(670)  # index670 es 4
+        rrs555 = rrsdata[:, index555]
+        rrs670 = rrsdata[:, index670]
+        flag_cyano = np.zeros(rrs555.shape)
+        flag_cyano[rrs555 >= self.th_cyano_555] = flag_cyano[rrs555 >= self.th_cyano_555] + 1
+        flag_cyano[rrs670 >= self.th_cyano_670] = flag_cyano[rrs670 >= self.th_cyano_670] + 2
+        cyano_info = {
+            'rrs555': rrs555,
+            'rrs670': rrs670,
+            'cyanobloom': flag_cyano
+        }
+
+        return rrsdata, iop, cyano_info
+
+
+    def get_valid_rrs_polymer(self, ncpolymer, valid_mask, nvalid, yini, yend, xini, xend):
+        # 443_490_510_555_670
+        #wlbands = ['Rw443', 'Rw490', 'Rw510', 'Rw560', 'Rw665']
+        # rrsdata = np.zeros([nvalid, 5])
+        rrsdata = np.zeros([5, nvalid])
+        for iband in range(5):
+            wlband = self.wlbands_chla_polymer[iband]
+            band = np.ma.array(ncpolymer.variables[wlband][yini:yend, xini:xend])
+            valid_mask[band.mask] = False
+            # rrsdata[:, iband] = band[valid_mask]
+            rrsdata[iband, :] = band[valid_mask]
+        rrsdata = rrsdata / np.pi
 
         iop = None
         if self.applyBandShifting:
@@ -494,10 +589,11 @@ class BALTIC_202411_PROCESSOR():
         ncoutput.create_lat_long_variables(array_lat, array_lon)
         if self.product_type == 'olci_l3':
             ncinput.close()
+
         # rrs
-        ##cci
         if self.verbose:
             print(f'[INFO]    Adding rrs:')
+        ##cci
         if self.product_type == 'cci':
             for rrsvar in self.rrs_bands_cci:
                 wl = float(rrsvar.split('_')[1])
@@ -511,6 +607,20 @@ class BALTIC_202411_PROCESSOR():
                 array = np.flipud(array)
 
                 ncoutput.create_rrs_variable(array, name_band, wl, self.varattr, self.product_type)
+
+        if self.product_type == 'polymer':
+            for rrsvar in self.rrsbands_polymer.keys():
+                namevar = self.rrsbands_polymer[rrsvar]
+                if self.verbose:
+                    print(f'[INFO]     {rrsvar}->{namevar}')
+                if not rrsvar in ncinput.variables:
+                    print(f'[WARNING] Band {rrsvar} is not available in the Polymer file')
+                    continue
+                array = np.ma.array(ncinput.variables[rrsvar][yini:yend, xini:xend])
+                array[array.mask] = -999
+                array[~array.mask] = array[~array.mask] / np.pi
+                wl = self.central_wavelength[rrsvar]
+                ncoutput.create_rrs_variable(array, namevar, wl, self.varattr,self.product_type)
 
         ##olci_l3
         if self.product_type == 'olci_l3':
@@ -548,21 +658,19 @@ class BALTIC_202411_PROCESSOR():
         if self.verbose:
             print(f'[INFO]    File {fileout} was created')
 
-        ncref = Dataset(fileout)
-
-        variables = ['lat', 'lon', 'CHL', 'CYANOBLOOM']
-        output_file_chla = os.path.join(os.path.dirname(fileout), f'C{date_file.strftime("%Y%j")}-chl-bal-hr.nc')
-        if self.verbose:
-            print(f'[INFO] Creating CHL file: {output_file_chla}')
-        self.create_copy_final_file(ncref, variables, date_file, output_file_chla)
-
-        variables = ['lat', 'lon', 'MICRO', 'NANO', 'PICO', 'CRYPTO', 'DIATO', 'DINO', 'GREEN', 'PROKAR']
-        output_file_pft = os.path.join(os.path.dirname(fileout), f'C{date_file.strftime("%Y%j")}-pft-bal-hr.nc')
-        if self.verbose:
-            print(f'[INFO] Creating PFT file: {output_file_pft}')
-        self.create_copy_final_file(ncref, variables, date_file, output_file_pft)
-
-        ncref.close()
+        if self.product_type=='cci':
+            ncref = Dataset(fileout)
+            variables = ['lat', 'lon', 'CHL', 'CYANOBLOOM']
+            output_file_chla = os.path.join(os.path.dirname(fileout), f'C{date_file.strftime("%Y%j")}-chl-bal-hr.nc')
+            if self.verbose:
+                print(f'[INFO] Creating CHL file: {output_file_chla}')
+            self.create_copy_final_file(ncref, variables, date_file, output_file_chla)
+            variables = ['lat', 'lon', 'MICRO', 'NANO', 'PICO', 'CRYPTO', 'DIATO', 'DINO', 'GREEN', 'PROKAR']
+            output_file_pft = os.path.join(os.path.dirname(fileout), f'C{date_file.strftime("%Y%j")}-pft-bal-hr.nc')
+            if self.verbose:
+                print(f'[INFO] Creating PFT file: {output_file_pft}')
+            self.create_copy_final_file(ncref, variables, date_file, output_file_pft)
+            ncref.close()
 
     def create_copy_final_file(self, ncref, variables, date_file, output_file):
         ncout = Dataset(output_file, 'w', format='NETCDF4')

@@ -70,11 +70,10 @@ def run_parallel_corrector(params):
     if zipped_input_path:  # zipped
         path_product_input = do_zip(path_product_input)
 
+
     valid_input, iszipped_input = check_path_validity(path_product_input, None)
     if valid_input and not iszipped_input:
-        print(path_product_input, output_file)
         b = corrector.run_process(path_product_input, output_file)
-
         ##ERROR,WORKING WITH ALTERNATIVE PATH
         if not b and alt_path_product_input is not None:
             if args.verbose:
@@ -250,6 +249,8 @@ def check_path_validity(prod_path, prod_name):
 
     if args.atm_correction == 'BAL202411':
         if args.type_product == 'cci' and prod_name.endswith('.nc'):
+            valid = True
+        elif args.type_product == 'polymer' and  prod_name.endswith('_POLYMER.nc'):
             valid = True
         else:
             valid = False
@@ -566,7 +567,7 @@ def do_check_coverage():
             file_daily = os.path.join(dir_daily, date_here.strftime('%Y'), date_here.strftime('%j'),
                                       f'C{date1}-chl-bal-hr.nc')
             file_pft = os.path.join(dir_daily, date_here.strftime('%Y'), date_here.strftime('%j'),
-                                      f'C{date1}-pft-bal-hr.nc')
+                                    f'C{date1}-pft-bal-hr.nc')
             if os.path.exists(file_daily):
                 try:
                     dataset = Dataset(file_daily)
@@ -593,22 +594,23 @@ def do_check_coverage():
     fw.close()
     flog.close()
 
+
 def mv_polymer_sources():
     from datetime import datetime as dt
     dir_output = '/store3/OC/OLCI_POLYMER'
     dir_sources_1 = '/store/COP2-OC-TAC/BAL_Evolutions/POLYMER_WATER'
     dir_sources_2 = '/store/COP2-OC-TAC/BAL_Evolutions/POLYMER_WATERN'
     dir_sources_3 = '/store/COP2-OC-TAC/BAL_Evolutions/POLYMERWHPC'
-    date_here = dt(2016,4,26)
-    end_date = dt(2023,12,31)
+    date_here = dt(2016, 4, 26)
+    end_date = dt(2023, 12, 31)
     year_ref = 1900
     fw = None
     while date_here <= end_date:
         year = date_here.year
-        if year!=year_ref:
+        if year != year_ref:
             if fw is not None: fw.close()
-            fout = os.path.join(dir_output,f'mvpw_{year}.slurm')
-            fw = open(fout,'w')
+            fout = os.path.join(dir_output, f'mvpw_{year}.slurm')
+            fw = open(fout, 'w')
             fw.write('# !/bin/bash')
             fw.write('\n')
             fw.write('# SBATCH --nodes=1')
@@ -624,21 +626,21 @@ def mv_polymer_sources():
             year_ref = year
         yyyy = date_here.strftime('%Y')
         jjj = date_here.strftime('%j')
-        dir_day_1 = os.path.join(dir_sources_1,yyyy,jjj)
-        dir_day_2 = os.path.join(dir_sources_2,yyyy,jjj)
+        dir_day_1 = os.path.join(dir_sources_1, yyyy, jjj)
+        dir_day_2 = os.path.join(dir_sources_2, yyyy, jjj)
         dir_day_3 = os.path.join(dir_sources_3, yyyy, jjj)
         file_list = []
         if os.path.exists(dir_day_1):
             for name in os.listdir(dir_day_1):
                 if name.endswith('POLYMER_MLP.nc'):
-                    file = os.path.join(dir_day_1,name)
+                    file = os.path.join(dir_day_1, name)
                     if file not in file_list:
                         file_list.append(file)
 
         if os.path.exists(dir_day_2):
             for name in os.listdir(dir_day_2):
                 if name.endswith('POLYMER_MLP.nc'):
-                    file = os.path.join(dir_day_2,name)
+                    file = os.path.join(dir_day_2, name)
                     if file not in file_list:
                         file_list.append(file)
 
@@ -649,9 +651,9 @@ def mv_polymer_sources():
                     if file not in file_list:
                         file_list.append(file)
 
-        if len(file_list)>0:
-            dir_output_year = os.path.join(dir_output,yyyy)
-            dir_output_jday = os.path.join(dir_output_year,jjj)
+        if len(file_list) > 0:
+            dir_output_year = os.path.join(dir_output, yyyy)
+            dir_output_jday = os.path.join(dir_output_year, jjj)
             if not os.path.exists(dir_output_year):
                 os.mkdir(dir_output_year)
             if not os.path.exists(dir_output_jday):
@@ -659,7 +661,7 @@ def mv_polymer_sources():
             for file in file_list:
                 fw.write('\n')
                 name_f = file.split('/')[-1]
-                file_output = os.path.join(dir_output_jday,name_f)
+                file_output = os.path.join(dir_output_jday, name_f)
                 line = f'mv {file} {file_output}'
                 fw.write(line)
 
@@ -667,12 +669,13 @@ def mv_polymer_sources():
 
     fw.close()
 
+
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     print('[INFO] Started')
-    b = mv_polymer_sources()
-    if b:
-        sys.exit()
+    # b = mv_polymer_sources()
+    # if b:
+    #     sys.exit()
     # b = do_check_coverage()
     # if b:
     #     sys.exit()
@@ -724,7 +727,6 @@ if __name__ == '__main__':
         corrector = POLYMER(fconfig, args.verbose)
         if args.type_product_polymer:
             corrector.product_type = args.type_product_polymer
-
         suffix = 'POLYMER'
     elif args.atm_correction == 'FUB_CSIRO':
         corrector = FUB_CSIRO(fconfig, args.verbose)
@@ -741,6 +743,11 @@ if __name__ == '__main__':
         corrector = BALTIC_ALL(fconfig, args.verbose)
     elif args.atm_correction == 'BAL202411':
         corrector = BALTIC_202411_PROCESSOR(fconfig, args.verbose)
+        corrector.set_product_type(args.type_product)
+        if args.verbose:
+            print(f'[INFO] Setting product type for BAL202411 processor to: {args.type_product}')
+    else:
+        corrector = None
 
     applyPool = 0
     geo_limits = None
@@ -762,8 +769,7 @@ if __name__ == '__main__':
             input_path_organization = options['GLOBAL']['input_path_organization']
             if input_path_organization.lower() == 'none':
                 input_path_organization = None
-    start_date = None
-    end_date = None
+
     # check if dates from args should be used
     start_date = None
     end_date = None
@@ -772,26 +778,9 @@ if __name__ == '__main__':
         if start_date is None or end_date is None:
             exit(1)
 
-    # if args.start_date and args.end_date:
-    #     try:
-    #         start_date = datetime.strptime(args.start_date, '%Y-%m-%d')
-    #     except ValueError:
-    #         print(f'[ERROR] Start date: {args.start_date} should be in format: yyyy-mm-dd')
-    #         exit(1)
-    #     try:
-    #         end_date = datetime.strptime(args.end_date, '%Y-%m-%d')
-    #     except ValueError:
-    #         print(f'[ERROR] End date: {args.end_date} should be in format: yyyy-mm-dd')
-    #         exit(1)
-    #     if start_date > end_date:
-    #         print(f'[ERROR] End date should be equal or greater than start date')
-    #         exit(1)
-    #
-    #     if args.verbose:
-    #         print(f'[INFO] Start date: {args.start_date} End date: {args.end_date}')
-
-    if not corrector.check_runac():
+    if not corrector.check_runac() or corrector is None:
         exit(1)
+
     if args.verbose:
         print(f'[INFO] Started {args.atm_correction} processor')
 
@@ -817,9 +806,6 @@ if __name__ == '__main__':
             exit(-1)
         f = os.path.basename(prod_path)
         if args.atm_correction == 'BAL202411':
-            if args.type_product:
-                corrector.product_type = args.type_product
-                print(f'[INFO] Setting product type for BAL202411 processor to: {args.type_product}')
             p = corrector.run_process(prod_path, output_path)
         if args.atm_correction == 'BALMLP' and f.endswith('.nc'):
             p = corrector.run_process(prod_path, output_path)
@@ -880,13 +866,12 @@ if __name__ == '__main__':
         if args.verbose:
             print('--------------------------------------------------')
     else:  ##WORKING WITH FOLDERS
-        if start_date is None and end_date is None:
-            print(f'[ERROR] Start date need to be correctly defined.')
-            exit(-1)
+        ##DATE INTERVAL
         if start_date is not None and end_date is not None:  # formato year/jjj
+            ##first we obtain list of param (corrector,input_path,output_path,iszipped)
+            param_list = []
             date_here = start_date
             while date_here <= end_date:
-                # input_path_date = os.path.join(input_path, year_str, day_str)
                 input_path_date = get_input_path_folder(input_path, date_here, input_path_organization)
                 if os.path.exists(input_path_date):
                     output_path_jday = get_output_path_jday(output_path, date_here)
@@ -901,20 +886,14 @@ if __name__ == '__main__':
                             print('--------------------------------------------------')
                         continue
 
-                    if args.atm_correction == 'BAL202411':
-                        if args.type_product:
-                            corrector.product_type = args.type_product
-                            print(f'[INFO] Setting product type for BAL202411 processor to: {args.type_product}')
-
-                    ##first we obtain list of param (corrector,input_path,output_path,iszipped)
-                    param_list = []
+                    ##l3 data, only one file for date
                     if args.atm_correction == 'BAL202411' and corrector.product_type == 'cci':
-                        ##single product name
                         prod_path = get_input_path_cci_default(input_path, date_here)
                         if os.path.exists(prod_path):
                             params = [corrector, prod_path, output_path_jday, False, None, False]
                             param_list.append(params)
 
+                    ##l2 data, multiple file for date
                     for f in os.listdir(input_path_date):
                         if args.atm_correction == 'BAL202411' and corrector.product_type == 'cci':
                             continue
@@ -922,7 +901,8 @@ if __name__ == '__main__':
                         prod_path = os.path.join(input_path_date, prod_name)
                         print('---------------')
 
-                        if args.atm_correction == 'BALMLP':
+                        ##BALMLP and BAL202411 are run from POLYMER images
+                        if args.atm_correction == 'BALMLP' or (args.atm_correction == 'BAL202411' and corrector.product_type=='polymer'):
                             if prod_name.endswith('_POLYMER.nc'):
                                 params = [corrector, prod_path, output_path_jday, False, None, False]
                                 param_list.append(params)
@@ -964,39 +944,44 @@ if __name__ == '__main__':
                         else:
                             print_check_geo_errors(check_geo)
 
-                    ##run the list of product as parallel processes
-                    if len(param_list) == 0:
-                        print(f'[WARNING] No valid products were found for date: {date_here}')
-                        date_here = date_here + timedelta(hours=24)
-                        continue
-                    param_list = optimize_param_list(param_list)
-                    if applyPool == 0:
-                        if args.verbose:
-                            print(f'[INFO] Starting sequencial processing. Number of products: {len(param_list)}')
-                        for params in param_list:
-                            if args.atm_correction == 'BALMLP':
-                                corrector = BALTIC_MLP(fconfig, args.verbose)
-                                params[0] = corrector
-                            run_parallel_corrector(params)
-
-                    else:
-                        if args.verbose:
-                            print(f'[INFO] Starting parallel processing. Number of products: {len(param_list)}')
-                            print(f'[INFO] CPUs: {os.cpu_count()}')
-                            print(f'[INFO] Parallel processes: {applyPool}')
-                        if applyPool < 0:
-                            poolhere = Pool()
-                        else:
-                            poolhere = Pool(applyPool)
-                        poolhere.map(run_parallel_corrector, param_list)
-
                 else:
                     if args.verbose:
                         print(f'[WARNING] Path: {input_path_date} does not exist. Skipping..')
-
                 date_here = date_here + timedelta(hours=24)
                 if args.verbose:
                     print('--------------------------------------------------')
+
+            ##run the list of product as parallel processes
+            if len(param_list) == 0:
+                print(f'[WARNING] No valid products were found')
+                exit(0)
+            param_list = optimize_param_list(param_list)
+            for params in param_list:
+                if args.atm_correction == 'BALMLP':
+                    corrector = BALTIC_MLP(fconfig, args.verbose)
+                    params[0] = corrector
+                if args.atm_correction == 'BAL202411':
+                    corrector = BALTIC_202411_PROCESSOR(fconfig, args.verbose)
+                    corrector.set_product_type(args.type_product)
+                    params[0] = corrector
+
+            if applyPool == 0:
+                if args.verbose:
+                    print(f'[INFO] Starting sequencial processing. Number of products: {len(param_list)}')
+                for params in param_list:
+                    run_parallel_corrector(params)
+            else:
+                if args.verbose:
+                    print(f'[INFO] Starting parallel processing. Number of products: {len(param_list)}')
+                    print(f'[INFO] CPUs: {os.cpu_count()}')
+                    print(f'[INFO] Parallel processes: {applyPool}')
+                if applyPool < 0:
+                    npool = os.cpu_count()
+                else:
+                    npool = applyPool
+
+                poolhere = Pool(npool)
+                poolhere.map(run_parallel_corrector, param_list)
         else:
             for f in os.listdir(input_path):
                 prod_path = os.path.join(input_path, f)
