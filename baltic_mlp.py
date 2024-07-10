@@ -199,8 +199,7 @@ class BALTIC_MLP():
         geovalid = np.zeros(array_lat.shape, dtype=np.bool)
         for r in range(height):
             for c in range(width):
-                if self.geo_limits[0] <= array_lat[r, c] <= self.geo_limits[1] and self.geo_limits[2] <= array_lon[
-                    r, c] <= self.geo_limits[3]:
+                if self.geo_limits[0] <= array_lat[r, c] <= self.geo_limits[1] and self.geo_limits[2] <= array_lon[r, c] <= self.geo_limits[3]:
                     geovalid[r, c] = True
         r, c = np.where(geovalid)
         startY = r.min()
@@ -283,40 +282,40 @@ class BALTIC_MLP():
             wl = self.central_wavelength[rrsvar]
             ncoutput.create_rrs_variable(array, namevar, wl, self.varattr)
 
-        #chl
+        # chl
         if self.verbose:
             print(f'[INFO]    Adding chla...')
-        #ncoutput.create_chla_variable(array_chl)
-        ncoutput.create_var_general(array_chl,'CHL',self.varattr)
+        # ncoutput.create_chla_variable(array_chl)
+        ncoutput.create_var_general(array_chl, 'CHL', self.varattr)
 
-        #IOP
+        # IOP
         if self.verbose:
             print(f'[INFO]    Adding IOPs...')
         for var in self.iop_var:
             if self.verbose:
                 print(f'[INFO]     {var}')
-            #ncoutput.create_iop_variable(all_arrays[var], var)
-            ncoutput.create_var_general(all_arrays[var],var,self.varattr)
+            # ncoutput.create_iop_variable(all_arrays[var], var)
+            ncoutput.create_var_general(all_arrays[var], var, self.varattr)
 
-        #KD490
+        # KD490
         if self.verbose:
             print(f'[INFO]    Adding KD490...')
-        #ncoutput.create_kd_variable(all_arrays['KD490'], 'KD490')
-        ncoutput.create_var_general(all_arrays['KD490'],'KD490',self.varattr)
+        # ncoutput.create_kd_variable(all_arrays['KD490'], 'KD490')
+        ncoutput.create_var_general(all_arrays['KD490'], 'KD490', self.varattr)
 
         if self.verbose:
             print(f'[INFO]    Adding PSC...')
         for var in self.psc_var:
             if self.verbose:
                 print(f'[INFO]     {var}')
-            ncoutput.create_var_general(all_arrays[var],var,self.varattr)
+            ncoutput.create_var_general(all_arrays[var], var, self.varattr)
 
         if self.verbose:
             print(f'[INFO]    Adding PFT...')
         for var in self.pft_var:
             if self.verbose:
                 print(f'[INFO]     {var}')
-            ncoutput.create_var_general(all_arrays[var],var,self.varattr)
+            ncoutput.create_var_general(all_arrays[var], var, self.varattr)
 
         ncoutput.close_file()
         if self.verbose:

@@ -30,6 +30,7 @@ class BALTIC_202411_PROCESSOR():
         self.wlbands_chla_olci_l3 = ['rrs442_5', 'rrs490', 'rrs510', 'rrs560', 'rrs665']
 
         self.rrsbands_polymer = self.bal_proc_old.rrsbands
+        self.geo_limits = self.bal_proc_old.geo_limits
 
         ##input bands
         # 443, 490, 510, 555, 670
@@ -71,13 +72,13 @@ class BALTIC_202411_PROCESSOR():
     def check_runac(self):
         return self.bal_proc.VALID
 
-    def set_product_type(self,product_type):
+    def set_product_type(self, product_type):
         self.product_type = product_type
         sdir = os.path.abspath(os.path.dirname(__file__))
-        if self.product_type=='polymer':
+        if self.product_type == 'polymer':
             name_json = 'varat.json'
         else:
-            name_json =  'varat_cci.json'
+            name_json = 'varat_cci.json'
         foptions = os.path.join(sdir, name_json)
         if not os.path.exists(foptions):
             path2info = os.path.join(os.path.dirname(sdir))
@@ -190,13 +191,13 @@ class BALTIC_202411_PROCESSOR():
         ncinput = Dataset(prod_path)
         from datetime import datetime as dt
         date_file = None
-        if self.product_type=='polymer':
+        if self.product_type == 'polymer':
             self.tileX = 500
             self.tileY = 500
             if 'start_time' in ncinput.ncattrs():
                 start_time_str = ncinput.start_time
                 try:
-                    date_file = dt.strptime(start_time_str,'%Y-%m-%d %H:%M:%S')
+                    date_file = dt.strptime(start_time_str, '%Y-%m-%d %H:%M:%S')
                 except:
                     start_time_str = os.path.basename(prod_path).split('_')[7]
                     try:
@@ -204,7 +205,7 @@ class BALTIC_202411_PROCESSOR():
                     except:
                         pass
 
-        if self.product_type=='cci':
+        if self.product_type == 'cci':
             date_file = dt.utcfromtimestamp(ncinput.variables['time'][0]).replace(tzinfo=pytz.UTC)
 
         if date_file is None:
@@ -240,6 +241,9 @@ class BALTIC_202411_PROCESSOR():
                 endY = ncinput.dimensions['height'].size - 1
             else:
                 startY, endY, startX, endX = self.get_geo_limits(ncinput)
+                if startY==-1 and endY==-1 and startX==-1 and endX==-1:
+                    print(f'[WARNING] Image is not covering the Baltic Sea. Skipping...')
+                    return
                 if self.verbose:
                     print(f'[INFO] Trimming y->{startY}:{endY} x->{startX}:{endX}')
         elif self.product_type == 'cci':
@@ -267,7 +271,7 @@ class BALTIC_202411_PROCESSOR():
             #     print(f'[INFO] Processing line {ycheck}/{ny}')
             for x in range(startX, endX, self.tileX):
                 xcheck = x - startX
-                #if self.verbose and (xcheck == 0 or ((xcheck % self.tileX) == 0)):
+                # if self.verbose and (xcheck == 0 or ((xcheck % self.tileX) == 0)):
                 print(f'[INFO] Processing tile {ycheck}/{ny} - {xcheck}/{nx}')
                 yini = y
                 yend = y + self.tileY
@@ -283,9 +287,11 @@ class BALTIC_202411_PROCESSOR():
 
                 if nvalid > 0:
                     if self.product_type == 'cci':
-                        input_rrs, iop, cyano_info = self.get_valid_rrs_cci(ncinput, valid_mask, nvalid, yini, yend, xini,xend)
+                        input_rrs, iop, cyano_info = self.get_valid_rrs_cci(ncinput, valid_mask, nvalid, yini, yend,
+                                                                            xini, xend)
                     if self.product_type == 'polymer':
-                        input_rrs, iop, cyano_info = self.get_valid_rrs_polymer(ncinput, valid_mask, nvalid, yini, yend,xini, xend)
+                        input_rrs, iop, cyano_info = self.get_valid_rrs_polymer(ncinput, valid_mask, nvalid, yini, yend,
+                                                                                xini, xend)
 
                     res_algorithm = self.bal_proc.compute_ensemble(input_rrs)
 
@@ -405,7 +411,23 @@ class BALTIC_202411_PROCESSOR():
                 self.central_wavelength = {}
                 self.central_wl_chla = []
 
+    def get_geo_limits(self, ncpolymer):
+        array_lat = np.array(ncpolymer.variables['latitude'][:, :])
+        array_lon = np.array(ncpolymer.variables['longitude'][:, :])
+        geovalid = np.logical_and(np.logical_and(array_lat >= self.geo_limits[0], array_lat <= self.geo_limits[1]),np.logical_and(array_lon >= self.geo_limits[2],array_lon <= self.geo_limits[3]))
+        if np.count_nonzero(geovalid)>0:
+            r, c = np.where(geovalid)
+            startY = r.min()
+            endY = r.max()
+            startX = c.min()
+            endX = c.max()
+        else:
+            startY=-1
+            endY=-1
+            startX=-1
+            endX=-1
 
+        return startY, endY, startX, endX
 
     def get_valid_olci_l3_mask(self, yini, yend, xini, xend):
         array_mask = None
@@ -478,10 +500,9 @@ class BALTIC_202411_PROCESSOR():
 
         return rrsdata, iop, cyano_info
 
-
     def get_valid_rrs_polymer(self, ncpolymer, valid_mask, nvalid, yini, yend, xini, xend):
         # 443_490_510_555_670
-        #wlbands = ['Rw443', 'Rw490', 'Rw510', 'Rw560', 'Rw665']
+        # wlbands = ['Rw443', 'Rw490', 'Rw510', 'Rw560', 'Rw665']
         # rrsdata = np.zeros([nvalid, 5])
         rrsdata = np.zeros([5, nvalid])
         for iband in range(5):
@@ -620,7 +641,7 @@ class BALTIC_202411_PROCESSOR():
                 array[array.mask] = -999
                 array[~array.mask] = array[~array.mask] / np.pi
                 wl = self.central_wavelength[rrsvar]
-                ncoutput.create_rrs_variable(array, namevar, wl, self.varattr,self.product_type)
+                ncoutput.create_rrs_variable(array, namevar, wl, self.varattr, self.product_type)
 
         ##olci_l3
         if self.product_type == 'olci_l3':
@@ -658,7 +679,7 @@ class BALTIC_202411_PROCESSOR():
         if self.verbose:
             print(f'[INFO]    File {fileout} was created')
 
-        if self.product_type=='cci':
+        if self.product_type == 'cci':
             ncref = Dataset(fileout)
             variables = ['lat', 'lon', 'CHL', 'CYANOBLOOM']
             output_file_chla = os.path.join(os.path.dirname(fileout), f'C{date_file.strftime("%Y%j")}-chl-bal-hr.nc')
@@ -704,7 +725,7 @@ class BALTIC_202411_PROCESSOR():
             if name == 'CYANOBLOOM':
                 datatype = 'i4'
                 fill_value = -999
-            #print(name, datatype, fill_value)
+            # print(name, datatype, fill_value)
 
             if name == 'lat' or name == 'lon':
                 dimensions = variable.dimensions
