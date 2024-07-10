@@ -680,84 +680,84 @@ def launch_single_map_olci(dataset, output_path, dateherestr):
 
     lat_array = dataset.variables['latitude'][:]
     lon_array = dataset.variables['longitude'][:]
-    data = dataset.variables['CHL'][:]
+    # data = dataset.variables['CHL'][:]
+    #
+    # data_stats = np.ma.compressed(data)
+    #
+    # ##chl-a- fix-range
+    # fig, ax = start_full_figure()
+    # h = ax.pcolormesh(lon_array, lat_array, data, norm=LogNorm(vmin=0.1, vmax=100))
+    # cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03, format="$%.2f$")
+    # cbar.ax.tick_params(labelsize=15)
+    # units = r'mg m$^-$$^3$'
+    # cbar.set_label(label=f'CHL ({units})', size=15)
+    # title = f'Chlorophyll a concentration ({units})'
+    # if dateherestr is not None:
+    #     title = f'{title} - {dateherestr}'
+    # ax.set_title(title, fontsize=20)
+    # fig.savefig(output_path, dpi=300, bbox_inches='tight')
+    # plt.close(fig)
+    #
+    # ##chl-a
+    # fig,ax = start_full_figure()
+    # min_chla = np.percentile(data_stats, 1)
+    # max_chla = np.percentile(data_stats, 99)
+    # h = ax.pcolormesh(lon_array,lat_array,data,norm=LogNorm(vmin=min_chla, vmax=max_chla))
+    # cbar = fig.colorbar(h,cax = None, ax = ax, use_gridspec = True, fraction=0.03,format="$%.2f$")
+    # cbar.ax.tick_params(labelsize=15)
+    # units = r'mg m$^-$$^3$'
+    # cbar.set_label(label=f'CHL ({units})', size=15)
+    # title = f'Chlorophyll a concentration ({units})'
+    # if dateherestr is not None:
+    #     title = f'{title} - {dateherestr}'
+    # ax.set_title(title, fontsize=20)
+    # output_path_here = os.path.join(os.path.dirname(output_path), f'Img_Chla_{dateherestr}.png')
+    # fig.savefig(output_path_here, dpi=300, bbox_inches='tight')
+    # plt.close(fig)
 
-    data_stats = np.ma.compressed(data)
 
-    ##chl-a- fix-range
-    fig, ax = start_full_figure()
-    h = ax.pcolormesh(lon_array, lat_array, data, norm=LogNorm(vmin=0.1, vmax=100))
-    cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03, format="$%.2f$")
-    cbar.ax.tick_params(labelsize=15)
-    units = r'mg m$^-$$^3$'
-    cbar.set_label(label=f'CHL ({units})', size=15)
-    title = f'Chlorophyll a concentration ({units})'
-    if dateherestr is not None:
-        title = f'{title} - {dateherestr}'
-    ax.set_title(title, fontsize=20)
-    fig.savefig(output_path, dpi=300, bbox_inches='tight')
-    plt.close(fig)
 
-    ##chl-a
-    fig,ax = start_full_figure()
-    min_chla = np.percentile(data_stats, 1)
-    max_chla = np.percentile(data_stats, 99)
-    h = ax.pcolormesh(lon_array,lat_array,data,norm=LogNorm(vmin=min_chla, vmax=max_chla))
-    cbar = fig.colorbar(h,cax = None, ax = ax, use_gridspec = True, fraction=0.03,format="$%.2f$")
-    cbar.ax.tick_params(labelsize=15)
-    units = r'mg m$^-$$^3$'
-    cbar.set_label(label=f'CHL ({units})', size=15)
-    title = f'Chlorophyll a concentration ({units})'
-    if dateherestr is not None:
-        title = f'{title} - {dateherestr}'
-    ax.set_title(title, fontsize=20)
-    output_path_here = os.path.join(os.path.dirname(output_path), f'Img_Chla_{dateherestr}.png')
-    fig.savefig(output_path_here, dpi=300, bbox_inches='tight')
-    plt.close(fig)
+    ##cdf flag
+    cdf_mlp3b = dataset.variables['CDF_MLP3B'][:]
+    cdf_mlp4b = dataset.variables['CDF_MLP4B'][:]
+    cdf_mlp5b = dataset.variables['CDF_MLP5B'][:]
+    cdf_mask_mlp3b = np.ma.where(cdf_mlp3b >= 0.001,2,0)
+    cdf_mask_mlp4b = np.ma.where(cdf_mlp4b >= 0.001,4,0)
+    cdf_mask_mlp5b = np.ma.where(cdf_mlp5b >= 0.001,8,0)
+    cdf_flag_multiple = np.ma.filled(cdf_mask_mlp3b,0)+np.ma.filled(cdf_mask_mlp4b,0)+np.ma.filled(cdf_mask_mlp5b,0)
+    cdf_flag_multiple[cdf_flag_multiple == 0] = 1
+    #cdf_flag_multiple = np.ma.array(cdf_flag_multiple,mask=(cdf_mlp3b.mask*cdf_mask_mlp4b.mask*cdf_mask_mlp5b.mask))
 
-    dataset.close()
+    cdf_mlp3b = np.ma.masked_less(cdf_mlp3b, 0.001)
+    cdf_mlp4b = np.ma.masked_less(cdf_mlp4b, 0.001)
+    cdf_mlp5b = np.ma.masked_less(cdf_mlp5b, 0.001)
+    cdf_sum = np.ma.filled(cdf_mlp3b,0) + np.ma.filled(cdf_mlp4b,0) + np.ma.filled(cdf_mlp5b,0)
+    weight_mlp3b = np.ma.divide(cdf_mlp3b, cdf_sum)
+    weight_mlp4b = np.ma.divide(cdf_mlp4b, cdf_sum)
+    weight_mlp5b = np.ma.divide(cdf_mlp5b, cdf_sum)
 
-    #cdf flag
-    # cdf_mlp3b = dataset.variables['CDF_MLP3B'][:]
-    # cdf_mlp4b = dataset.variables['CDF_MLP4B'][:]
-    # cdf_mlp5b = dataset.variables['CDF_MLP5B'][:]
-    # cdf_mask_mlp3b = np.ma.where(cdf_mlp3b >= 0.001,2,0)
-    # cdf_mask_mlp4b = np.ma.where(cdf_mlp4b >= 0.001,4,0)
-    # cdf_mask_mlp5b = np.ma.where(cdf_mlp5b >= 0.001,8,0)
-    # cdf_flag_multiple = np.ma.filled(cdf_mask_mlp3b,0)+np.ma.filled(cdf_mask_mlp4b,0)+np.ma.filled(cdf_mask_mlp5b,0)
-    # cdf_flag_multiple[cdf_flag_multiple == 0] = 1
-    # cdf_flag_multiple = np.ma.array(cdf_flag_multiple,mask=(cdf_mlp3b.mask*cdf_mask_mlp4b.mask*cdf_mask_mlp5b.mask))
-    #
-    # cdf_mlp3b = np.ma.masked_less(cdf_mlp3b, 0.001)
-    # cdf_mlp4b = np.ma.masked_less(cdf_mlp4b, 0.001)
-    # cdf_mlp5b = np.ma.masked_less(cdf_mlp5b, 0.001)
-    # cdf_sum = np.ma.filled(cdf_mlp3b,0) + np.ma.filled(cdf_mlp4b,0) + np.ma.filled(cdf_mlp5b,0)
-    # weight_mlp3b = np.ma.divide(cdf_mlp3b, cdf_sum)
-    # weight_mlp4b = np.ma.divide(cdf_mlp4b, cdf_sum)
-    # weight_mlp5b = np.ma.divide(cdf_mlp5b, cdf_sum)
-    #
-    #
-    #
-    # weight_arrays = [weight_mlp3b, weight_mlp4b, weight_mlp5b]
-    # titles = ['Weight CDF MLP3B','Weight CDF MLP4B','Weight CDF MLP5B']
-    # ##weight arrays
-    # for idx in range(len(weight_arrays)):
-    #     fig, ax = start_full_figure()
-    #     array = weight_arrays[idx]
-    #     h = ax.pcolormesh(lon_array, lat_array,array,cmap = mpl.colormaps['jet'],vmin=0,vmax=1)
-    #     cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03, format="$%.2f$")
-    #     cbar.ax.tick_params(labelsize=15)
-    #     cbar.set_label(label=f'Weight', size=15)
-    #     title = titles[idx]
-    #     if dateherestr is not None:
-    #         title = f'{title} - {dateherestr}'
-    #     ax.set_title(title, fontsize=20)
-    #     name = title.replace(' ','_')
-    #     output_path_here = os.path.join(os.path.dirname(output_path), f'Img_{name}_.png')
-    #     fig.savefig(output_path_here, dpi=300, bbox_inches='tight')
-    #     plt.close(fig)
-    #
-    #
+
+
+    weight_arrays = [weight_mlp3b, weight_mlp4b, weight_mlp5b]
+    titles = ['Weight CDF MLP3B','Weight CDF MLP4B','Weight CDF MLP5B']
+    ##weight arrays
+    for idx in range(len(weight_arrays)):
+        fig, ax = start_full_figure()
+        array = weight_arrays[idx]
+        h = ax.pcolormesh(lon_array, lat_array,array,cmap = mpl.colormaps['jet'],vmin=0,vmax=1)
+        cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03, format="$%.2f$")
+        cbar.ax.tick_params(labelsize=15)
+        cbar.set_label(label=f'Weight', size=15)
+        title = titles[idx]
+        if dateherestr is not None:
+            title = f'{title} - {dateherestr}'
+        ax.set_title(title, fontsize=20)
+        name = title.replace(' ','_')
+        output_path_here = os.path.join(os.path.dirname(output_path), f'Img_{name}_.png')
+        fig.savefig(output_path_here, dpi=300, bbox_inches='tight')
+        plt.close(fig)
+
+
     # #flag multiple
     # fig, ax = start_full_figure()
     # bounds = [1, 2, 4, 6, 8, 10, 12, 14, 15]
