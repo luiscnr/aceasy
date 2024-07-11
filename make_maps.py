@@ -678,8 +678,8 @@ def launch_single_map_daily_diff(dataset, output_path, dateherestr):
 def launch_single_map_olci(dataset, output_path, dateherestr):
     print(f'[INFO] Output path: {output_path}')
 
-    lat_array = dataset.variables['latitude'][:]
-    lon_array = dataset.variables['longitude'][:]
+    # lat_array = dataset.variables['latitude'][:]
+    # lon_array = dataset.variables['longitude'][:]
     # data = dataset.variables['CHL'][:]
     #
     # data_stats = np.ma.compressed(data)
@@ -717,16 +717,16 @@ def launch_single_map_olci(dataset, output_path, dateherestr):
 
 
 
-    ##cdf flag
-    cdf_mlp3b = dataset.variables['CDF_MLP3B'][:]
-    cdf_mlp4b = dataset.variables['CDF_MLP4B'][:]
-    cdf_mlp5b = dataset.variables['CDF_MLP5B'][:]
-    cdf_mask_mlp3b = np.ma.where(cdf_mlp3b >= 0.001,2,0)
-    cdf_mask_mlp4b = np.ma.where(cdf_mlp4b >= 0.001,4,0)
-    cdf_mask_mlp5b = np.ma.where(cdf_mlp5b >= 0.001,8,0)
-    cdf_flag_multiple = np.ma.filled(cdf_mask_mlp3b,0)+np.ma.filled(cdf_mask_mlp4b,0)+np.ma.filled(cdf_mask_mlp5b,0)
-    cdf_flag_multiple[cdf_flag_multiple == 0] = 1
-    cdf_flag_multiple = np.ma.array(cdf_flag_multiple,mask=(cdf_mlp3b.mask*cdf_mask_mlp4b.mask*cdf_mask_mlp5b.mask))
+    # ##cdf flag
+    # cdf_mlp3b = dataset.variables['CDF_MLP3B'][:]
+    # cdf_mlp4b = dataset.variables['CDF_MLP4B'][:]
+    # cdf_mlp5b = dataset.variables['CDF_MLP5B'][:]
+    # cdf_mask_mlp3b = np.ma.where(cdf_mlp3b >= 0.001,2,0)
+    # cdf_mask_mlp4b = np.ma.where(cdf_mlp4b >= 0.001,4,0)
+    # cdf_mask_mlp5b = np.ma.where(cdf_mlp5b >= 0.001,8,0)
+    # cdf_flag_multiple = np.ma.filled(cdf_mask_mlp3b,0)+np.ma.filled(cdf_mask_mlp4b,0)+np.ma.filled(cdf_mask_mlp5b,0)
+    # cdf_flag_multiple[cdf_flag_multiple == 0] = 1
+    # cdf_flag_multiple = np.ma.array(cdf_flag_multiple,mask=(cdf_mlp3b.mask*cdf_mask_mlp4b.mask*cdf_mask_mlp5b.mask))
 
     # cdf_mlp3b = np.ma.masked_less(cdf_mlp3b, 0.001)
     # cdf_mlp4b = np.ma.masked_less(cdf_mlp4b, 0.001)
@@ -758,68 +758,68 @@ def launch_single_map_olci(dataset, output_path, dateherestr):
     #     plt.close(fig)
 
 
-    #flag multiple
-    fig, ax = start_full_figure()
-    bounds = [1, 2, 4, 6, 8, 10, 12, 14, 15]
-    norm = colors.BoundaryNorm(boundaries=bounds, ncolors=9)
-    h = ax.pcolormesh(lon_array, lat_array, cdf_flag_multiple,norm = norm, cmap = mpl.colormaps['Set1'])
-    cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03,format="$%.2f$")
-    cbar.ax.tick_params(labelsize=15)
-    cbar.set_label(label=f'CDF Flag Multiple', size=15)
-    title = f'CDF Flag Multiple'
-    if dateherestr is not None:
-        title = f'{title} - {dateherestr}'
-    ax.set_title(title, fontsize=20)
-    output_path_here = os.path.join(os.path.dirname(output_path),f'Img_FlagMultiple_{dateherestr}.png')
-    fig.savefig(output_path_here, dpi=300, bbox_inches='tight')
-    plt.close(fig)
-
-    #flag_cyano
-    rrs555 = dataset.variables['RRS560'][:]
-    rrs670 = dataset.variables['RRS665'][:]
-    rrs555 = rrs555 * np.pi
-    rrs670 = rrs670 * np.pi
-    mask_cyano = np.zeros(rrs670.shape)
-    mask_cyano[rrs555 > 4.25e-3] = mask_cyano[rrs555 > 4.25e-3] + 1
-    mask_cyano[rrs670 > 1.22e-3] = mask_cyano[rrs670 > 1.22e-3] + 2
-    mask_cyano = np.ma.array(mask_cyano,mask = cdf_flag_multiple.mask)
-    fig, ax = start_full_figure()
-    bounds = [0, 1, 2, 3, 4]
-    norm = colors.BoundaryNorm(boundaries=bounds, ncolors=5)
-    newcolors = ['blue','red','green','purple']
-    newcmp = ListedColormap(newcolors)
-    h = ax.pcolormesh(lon_array, lat_array, mask_cyano, norm=norm, cmap=newcmp)
-    cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03, format="$%.2f$")
-    cbar.ax.tick_params(labelsize=15)
-    cbar.set_label(label=f'Flag Cyano', size=15)
-    title = f'Cyanobacterial flag'
-    if dateherestr is not None:
-        title = f'{title} - {dateherestr}'
-    ax.set_title(title, fontsize=20)
-    output_path_here = os.path.join(os.path.dirname(output_path), f'Img_FlagCyano_{dateherestr}.png')
-    fig.savefig(output_path_here, dpi=300, bbox_inches='tight')
-    plt.close(fig)
-
-    dataset.close()
-    #
-    # ##multiple plot
-    # file_out = os.path.join(os.path.dirname(output_path), f'Img_DayAll_{dateherestr}.png')
-    # if os.path.exists(file_out):
-    #     return
-    # fig, ax = plt.subplots(2, 3, figsize=(15, 6), frameon=True, gridspec_kw={'wspace': 0, 'hspace': 0})
-    # from matplotlib import image as img
-    # files_img = [[f'Img_Chla_{dateherestr}.png',f'Img_FlagMultiple_{dateherestr}.png',f'Img_FlagCyano_{dateherestr}.png'],
-    #              [f'Img_Weight_CDF_MLP3B_-_{dateherestr}_.png',f'Img_Weight_CDF_MLP4B_-_{dateherestr}_.png',f'Img_Weight_CDF_MLP5B_-_{dateherestr}_.png']]
-    # for irow in range(2):
-    #     for icol in range(3):
-    #         file_img = os.path.join(os.path.dirname(output_path),files_img[irow][icol])
-    #         image = img.imread(file_img)
-    #         ax[irow, icol].imshow(image)
-    #         ax[irow, icol].set_xticks([])
-    #         ax[irow, icol].set_yticks([])
-    # fig.tight_layout()
-    # plt.savefig(file_out, dpi=300, bbox_inches='tight', facecolor='white')
+    # #flag multiple
+    # fig, ax = start_full_figure()
+    # bounds = [1, 2, 4, 6, 8, 10, 12, 14, 15]
+    # norm = colors.BoundaryNorm(boundaries=bounds, ncolors=9)
+    # h = ax.pcolormesh(lon_array, lat_array, cdf_flag_multiple,norm = norm, cmap = mpl.colormaps['Set1'])
+    # cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03,format="$%.2f$")
+    # cbar.ax.tick_params(labelsize=15)
+    # cbar.set_label(label=f'CDF Flag Multiple', size=15)
+    # title = f'CDF Flag Multiple'
+    # if dateherestr is not None:
+    #     title = f'{title} - {dateherestr}'
+    # ax.set_title(title, fontsize=20)
+    # output_path_here = os.path.join(os.path.dirname(output_path),f'Img_FlagMultiple_{dateherestr}.png')
+    # fig.savefig(output_path_here, dpi=300, bbox_inches='tight')
     # plt.close(fig)
+
+    # #flag_cyano
+    # rrs555 = dataset.variables['RRS560'][:]
+    # rrs670 = dataset.variables['RRS665'][:]
+    # rrs555 = rrs555 * np.pi
+    # rrs670 = rrs670 * np.pi
+    # mask_cyano = np.zeros(rrs670.shape)
+    # mask_cyano[rrs555 > 4.25e-3] = mask_cyano[rrs555 > 4.25e-3] + 1
+    # mask_cyano[rrs670 > 1.22e-3] = mask_cyano[rrs670 > 1.22e-3] + 2
+    # mask_cyano = np.ma.array(mask_cyano,mask = cdf_flag_multiple.mask)
+    # fig, ax = start_full_figure()
+    # bounds = [0, 1, 2, 3, 4]
+    # norm = colors.BoundaryNorm(boundaries=bounds, ncolors=5)
+    # newcolors = ['blue','red','green','purple']
+    # newcmp = ListedColormap(newcolors)
+    # h = ax.pcolormesh(lon_array, lat_array, mask_cyano, norm=norm, cmap=newcmp)
+    # cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03, format="$%.2f$")
+    # cbar.ax.tick_params(labelsize=15)
+    # cbar.set_label(label=f'Flag Cyano', size=15)
+    # title = f'Cyanobacterial flag'
+    # if dateherestr is not None:
+    #     title = f'{title} - {dateherestr}'
+    # ax.set_title(title, fontsize=20)
+    # output_path_here = os.path.join(os.path.dirname(output_path), f'Img_FlagCyano_{dateherestr}.png')
+    # fig.savefig(output_path_here, dpi=300, bbox_inches='tight')
+    # plt.close(fig)
+    #
+    # dataset.close()
+
+    ##multiple plot
+    file_out = os.path.join(os.path.dirname(output_path), f'Img_DayAll_{dateherestr}.png')
+    if os.path.exists(file_out):
+        return
+    fig, ax = plt.subplots(2, 3, figsize=(15, 6), frameon=True, gridspec_kw={'wspace': 0, 'hspace': 0})
+    from matplotlib import image as img
+    files_img = [[f'Img_Chla_{dateherestr}.png',f'Img_FlagMultiple_{dateherestr}.png',f'Img_FlagCyano_{dateherestr}.png'],
+                 [f'Img_Weight_CDF_MLP3B_-_{dateherestr}_.png',f'Img_Weight_CDF_MLP4B_-_{dateherestr}_.png',f'Img_Weight_CDF_MLP5B_-_{dateherestr}_.png']]
+    for irow in range(2):
+        for icol in range(3):
+            file_img = os.path.join(os.path.dirname(output_path),files_img[irow][icol])
+            image = img.imread(file_img)
+            ax[irow, icol].imshow(image)
+            ax[irow, icol].set_xticks([])
+            ax[irow, icol].set_yticks([])
+    fig.tight_layout()
+    plt.savefig(file_out, dpi=300, bbox_inches='tight', facecolor='white')
+    plt.close(fig)
 
 
 
