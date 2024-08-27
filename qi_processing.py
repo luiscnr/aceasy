@@ -12,6 +12,7 @@ parser.add_argument('-sd', "--start_date", help="Start date (yyyy-mm-dd)")
 parser.add_argument('-ed', "--end_date", help="End date (yyyy-mm-dd")
 parser.add_argument('-c', "--config_file", help="Configuration file (Default: qiprocessing.ini)")
 parser.add_argument('-nrt', "--nrt_mode", help="NRT mode.", action="store_true")
+parser.add_argument('-dt', "--dt_mode", help="DT mode (last two years).", action="store_true")
 parser.add_argument('-af',"--append_files", help="Append QI files from start date to end date", action="store_true")
 args = parser.parse_args()
 
@@ -93,7 +94,10 @@ def main():
             qiproc.update_json_file(region, date_proc)
             date_proc = date_proc + timedelta(hours=24)
 
-    if args.append_files:
+    if args.dt_mode:
+        start_date_abs = end_date - timedelta(days=730)
+        qiproc.append_qi_files(start_date_abs,end_date)
+    elif args.append_files:
         qiproc.append_qi_files(start_date,end_date)
 
 
