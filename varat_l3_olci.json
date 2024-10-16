@@ -1,0 +1,211 @@
+{
+"RRS":
+{
+"standard_name":"surface_ratio_of_upwelling_radiance_emerging_from_sea_water_to_downwelling_radiative_flux_in_air",
+"units":"sr^-1",
+"type":"surface",
+"source":"OLCI - POLYMER v.4.14 Atmospheric Correction Processor",
+"valid_min":0.000001,
+"valid_max":1.0
+},
+"CHL":
+{
+"long_name":"Chlorophyll a concentration",
+"standard_name":"mass_concentration_of_chlorophyll_a_in_sea_water",
+"type":"surface",
+"units":"milligram m^-3",
+"source":"OLCI - POLYMER v.4.14 Atmospheric Correction Processor - BAL MLP Ensemble v. 202411",
+"comment":"Brando VE, Sammartino M, Colella S, Bracaglia M, Di Cicco A, D’Alimonte D, Kajiyama T, Kaitala S and Attila J (2021). Phytoplankton Bloom Dynamics in the Baltic Sea Using a Consistently Reprocessed Time Series of Multi-Sensor Reflectance and Novel Chlorophyll-a Retrievals. Remote Sens. 13:3071. doi: 10.3390/rs13163071",
+"missing_value":-999.0,
+"valid_min":0.01,
+"valid_max":300.0
+},
+"ADG443":
+{
+"long_name":"Absorption due to gelbstoff and detrital material at 443 nm",
+"standard_name":"volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_dissolved_organic_matter_and_non_algal_particles",
+"type":"surface",
+"units":"m^-1",
+"source":"OLCI - POLYMER v.4.14 Atmospheric Correction Processor",
+"comment":"QAA v.6 modified as in Brando et al. (2021)",
+"missing_value":-999.0,
+"valid_min":0.0,
+"valid_max":10.0
+},
+"APH443":
+{
+"long_name":"Absorption due to phytoplankton at 443 nm",
+"standard_name":"volume_absorption_coefficient_of_radiative_flux_in_sea_water_due_to_phytoplankton",
+"type":"surface",
+"units":"m^-1",
+"source":"OLCI - POLYMER v.4.14 Atmospheric Correction Processor",
+"comment":"QAA v. 6 modified as in Brando et al. (2021)",
+"missing_value":-999.0,
+"valid_min":0.0,
+"valid_max":10.0
+},
+"BBP443":
+{
+"long_name":"Particulate back-scattering coefficient at 443 nm",
+"standard_name":"volume_backwards_scattering_coefficient_of_radiative_flux_in_sea_water_due_to_particles",
+"type":"surface",
+"units":"m^-1",
+"source":"OLCI - POLYMER v.4.14 Atmospheric Correction Processor",
+"comment":"QAA v. 6 modified as in Brando et al. (2021)",
+"missing_value":-999.0,
+"valid_min":0.0,
+"valid_max":10.0
+},
+"KD490":
+{
+"long_name":"OLCI Diffuse Attenuation Coefficient at 490 nm",
+"standard_name":"volume_attenuation_coefficient_of_downwelling_radiative_flux_in_sea_water",
+"type":"surface",
+"units":"m^-1",
+"source":"OLCI - POLYMER v.4.14 Atmospheric Correction Processor",
+"comment":"Sentinel-3 OLCI Transparency Products ATBD (https://sentinels.copernicus.eu/documents/247904/349589/OLCI_L2_Transparency_Products.pdf)", 
+"missing_value":-999.0,
+"valid_min":0.0,
+"valid_max":10.0
+},
+"MICRO":
+{
+"long_name":"Concentration Of Microphytoplankton expressed as chlorophyll-a concentration",
+"standard_name":"mass_concentration_of_microphytoplankton_expressed_as_chlorophyll_in_sea_water",
+"type":"surface",
+"units":"milligram m^-3",
+"source":"OLCI - POLYMER v.4.14 Atmospheric Correction Processor - BAL MLP Ensemble v. 202411",
+"comment":"Derived from chl as in Brando et al. (2021). Chl validity range: 0.13-25.5 mg m-3",
+"missing_value":-999.0,
+"valid_min":0.01,
+"valid_max":100.0
+},
+"NANO":
+{
+"long_name":"Concentration Of Nanophytoplankton expressed as chlorophyll-a concentration",
+"standard_name":"mass_concentration_of_nanophytoplankton_expressed_as_chlorophyll_in_sea_water",
+"type":"surface",
+"units":"milligram m^-3",
+"source":"OLCI - POLYMER v.4.14 Atmospheric Correction Processor - BAL MLP Ensemble  v. 202411",
+"comment":"Derived from chl as in Brando et al. (2021). Chl validity range: 0.13-25.5 mg m-3",
+"missing_value":-999.0,
+"valid_min":0.01,
+"valid_max":100.0
+},
+"PICO":
+{
+"long_name":"Concentration Of Picophytoplankton expressed as chlorophyll-a concentration",
+"standard_name":"mass_concentration_of_picophytoplankton_expressed_as_chlorophyll_in_sea_water",
+"type":"surface",
+"units":"milligram m^-3",
+"source":"OLCI - POLYMER v.4.14 Atmospheric Correction Processor - BAL MLP Ensemble v. 202411",
+"comment":"Derived from chl as in Brando et al. (2021). Chl validity range: 0.13-25.5 mg m-3",
+"missing_value":-999.0,
+"valid_min":0.01,
+"valid_max":100.0
+},
+"DINO":
+{
+"long_name":"Concentration Of Dinophyte expressed as chlorophyll-a concentration",
+"standard_name":"mass_concentration_of_dinophytes_expressed_as_chlorophyll_in_sea_water",
+"type":"surface",
+"units":"milligram m^-3",
+"source":"OLCI - POLYMER v.4.14 Atmospheric Correction Processor - BAL MLP Ensemble  v. 202411",
+"comment":"Derived from chl as in Brando et al. (2021). Chl validity range: 0.13-25.5 mg m-3",
+"missing_value":-999.0,
+"valid_min":0.01,
+"valid_max":100.0
+},
+"DIATO":
+{
+"long_name":"Concentration Of Diatom expressed as chlorophyll-a concentration",
+"standard_name":"mass_concentration_of_diatoms_expressed_as_chlorophyll_in_sea_water",
+"type":"surface",
+"units":"milligram m^-3",
+"source":"OLCI - POLYMER v.4.14 Atmospheric Correction Processor - BAL MLP Ensemble  v. 202411",
+"comment":"Derived from chl as in Brando et al. (2021). Chl validity range: 0.13-25.5 mg m-3",
+"missing_value":-999.0,
+"valid_min":0.01,
+"valid_max":100.0
+},
+"GREEN":
+{
+"long_name":"Concentration Of Green algae and Prochlorophyte expressed as chlorophyll-a concentration",
+"standard_name":"mass_concentration_of_greenalgae_and_prochlorophytes_expressed_as_chlorophyll_in_sea_water",
+"type":"surface",
+"units":"milligram m^-3",
+"source":"OLCI - POLYMER v.4.14 Atmospheric Correction Processor - BAL MLP Ensemble  v. 202411",
+"comment":"Derived from chl as in Brando et al. (2021). Chl validity range: 0.13-25.5 mg m-3",
+"missing_value":-999.0,
+"valid_min":0.01,
+"valid_max":100.0
+},
+"CRYPTO":
+{
+"long_name":"Concentration Of Cryptophyte expressed as chlorophyll-a concentration",
+"standard_name":"mass_concentration_of_cryptophytes_expressed_as_chlorophyll_in_sea_water",
+"type":"surface",
+"units":"milligram m^-3",
+"source":"OLCI - POLYMER v.4.14 Atmospheric Correction Processor - BAL MLP Ensemble  v. 202411",
+"comment":"Derived from chl as in Brando et al. (2021). Chl validity range: 0.13-25.5 mg m-3",
+"missing_value":-999.0,
+"valid_min":0.01,
+"valid_max":100.0
+},
+"PROKAR":
+{
+"long_name":"Concentration Of Prokaryote expressed as chlorophyll-a concentration",
+"standard_name":"mass_concentration_of_prokaryotes_expressed_as_chlorophyll_in_sea_water",
+"type":"surface",
+"units":"milligram m^-3",
+"source":"OLCI - POLYMER v.4.14 Atmospheric Correction Processor - BAL MLP Ensemble  v. 202411",
+"comment":"Derived from chl as in Brando et al. (2021). Chl validity range: 0.13-25.5 mg m-3",
+"missing_value":-999.0,
+"valid_min":0.01,
+"valid_max":100.0
+},
+"CYANOBLOOM":{
+"long_name":"Cyanobacteria summer bloom mask",
+"comment":"Subsurface bloom=1; Surface bloom=2. Each CYANOBLOOM pixel is the sum of all available values. Each pixel can have a value between 0 (no summer bloom detected) and 3 (both subsurface and surface summer blooms detected). Derived from RRS(550 nm and 670 nm) as in Brando et al., 2021",
+"type":"surface",
+"source":"OLCI - POLYMER v.4.14 Atmospheric Correction Processor - BAL MLP Ensemble based on CDF",
+"missing_value":-999,
+"valid_min":0,
+"valid_max":3
+},
+"GLOBAL":{
+"Conventions":"CF-1.4",
+"netcdf_version":"v4",
+"contact":"technical@gos.artov.isac.cnr.it",
+"institution":"CNR-GOS",
+"references":"Brando VE, Sammartino M, Colella S, Bracaglia M, Di Cicco A, D?Alimonte D, Kajiyama T, Kaitala S and Attila J (2021). Phytoplankton Bloom Dynamics in the Baltic Sea Using a Consistently Reprocessed Time Series of Multi-Sensor Reflectance and Novel Chlorophyll-a Retrievals. Remote Sens. 13:3071. doi: 10.3390/rs13163071",
+"naming_authority":"CMEMS",
+"distribution_statement":"See CMEMS Data License",
+"cmems_production_unit":"OC-CNR-ROMA-IT",
+"source":"surface observation",
+"platform":"Sentinel3A+B",
+"sensor_name":"OLCIA+B",
+"sensor":"Ocean and Land Colour Instrument",
+"product_level":"L3",
+"product_version":"v02",
+"grid_mapping":"Equirectangular",
+"software_name":"GOS Processing chain",
+"BALMLP_code_version":"BAL MLP ENSEMBLE 202411",
+"grid_mapping":"Equirectangular",
+"grid_resolution":"0.3 km",
+"westernmost_longitude":9.25,
+"easternmost_longitude":30.25,
+"southernmost_latitude":53.25,
+"northernmost_latitude": 65.85,
+"site_name":"BAL",
+"area": "bal",
+"start_date":"",
+"stop_date":"",
+"creation_date":"",
+"creation_time":"",
+"parameter_code":"PLANKTON",
+"parameter":"Chlorophyll-a concentration and Phytoplankton Functional Types",
+"title":"cmems_obs-oc_bal_bgc-plankton_my_l3-multi-1km_P1D",
+"cmems_product_id":"OCEANCOLOUR_BAL_BGC_L3_MY_009_133"
+}	
+}

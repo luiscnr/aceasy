@@ -38,7 +38,7 @@ parser.add_argument('-ac', "--atm_correction", help="Atmospheric correction",
                     choices=["C2RCC", "POLYMER", "FUB_CSIRO", "ACOLITE", "IDEPIX", "BALMLP", "BALALL", "QI",
                              "BAL202411"], required=True)
 parser.add_argument('-type', "--type_product", help="Type product for Baltic_2024", default="cci",
-                    choices=["cci", "polymer", "olci_l3"])
+                    choices=["cci", "polymer", "l3_olci"])
 parser.add_argument('-type_polymer', "--type_product_polymer", help="Type product for POLYMER", default="cci",
                     choices=["olci_l3", "s2_msi"])
 
@@ -226,6 +226,34 @@ def check_exist_output_file(prod_path, output_dir, suffix):
     else:
         return 0, output_path
 
+def check_l3_olci_path(prod_path,date_here):
+    from datetime import datetime as dt
+    refs = ['400','412_5','442_5','490','510','560','620','665','673_75','681_25','708_75','753_75','778_75','865']
+    all_files = []
+    if date_here is None:
+        yyyy = prod_path.split('/')[-2]
+        jjj = prod_path.split('/')[-3]
+        try:
+            date_here = dt.strptime(f'{yyyy}{jjj}','%Y%j')
+        except:
+            pass
+    if date_here is not None:
+        for ref in refs:
+            yyyy = date_here.strftime('%Y')
+            jjj = date_here.strftime('%j')
+            file_rrs = os.path.join(prod_path,f'O{yyyy}{jjj}-rrs{ref}-bal-fr.nc')
+            if os.path.exists(file_rrs):
+                all_files.append(file_rrs)
+    else:
+        for ref in refs:
+            for name in os.listdir(prod_path):
+                if name.find(ref)>0:
+                    all_files.append(os.path.join(prod_path,name))
+
+    if len(all_files)<len(refs):
+        all_files = None
+
+    return all_files
 
 def check_path_validity(prod_path, prod_name):
     valid = False
@@ -251,6 +279,8 @@ def check_path_validity(prod_path, prod_name):
         if args.type_product == 'cci' and prod_name.endswith('.nc'):
             valid = True
         elif args.type_product == 'polymer' and  prod_name.endswith('_POLYMER.nc'):
+            valid = True
+        elif args.type_product == 'l3_olci' and check_l3_olci_path(prod_path,None) is not None:
             valid = True
         else:
             valid = False
@@ -892,10 +922,18 @@ if __name__ == '__main__':
                         if os.path.exists(prod_path):
                             params = [corrector, prod_path, output_path_jday, False, None, False]
                             param_list.append(params)
+                    #l3 oli data, prod_path is input_path_date
+                    if args.atm_correction == 'BAL202411' and corrector.product_type == 'l3_olci':
+                        prod_path = input_path_date
+                        if os.path.isdir(prod_path):
+                            params = [corrector,prod_path,output_path_jday,False,None,False]
+                            param_list.append(params)
 
                     ##l2 data, multiple file for date
                     for f in os.listdir(input_path_date):
                         if args.atm_correction == 'BAL202411' and corrector.product_type == 'cci':
+                            continue
+                        if args.atm_correction == 'BAL202411' and corrector.product_type == 'l3_olci':
                             continue
                         prod_name = f
                         prod_path = os.path.join(input_path_date, prod_name)

@@ -66,7 +66,7 @@ class BalOutputFile:
         # self.EXTRACT.insitu_lat = at['in_situ_lat']
         # self.EXTRACT.insitu_lon = at['in_situ_lon']
 
-    def set_global_attributes_cci(self,varattr):
+    def set_global_attributes_from_dict(self,varattr):
         if varattr is not None:
             if 'GLOBAL' in varattr.keys():
                 #print(varattr['GLOBAL'])

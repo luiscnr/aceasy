@@ -52,6 +52,8 @@ class BALTIC_202411_PROCESSOR():
                                'CDF_FLAG_MULTIPLE', 'WEIGHT_MLP3B', 'WEIGHT_MLP4B', 'WEIGHT_MLP5B',
                                'RRS555', 'RRS670', 'CYANOBLOOM', 'FLAG_CDF', 'ADG443', 'APH443', 'BBP443', 'KD490',
                                'MICRO', 'NANO', 'PICO', 'DIATO', 'DINO', 'GREEN', 'CRYPTO', 'PROKAR']
+        self.iop_bands = ['ADG443', 'APH443', 'BBP443']
+
 
         # defining tile sizes
         self.tileX = 1500
@@ -76,7 +78,9 @@ class BALTIC_202411_PROCESSOR():
         self.product_type = product_type
         sdir = os.path.abspath(os.path.dirname(__file__))
         if self.product_type == 'polymer':
-            name_json = 'varat.json'
+            name_json = 'varat_polymer.json'
+        elif self.product_type.startswith('l3_olci'):
+            name_json = 'varat_l3_olci.json'
         else:
             name_json = 'varat_cci.json'
         foptions = os.path.join(sdir, name_json)
@@ -89,10 +93,10 @@ class BALTIC_202411_PROCESSOR():
             f.close()
 
     def run_process_multiple_files(self, prod_path, output_dir):
-        if self.product_type != 'olci_l3':
+        if self.product_type != 'l3_olci':
             print('Only OLCI L3 is implemented')
-        self.tileY = 500
-        self.tileX = 500
+        self.tileY = 250
+        self.tileX = 250
 
         from datetime import datetime as dt
 
@@ -108,7 +112,7 @@ class BALTIC_202411_PROCESSOR():
                 except:
                     pass
         if olci_date is None:
-            print(f'[ERROR] OLCI data could not be retrieved')
+            print(f'[ERROR] OLCI date could not be retrieved')
             return
         fileout = os.path.join(output_dir, f'O{olci_date_str}-bal-fr_BAL202411.nc')
         if self.verbose:
@@ -156,29 +160,70 @@ class BALTIC_202411_PROCESSOR():
                 xini = x
                 xend = x + self.tileX
                 if xend > endX: xend = endX + 1
-                if self.product_type == 'olci_l3':
+                if self.product_type == 'l3_olci':
                     nvalid, valid_mask = self.get_valid_olci_l3_mask(yini, yend, xini, xend)
                 if nvalid > 1:
                     print(f'[INFO] Processing {nvalid} valid pixels...')
                     input_rrs, iop = self.get_valid_rrs_olci_l3(valid_mask, nvalid, yini, yend, xini, xend)
+
+                    for iop_index,iop_band in enumerate(self.iop_bands):
+                        array_here = np.ma.masked_all(valid_mask.shape)
+                        array_here[valid_mask == 1] = iop[:,iop_index]
+                        all_arrays[iop_band][yini - startY:yend - startY,xini - startX:xend - startX] = array_here[:, :]
+
+
+
                     res_algorithm = self.bal_proc.compute_ensemble(input_rrs)
+
                     for key in res_algorithm.keys():
                         if key.upper() in all_arrays.keys():
+                            #print('-->',key.upper(),yini-startY,yend-startY,xini-startX,xend-startX)
                             array_here = np.ma.masked_all(valid_mask.shape)
                             array_here[valid_mask == 1] = res_algorithm[key]
                             all_arrays[key.upper()][yini - startY:yend - startY,
                             xini - startX:xend - startX] = array_here[:, :]
+
+                    # kd, using 490 and 555 bands,
+                    kd_res = self.bal_proc_old.compute_kd(input_rrs[:, 1], input_rrs[:, 3])
+                    kd_here = np.ma.masked_all(valid_mask.shape)
+                    kd_here[valid_mask == 1] = kd_res[:]
+                    all_arrays['KD490'][yini - startY:yend - startY, xini - startX:xend - startX] = kd_here[:,:]
+
+                    psc, pft = self.bal_proc_old.compute_psc_pft(res_algorithm['chl'])
+                    for var in self.bal_proc_old.psc_var:
+                        psc_here = np.ma.masked_all(valid_mask.shape)
+                        psc_here[valid_mask == 1] = psc[var][:]
+                        all_arrays[var][yini - startY:yend - startY, xini - startX:xend - startX] = psc_here[:, :]
+                    for var in self.bal_proc_old.pft_var:
+                        pft_here = np.ma.masked_all(valid_mask.shape)
+                        pft_here[valid_mask == 1] = pft[var][:]
+                        all_arrays[var][yini - startY:yend - startY, xini - startX:xend - startX] = pft_here[:, :]
+
+
+
 
         if self.verbose:
             print(f'[INFO] Water processing completed')
             print(f'[INFO] Generating output file: {fileout}')
         # input_file = list(self.central_wavelength.keys())[0]
         # ncinput = Dataset(input_file)
-        self.create_file(fileout, prod_path, all_arrays, startY, endY + 1, startX, endX + 1)
+
+        # chl_test = all_arrays['CHL'][0:250,750:1000]
+        # cdf_test = all_arrays['CDF_FLAG_MULTIPLE'][0:250,750:1000]
+        # chl_test = chl_test.filled(-999.0)
+        # cdf_test = cdf_test.filled(-999.0)
+        # chl_test = np.ma.where(chl_test==-999.0,0,1)
+        # cdf_test = np.ma.where(cdf_test == -999.0, 0, 1)
+        # print('n chl',np.sum(chl_test))
+        # print('n cdf',np.sum(cdf_test))
+        # diff = chl_test-cdf_test
+        # print('diff',np.min(diff[:]),np.max(diff[:]))
+
+        self.create_file(fileout, prod_path, all_arrays, startY, endY + 1, startX, endX + 1,olci_date)
         # ncinput.close()
 
     def run_process(self, prod_path, output_dir):
-        if self.product_type == 'olci_l3' and os.path.isdir(prod_path):
+        if self.product_type == 'l3_olci' and os.path.isdir(prod_path):
             self.run_process_multiple_files(prod_path, output_dir)
             return
         fileout = self.get_file_out(prod_path, output_dir)
@@ -564,7 +609,7 @@ class BALTIC_202411_PROCESSOR():
         if self.verbose:
             print(f'[INFO] Writting output file: {fileout}')
 
-        if self.product_type == 'olci_l3':
+        if self.product_type == 'l3_olci':
             input_dir = ncinput
 
         from baltic_mlp import baloutputfile
@@ -575,8 +620,10 @@ class BALTIC_202411_PROCESSOR():
 
         if self.product_type == 'polymer':
             ncoutput.set_global_attributes(ncinput)
-        if self.product_type == 'cci':
-            ncoutput.set_global_attributes_cci(self.varattr)
+        if self.product_type == 'cci' or self.product_type == 'l3_olci':
+            ncoutput.set_global_attributes_from_dict(self.varattr)
+
+
 
         array_chl = all_arrays['CHL']
         ny = array_chl.shape[0]
@@ -591,7 +638,7 @@ class BALTIC_202411_PROCESSOR():
             print(f'[INFO]    Adding latitude/longitude...')
         var_lat_name = 'latitude'
         var_lon_name = 'longitude'
-        if self.product_type == 'olci_l3':
+        if self.product_type == 'l3_olci':
             var_lat_name = 'lat'
             var_lon_name = 'lon'
             ncinput = Dataset(list(self.central_wavelength.keys())[0])
@@ -604,11 +651,13 @@ class BALTIC_202411_PROCESSOR():
         elif len(ncinput.variables[var_lon_name].dimensions) == 1:
             array_lon = np.array(ncinput.variables[var_lon_name][xini:xend])
 
+
+
         if self.product_type == 'cci':
             array_lat = np.flip(array_lat)
 
         ncoutput.create_lat_long_variables(array_lat, array_lon)
-        if self.product_type == 'olci_l3':
+        if self.product_type == 'l3_olci':
             ncinput.close()
 
         # rrs
@@ -643,8 +692,8 @@ class BALTIC_202411_PROCESSOR():
                 wl = self.central_wavelength[rrsvar]
                 ncoutput.create_rrs_variable(array, namevar, wl, self.varattr, self.product_type)
 
-        ##olci_l3
-        if self.product_type == 'olci_l3':
+        ##l3_olci
+        if self.product_type == 'l3_olci':
             for name in os.listdir(input_dir):
                 if name.startswith('Oa') or name.startswith('Ob'): continue
                 if name.startswith('O') and name.endswith('bal-fr.nc') and name.find('rrs') > 0:
@@ -653,7 +702,7 @@ class BALTIC_202411_PROCESSOR():
                     rrsvar = input_file[input_file.find('rrs'):input_file.find('-bal-fr.nc')].upper()
                     array = np.ma.array(nchere.variables[rrsvar][0, yini:yend, xini:xend])
                     wl = float(rrsvar[3:].replace('_', '.'))
-                    ncoutput.create_rrs_variable(array, rrsvar, wl, self.varattr)
+                    ncoutput.create_rrs_variable(array, rrsvar, wl, self.varattr,self.product_type)
                     nchere.close()
 
         # chl
@@ -669,7 +718,8 @@ class BALTIC_202411_PROCESSOR():
             if self.verbose:
                 print(f'[INFO]    Adding extra variable {ovar}....')
             array_here = all_arrays[ovar]
-            array_here = np.flipud(array_here)
+            if self.product_type=='cci':
+                array_here = np.flipud(array_here)
             if ovar.startswith('FLAG'):
                 ncoutput.create_var_flag_general(array_here, ovar, self.varattr)
             else:
@@ -748,3 +798,4 @@ class BALTIC_202411_PROCESSOR():
                 ncout[name][0, :, :] = ncref[name][:, :]
 
         ncout.close()
+
