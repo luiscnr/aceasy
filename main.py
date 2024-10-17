@@ -38,9 +38,9 @@ parser.add_argument('-ac', "--atm_correction", help="Atmospheric correction",
                     choices=["C2RCC", "POLYMER", "FUB_CSIRO", "ACOLITE", "IDEPIX", "BALMLP", "BALALL", "QI",
                              "BAL202411"], required=True)
 parser.add_argument('-type', "--type_product", help="Type product for Baltic_2024", default="cci",
-                    choices=["cci", "polymer", "l3_olci"])
+                    choices=["cci", "polymer", "l3_olci_nr","l3_olci_nt"])
 parser.add_argument('-type_polymer', "--type_product_polymer", help="Type product for POLYMER", default="cci",
-                    choices=["olci_l3", "s2_msi"])
+                    choices=["olci_l3", "s2_msi", "prisma"])
 
 args = parser.parse_args()
 
@@ -280,7 +280,7 @@ def check_path_validity(prod_path, prod_name):
             valid = True
         elif args.type_product == 'polymer' and  prod_name.endswith('_POLYMER.nc'):
             valid = True
-        elif args.type_product == 'l3_olci' and check_l3_olci_path(prod_path,None) is not None:
+        elif args.type_product.startswith('l3_olci_') and check_l3_olci_path(prod_path,None) is not None:
             valid = True
         else:
             valid = False
@@ -828,6 +828,8 @@ if __name__ == '__main__':
                         exit(-1)
             # print(output_path)
             corrector.run_from_csv_file(input_csv, output_path)
+        else:
+            print(f'[WARNING] CSV option is not allowed for {corrector.name_ac}')
         exit(0)
 
     if input_path is None:  # single product, for testing
@@ -840,6 +842,8 @@ if __name__ == '__main__':
         if args.atm_correction == 'BALMLP' and f.endswith('.nc'):
             p = corrector.run_process(prod_path, output_path)
         elif args.atm_correction == 'BALALL' and os.path.isdir(prod_path):
+            p = corrector.run_process(prod_path, output_path)
+        elif args.atm_correction == 'POLYMER' and corrector.product_type!='s3_olci':
             p = corrector.run_process(prod_path, output_path)
         elif os.path.isdir(prod_path) and f.endswith('.SEN3') and f.find('EFR') > 0:
             check_geo = check_geo_limits(prod_path, geo_limits, False)
@@ -923,7 +927,7 @@ if __name__ == '__main__':
                             params = [corrector, prod_path, output_path_jday, False, None, False]
                             param_list.append(params)
                     #l3 oli data, prod_path is input_path_date
-                    if args.atm_correction == 'BAL202411' and corrector.product_type == 'l3_olci':
+                    if args.atm_correction == 'BAL202411' and corrector.product_type.startswith('l3_olci_'):
                         prod_path = input_path_date
                         if os.path.isdir(prod_path):
                             params = [corrector,prod_path,output_path_jday,False,None,False]
@@ -933,7 +937,7 @@ if __name__ == '__main__':
                     for f in os.listdir(input_path_date):
                         if args.atm_correction == 'BAL202411' and corrector.product_type == 'cci':
                             continue
-                        if args.atm_correction == 'BAL202411' and corrector.product_type == 'l3_olci':
+                        if args.atm_correction == 'BAL202411' and corrector.product_type.startswith('l3_olci_'):
                             continue
                         prod_name = f
                         prod_path = os.path.join(input_path_date, prod_name)

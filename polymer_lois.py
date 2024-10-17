@@ -18,6 +18,9 @@ class POLYMER:
            * apply both (3)
         '''
         self.verbose = verbose
+        self.name_ac = 'POLYMER'
+        self.product_type = 's3_olci'
+
         if fconfig is None:
             fconfig = 'aceasy_config.ini'
 
@@ -37,7 +40,8 @@ class POLYMER:
                 'apply': False
             }
         }
-        self.product_type = 's3_olci'
+
+
         if os.path.exists(fconfig):
             options = configparser.ConfigParser()
             options.read(fconfig)
@@ -59,6 +63,8 @@ class POLYMER:
                     self.extraoptions['normalize']['value'] = int(options['POLYMER']['normalize'])
                     self.extraoptions['normalize']['apply'] = True
 
+    def allow_csv_test(self):
+        return False
     def check_runac(self):
         if self.polymer_path is None:
             if self.verbose:
@@ -70,18 +76,49 @@ class POLYMER:
             return False
         return True
 
-    def run_process(self, prod_path, output_dir):
-        prod_name = prod_path.split('/')[-1]
-        if prod_name.endswith('.SEN3') and os.path.isdir(prod_path):
-            if os.path.isdir(output_dir):
-                output_name = prod_name[0:-5] + '_POLYMER.nc'
-                output_path = os.path.join(output_dir, output_name)
+    def check_product_path(self,prod_path,prod_name,output_dir):
+        if self.product_type=='s3_olci':
+            if prod_name.endswith('.SEN3') and os.path.isdir(prod_path):
+                if os.path.isdir(output_dir):
+                    output_name = prod_name[0:-5] + '_POLYMER.nc'
+                    output_path = os.path.join(output_dir, output_name)
+                else:
+                    output_name = os.path.basename(output_dir)
+                    output_path = output_dir
+                return output_path,output_name
             else:
-                output_name = os.path.basename(output_dir)
-                output_path = output_dir
-        else:
-            print(f'[ERROR] Product {prod_name} is not a correct *.SEN3 directory')
-            return False
+                print(f'[ERROR] Product {prod_name} is not a correct *.SEN3 directory')
+                return None,None
+
+        if self.product_type=='s2_msi':
+            if prod_name.startswith('s2_msi') and prod_name.endswith('.SAFE') and os.path.isdir(prod_path):
+                if os.path.isdir(output_dir):
+                    output_name = prod_name[0:-5] + '_POLYMER.nc'
+                    output_path = os.path.join(output_dir, output_name)
+                else:
+                    output_name = os.path.basename(output_dir)
+                    output_path = output_dir
+                return output_path,output_name
+            else:
+                print(f'[ERROR] Product {prod_name} is not a correct *.SAFE directory')
+                return None,None
+
+        if self.product_type=='prisma':
+            if prod_name.endswith('.h5'):
+                if os.path.isdir(output_dir):
+                    output_name = prod_name[0:-3] + '_POLYMER.nc'
+                    output_path = os.path.join(output_dir, output_name)
+                else:
+                    output_name = os.path.basename(output_dir)
+                    output_path = output_dir
+                return output_path, output_name
+            else:
+                print(f'[ERROR] Product {prod_name} is not a correct *.h5 format')
+                return None, None
+
+    def run_process(self, prod_path, output_dir):
+        prod_name = os.path.basename(prod_path)
+        output_path, output_name = self.check_product_path(prod_path,output_dir)
         if os.path.exists(output_path):
             print(f'[INFO] Output file {output_path} already exists. Skiping...')
             return True

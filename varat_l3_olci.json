@@ -201,11 +201,12 @@
 "area": "bal",
 "start_date":"",
 "stop_date":"",
+"timeliness":"",
+"cmems_product_id":"",
+"title":"",
 "creation_date":"",
 "creation_time":"",
 "parameter_code":"PLANKTON",
-"parameter":"Chlorophyll-a concentration and Phytoplankton Functional Types",
-"title":"cmems_obs-oc_bal_bgc-plankton_my_l3-multi-1km_P1D",
-"cmems_product_id":"OCEANCOLOUR_BAL_BGC_L3_MY_009_133"
+"parameter":"Chlorophyll-a concentration and Phytoplankton Functional Types"
 }	
 }

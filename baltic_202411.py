@@ -1,3 +1,4 @@
+import datetime
 import os.path
 
 import pytz
@@ -74,12 +75,26 @@ class BALTIC_202411_PROCESSOR():
     def check_runac(self):
         return self.bal_proc.VALID
 
+    def update_attrs_l3_olci(self,date_olci):
+        timeliness = self.product_type.split('_')[2].upper()
+        self.varattr['GLOBAL']['start_date'] = date_olci.strftime('%Y-%m-%d')
+        self.varattr['GLOBAL']['stop_date'] = date_olci.strftime('%Y-%m-%d')
+        self.varattr['GLOBAL']['timeliness'] = timeliness
+        if timeliness=='NR':
+            product_name = 'OCEANCOLOUR_BAL_BGC_L3_NRT_009_131'
+            dataset_name = 'cmems_obs-oc_bal_bgc-plankton_nrt_l3-olci-300m_P1D'
+        else:
+            product_name = 'OCEANCOLOUR_BAL_BGC_L3_MY_009_133'
+            dataset_name = 'cmems_obs-oc_bal_bgc-plankton_my_l3-olci-300m_P1D'
+        self.varattr['GLOBAL']['cmems_product_id'] = product_name
+        self.varattr['GLOBAL']['title'] = dataset_name
+
     def set_product_type(self, product_type):
         self.product_type = product_type
         sdir = os.path.abspath(os.path.dirname(__file__))
         if self.product_type == 'polymer':
             name_json = 'varat_polymer.json'
-        elif self.product_type.startswith('l3_olci'):
+        elif self.product_type.startswith('l3_olci_'):
             name_json = 'varat_l3_olci.json'
         else:
             name_json = 'varat_cci.json'
@@ -93,7 +108,7 @@ class BALTIC_202411_PROCESSOR():
             f.close()
 
     def run_process_multiple_files(self, prod_path, output_dir):
-        if self.product_type != 'l3_olci':
+        if not self.product_type.startswith('l3_olci_'):
             print('Only OLCI L3 is implemented')
         self.tileY = 250
         self.tileX = 250
@@ -160,7 +175,7 @@ class BALTIC_202411_PROCESSOR():
                 xini = x
                 xend = x + self.tileX
                 if xend > endX: xend = endX + 1
-                if self.product_type == 'l3_olci':
+                if self.product_type.startswith('l3_olci_'):
                     nvalid, valid_mask = self.get_valid_olci_l3_mask(yini, yend, xini, xend)
                 if nvalid > 1:
                     print(f'[INFO] Processing {nvalid} valid pixels...')
@@ -223,7 +238,7 @@ class BALTIC_202411_PROCESSOR():
         # ncinput.close()
 
     def run_process(self, prod_path, output_dir):
-        if self.product_type == 'l3_olci' and os.path.isdir(prod_path):
+        if self.product_type.startswith('l3_olci_') and os.path.isdir(prod_path):
             self.run_process_multiple_files(prod_path, output_dir)
             return
         fileout = self.get_file_out(prod_path, output_dir)
@@ -609,7 +624,7 @@ class BALTIC_202411_PROCESSOR():
         if self.verbose:
             print(f'[INFO] Writting output file: {fileout}')
 
-        if self.product_type == 'l3_olci':
+        if self.product_type.startswith('l3_olci_'):
             input_dir = ncinput
 
         from baltic_mlp import baloutputfile
@@ -620,7 +635,10 @@ class BALTIC_202411_PROCESSOR():
 
         if self.product_type == 'polymer':
             ncoutput.set_global_attributes(ncinput)
-        if self.product_type == 'cci' or self.product_type == 'l3_olci':
+        if self.product_type == 'cci':
+            ncoutput.set_global_attributes_from_dict(self.varattr)
+        if self.product_type.startswith('l3_olci_'):
+            self.update_attrs_l3_olci(date_file)
             ncoutput.set_global_attributes_from_dict(self.varattr)
 
 
@@ -638,7 +656,7 @@ class BALTIC_202411_PROCESSOR():
             print(f'[INFO]    Adding latitude/longitude...')
         var_lat_name = 'latitude'
         var_lon_name = 'longitude'
-        if self.product_type == 'l3_olci':
+        if self.product_type.startswith('l3_olci_'):
             var_lat_name = 'lat'
             var_lon_name = 'lon'
             ncinput = Dataset(list(self.central_wavelength.keys())[0])
@@ -657,7 +675,7 @@ class BALTIC_202411_PROCESSOR():
             array_lat = np.flip(array_lat)
 
         ncoutput.create_lat_long_variables(array_lat, array_lon)
-        if self.product_type == 'l3_olci':
+        if self.product_type.startswith('l3_olci_'):
             ncinput.close()
 
         # rrs
@@ -693,7 +711,7 @@ class BALTIC_202411_PROCESSOR():
                 ncoutput.create_rrs_variable(array, namevar, wl, self.varattr, self.product_type)
 
         ##l3_olci
-        if self.product_type == 'l3_olci':
+        if self.product_type.startswith('l3_olci_'):
             for name in os.listdir(input_dir):
                 if name.startswith('Oa') or name.startswith('Ob'): continue
                 if name.startswith('O') and name.endswith('bal-fr.nc') and name.find('rrs') > 0:
@@ -760,7 +778,8 @@ class BALTIC_202411_PROCESSOR():
         time_var.axis = "T"
         time_var.calendar = "Gregorian"
         time_var.units = "seconds since 1981-01-01 00:00:00"
-        time_var[0] = np.int32(date_file.timestamp())
+        epoch_copernicus = datetime.datetime(1981, 1, 1,0,0,0)
+        time_var[0] = int((date_file - epoch_copernicus).total_seconds())
 
         # other variables
         # copy variables
