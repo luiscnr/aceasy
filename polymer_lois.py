@@ -1,6 +1,6 @@
 import os
 import configparser
-import sys
+import sys,stat
 
 
 class POLYMER:
@@ -146,6 +146,24 @@ class POLYMER:
                 params[key] = self.extraoptions[key]['value']
 
         if self.product_type=='prisma':
+            ancillary_folder = os.path.join(os.path.dirname(prod_path),'ANCILLARY')
+            if not os.path.isdir(ancillary_folder):
+                try:
+                    os.mkdir(ancillary_folder)
+                    os.chmod(ancillary_folder,stat.S_IWGRP)
+                except:
+                    print(f'[ERROR] Ancillary folder {ancillary_folder} could not be created, please review permissions')
+                    return False
+
+            meteo_folder = os.path.join(ancillary_folder, 'METEO')
+            if not os.path.isdir(meteo_folder):
+                try:
+                    os.mkdir(meteo_folder)
+                    os.chmod(meteo_folder, stat.S_IWGRP)
+                except:
+                    print(f'[ERROR] Meteo folder {meteo_folder} could not be created, please review permissions')
+                    return False
+
             try:
                 res = run_atm_corr(Level1_PRISMA(prod_path), Level2(filename=output_path, fmt='netcdf4'), **params)
             except Exception as error:
