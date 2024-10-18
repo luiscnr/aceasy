@@ -720,10 +720,16 @@ if __name__ == '__main__':
     if args.config_file:
         fconfig = args.config_file
     else:
-        if os.path.exists(name_config):
-            fconfig = name_config
-        elif os.path.exists(os.path.join('aceasy', name_config)):
-            fconfig = os.path.join('aceasy', name_config)
+        saceasy = os.path.abspath(os.path.dirname(__file__))
+        sdir = os.path.dirname(saceasy)
+        fconfig = os.path.join(sdir,name_config)
+        if not os.path.exists(fconfig):
+            fconfig = os.path.join(saceasy, name_config)
+        if not os.path.exists(fconfig):
+            if os.path.exists(name_config):
+                fconfig = name_config
+            elif os.path.exists(os.path.join('aceasy', name_config)):
+                fconfig = os.path.join('aceasy', name_config)
     if fconfig is None:
         print(f'[ERROR] Config file is required')
         exit(1)
