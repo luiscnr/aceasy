@@ -128,6 +128,7 @@ class POLYMER:
             return True
         if self.verbose:
             print(f'[INFO] Input product: {prod_name}')
+            print(f'[INFO] Ouput path: {output_path}')
 
         if self.version<=4.14:
             from polymer.main import run_atm_corr, Level1, Level2
@@ -135,6 +136,7 @@ class POLYMER:
         if self.version>4.14:
             from polymer.main  import run_atm_corr
             from polymer.level1 import Level1
+            from polymer.level1_prisma import Level1_PRISMA
             from polymer.level2 import Level2
             from polymer.level2_nc import Level2_NETCDF
 
@@ -143,13 +145,20 @@ class POLYMER:
             if self.extraoptions[key]['apply']:
                 params[key] = self.extraoptions[key]['value']
 
-        # Level2('memory')  # store output in memory
-        try:
-            res = run_atm_corr(Level1(prod_path), Level2(filename=output_path, fmt='netcdf4'), **params)
-        except Exception as error:
-            print(f'[ERROR] Polymer WAS NOT completed for product: {prod_name}. ')
-            print(f'[ERROR] {error}')
-            return False
+        if self.product_type=='prisma':
+            try:
+                res = run_atm_corr(Level1_PRISMA(prod_path), Level2(filename=output_path, fmt='netcdf4'), **params)
+            except Exception as error:
+                print(f'[ERROR] Polymer WAS NOT completed for product: {prod_name}. ')
+                print(f'[ERROR] {error}')
+                return False
+        else:
+            try:
+                res = run_atm_corr(Level1(prod_path), Level2(filename=output_path, fmt='netcdf4'), **params)
+            except Exception as error:
+                print(f'[ERROR] Polymer WAS NOT completed for product: {prod_name}. ')
+                print(f'[ERROR] {error}')
+                return False
         # res = run_atm_corr(Level1(prod_path), Level2('memory'), **params)
 
         if isinstance(res, Level2_NETCDF) and os.path.exists(output_path):
