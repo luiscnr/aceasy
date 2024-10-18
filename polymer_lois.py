@@ -150,7 +150,8 @@ class POLYMER:
             if not os.path.isdir(ancillary_folder):
                 try:
                     os.mkdir(ancillary_folder)
-                    os.chmod(ancillary_folder,stat.S_IWGRP)
+                    os.chmod(ancillary_folder, stat.S_IRWXU)
+                    os.chmod(ancillary_folder, stat.S_IRWXG)
                 except:
                     print(f'[ERROR] Ancillary folder {ancillary_folder} could not be created, please review permissions')
                     return False
@@ -159,7 +160,8 @@ class POLYMER:
             if not os.path.isdir(meteo_folder):
                 try:
                     os.mkdir(meteo_folder)
-                    os.chmod(meteo_folder, stat.S_IWGRP)
+                    os.chmod(meteo_folder, stat.S_IRWXU)
+                    os.chmod(meteo_folder, stat.S_IRWXG)
                 except:
                     print(f'[ERROR] Meteo folder {meteo_folder} could not be created, please review permissions')
                     return False
