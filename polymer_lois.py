@@ -104,9 +104,9 @@ class POLYMER:
                 return None,None
 
         if self.product_type=='prisma':
-            if prod_name.endswith('.h5'):
+            if prod_name.endswith('.he5'):
                 if os.path.isdir(output_dir):
-                    output_name = prod_name[0:-3] + '_POLYMER.nc'
+                    output_name = prod_name[0:-4] + '_POLYMER.nc'
                     output_path = os.path.join(output_dir, output_name)
                 else:
                     output_name = os.path.basename(output_dir)
@@ -118,7 +118,7 @@ class POLYMER:
 
     def run_process(self, prod_path, output_dir):
         prod_name = os.path.basename(prod_path)
-        output_path, output_name = self.check_product_path(prod_path,output_dir)
+        output_path, output_name = self.check_product_path(prod_path,prod_name,output_dir)
         if os.path.exists(output_path):
             print(f'[INFO] Output file {output_path} already exists. Skiping...')
             return True
