@@ -19,6 +19,8 @@ class POLYMER:
         '''
         self.verbose = verbose
         self.name_ac = 'POLYMER'
+        self.version = 4.14
+
         self.product_type = 's3_olci'
 
         if fconfig is None:
@@ -52,6 +54,8 @@ class POLYMER:
                         sys.path.append(self.polymer_path)
                     if self.verbose:
                         print(f'[INFO] Polymer path: {self.polymer_path}')
+                if options.has_option('POLYMER', 'version'):
+                    self.version = float(options['POLYMER']['version'])
                 if options.has_option('POLYMER', 'multiprocessing'):
                     self.extraoptions['multiprocessing']['value'] = int(options['POLYMER']['multiprocessing'])
                     self.extraoptions['multiprocessing']['apply'] = True
@@ -125,8 +129,15 @@ class POLYMER:
         if self.verbose:
             print(f'[INFO] Input product: {prod_name}')
 
-        from polymer.main import run_atm_corr, Level1, Level2
-        from polymer.level2_nc import Level2_NETCDF
+        if self.version<=4.14:
+            from polymer.main import run_atm_corr, Level1, Level2
+            from polymer.level2_nc import Level2_NETCDF
+        if self.version>4.14:
+            from polymer.main  import run_atm_corr
+            from polymer.level1 import Level1
+            from polymer.level2 import Level2
+            from polymer.level2_nc import Level2_NETCDF
+
         params = {}
         for key in self.extraoptions:
             if self.extraoptions[key]['apply']:
