@@ -654,9 +654,9 @@ def compute_year_coverage_cci(year):
     weight_mlp3b_total[np.where(n_nocdf_total == 0)] = weight_mlp3b_cdf[np.where(n_nocdf_total==0)]
     weight_mlp3b_total[np.where(n_nocdf_total > 0)] = weight_mlp3b_cdf[np.where(n_nocdf_total > 0)]+ weight_mlp3b_total[np.where(n_nocdf_total > 0)]
     print(f'--> weight_mlp3b_total (end): {weight_mlp3b_total.shape}')
-    coverage_total_mlp3 = weight_mlp3b_total[np.where(n_total > 0)]/ n_total[np.where(n_total > 0)]
-    coverage_total_mlp4 = weight_mlp4b_cdf[np.where(n_total > 0)]/ n_total[np.where(n_total > 0)]
-    coverage_total_mlp5 = weight_mlp5b_cdf[np.where(n_total > 0)]/ n_total[np.where(n_total > 0)]
+    coverage_total_mlp3[np.where(n_total > 0)] = weight_mlp3b_total[np.where(n_total > 0)]/ n_total[np.where(n_total > 0)]
+    coverage_total_mlp4[np.where(n_total > 0)] = weight_mlp4b_cdf[np.where(n_total > 0)]/ n_total[np.where(n_total > 0)]
+    coverage_total_mlp5[np.where(n_total > 0)] = weight_mlp5b_cdf[np.where(n_total > 0)]/ n_total[np.where(n_total > 0)]
     print(f'--> coverage_total_mlp3: {coverage_total_mlp3.shape}')
     print(f'--> coverage_total_mlp4: {coverage_total_mlp4.shape}')
     print(f'--> coverage_total_mlp5: {coverage_total_mlp5.shape}')
