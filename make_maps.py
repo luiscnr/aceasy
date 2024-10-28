@@ -618,11 +618,11 @@ def compute_year_coverage_cci(year):
     nc_out.createDimension('lon',nlon)
     nc_out.createDimension('time',13)
 
-    var_lat = nc_out.createVariable('lat','f4',('lat,'),zlib=True,complevel=6,fill_value=-999.0)
+    var_lat = nc_out.createVariable('lat','f4',('lat',),zlib=True,complevel=6,fill_value=-999.0)
     var_lat[:] = lat[:]
-    var_lon = nc_out.createVariable('lon', 'f4', ('lon,'), zlib=True, complevel=6, fill_value=-999.0)
+    var_lon = nc_out.createVariable('lon', 'f4', ('lon',), zlib=True, complevel=6, fill_value=-999.0)
     var_lon[:] = lon[:]
-    var_time = nc_out.createVariable('time', 'i4', ('time,'), zlib=True, complevel=6, fill_value=-999.0)
+    var_time = nc_out.createVariable('time', 'i4', ('time',), zlib=True, complevel=6, fill_value=-999.0)
     var_time[:] = np.arange(13).astype(np.int32)
     var_time.units = f'0 is all the year, 1-12 for each month. Year: {year}'
 
