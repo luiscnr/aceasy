@@ -12,6 +12,8 @@ import BSC_QAA.bsc_qaa_EUMETSAT as bsc_qaa
 from balticmlp import polymerflag
 import json
 
+from split_202411 import Splitter
+
 
 class BALTIC_202411_PROCESSOR():
 
@@ -110,6 +112,11 @@ class BALTIC_202411_PROCESSOR():
     def run_process_multiple_files(self, prod_path, output_dir):
         if not self.product_type.startswith('l3_olci_'):
             print('Only OLCI L3 is implemented')
+
+
+
+
+
         self.tileY = 250
         self.tileX = 250
 
@@ -130,6 +137,18 @@ class BALTIC_202411_PROCESSOR():
             print(f'[ERROR] OLCI date could not be retrieved')
             return
         fileout = os.path.join(output_dir, f'O{olci_date_str}-bal-fr_BAL202411.nc')
+
+        if os.path.exists(fileout):
+            ##SPLIT
+            splits = {
+                'chl': ['CHL', 'CYANOBLOOM'],
+                'pft': ['PICO', 'NANO', 'MICRO', 'CRYPTO', 'GREEN', 'DIATO', 'DINO', 'PROKAR']
+            }
+            splitter = Splitter(fileout, olci_date)
+            splitter.make_multiple_split(os.path.dirname(fileout), splits)
+            return
+
+
         if self.verbose:
             print(f'[INFO] Date: {olci_date.strftime("%Y-%m-%d")}')
         self.retrieve_info_wlbands_olci_l3(prod_path, olci_date_str)
@@ -236,6 +255,14 @@ class BALTIC_202411_PROCESSOR():
 
         self.create_file(fileout, prod_path, all_arrays, startY, endY + 1, startX, endX + 1,olci_date)
         # ncinput.close()
+
+        ##SPLIT
+        splits = {
+            'chl': ['CHL','CYANOBLOOM'],
+            'pft': ['PICO','NANO','MICRO','CRYPTO','GREEN','DIATO','DINO','PROKAR']
+        }
+        splitter = Splitter(fileout,olci_date)
+        splitter.make_multiple_split(os.path.dirname(fileout),splits)
 
     def run_process(self, prod_path, output_dir):
         if self.product_type.startswith('l3_olci_') and os.path.isdir(prod_path):
