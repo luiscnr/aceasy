@@ -627,18 +627,40 @@ def compute_year_coverage_cci(year):
 
         date_here = date_here + timedelta(hours=24)
 
+
+    print('[INFO] Output shapes: ')
+    print(f'--> n_total: {n_total.shape}')
+    print(f'--> n_cdf_total: {n_cdf_total.shape}')
+    print(f'--> n_nocdf_total: {n_nocdf_total.shape}')
+    print(f'--> weight_mlp_3b: {weight_mlp3b_cdf}')
+    print(f'--> weight_mlp_4b: {weight_mlp4b_cdf}')
+    print(f'--> weight_mlp_5b: {weight_mlp5b_cdf}')
+
     coverage_cdf[np.where(n_total>0)] = n_cdf_total[np.where(n_total>0)]/n_total[np.where(n_total>0)]
     coverage_no_cdf[np.where(n_total>0)] = n_nocdf_total[np.where(n_total>0)]/n_total[np.where(n_total>0)]
+    print(f'--> coverage_cdf: {coverage_cdf}')
+    print(f'--> coverage_no_cdf: {coverage_no_cdf}')
+
 
     coverage_cdf_mlp3[np.where(n_cdf_total > 0)] = weight_mlp3b_cdf[np.where(n_cdf_total > 0)]/ n_cdf_total[np.where(n_cdf_total > 0)]
     coverage_cdf_mlp4[np.where(n_cdf_total > 0)] = weight_mlp4b_cdf[np.where(n_cdf_total > 0)]/ n_cdf_total[np.where(n_cdf_total > 0)]
     coverage_cdf_mlp5[np.where(n_cdf_total > 0)] = weight_mlp5b_cdf[np.where(n_cdf_total > 0)]/ n_cdf_total[np.where(n_cdf_total > 0)]
+    print(f'--> coverage_cdf_mlp3: {coverage_cdf_mlp3}')
+    print(f'--> coverage_cdf_mlp4: {coverage_cdf_mlp4}')
+    print(f'--> coverage_cdf_mlp5: {coverage_cdf_mlp5}')
+
     weight_mlp3b_total = n_nocdf_total.copy()
+    print(f'--> weight_mlp3b_total (start): {weight_mlp3b_total}')
     weight_mlp3b_total[np.where(n_nocdf_total == 0)] = weight_mlp3b_cdf[np.where(n_nocdf_total==0)]
     weight_mlp3b_total[np.where(n_nocdf_total > 0)] = weight_mlp3b_cdf[np.where(n_nocdf_total > 0)]+ weight_mlp3b_total[np.where(n_nocdf_total > 0)]
+    print(f'--> weight_mlp3b_total (end): {weight_mlp3b_total}')
     coverage_total_mlp3 = weight_mlp3b_total[np.where(n_total > 0)]/ n_total[np.where(n_total > 0)]
     coverage_total_mlp4 = weight_mlp4b_cdf[np.where(n_total > 0)]/ n_total[np.where(n_total > 0)]
     coverage_total_mlp5 = weight_mlp5b_cdf[np.where(n_total > 0)]/ n_total[np.where(n_total > 0)]
+    print(f'--> coverage_total_mlp3: {coverage_total_mlp3}')
+    print(f'--> coverage_total_mlp4: {coverage_total_mlp4}')
+    print(f'--> coverage_total_mlp5: {coverage_total_mlp5}')
+
 
     n_total = np.ma.masked_equal(n_total,0)
     n_cdf_total = np.ma.masked_equal(n_cdf_total,0)
