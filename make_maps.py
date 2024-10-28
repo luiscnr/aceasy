@@ -556,6 +556,7 @@ def compute_year_coverage_cci(year):
         if not os.path.exists(file_in):
             print(f'[WARNING] Input file {file_in} does not exist. Skipping...')
             date_here = date_here + timedelta(hours=24)
+            continue
 
         print(f'[INFO] Date: {date_here}')
         input_dataset = Dataset(file_in)
