@@ -568,41 +568,77 @@ def compute_year_coverage_cci(year):
         weight_mlp5 = input_dataset.variables['WEIGHT_MLP5B'][:]
         cdf_flag = input_dataset.variables['CDF_FLAG_MULTIPLE'][:]
 
-        ##all
-        for index_here in [0,index_month]:
-            n_total[index_here, cdf_flag >=1] = n_total[index_here, cdf_flag >=1] + 1
-            n_cdf_total[index_here, cdf_flag >= 2] = n_cdf_total[index_here, cdf_flag >= 2] + 1
-            n_nocdf_total[index_here, cdf_flag == 1] = n_nocdf_total[index_here, cdf_flag == 1] + 1
-            weight_mlp3b_cdf[index_here, cdf_flag == 2] = weight_mlp3b_cdf[index_here, cdf_flag == 2] + weight_mlp3[cdf_flag == 2]
-            weight_mlp3b_cdf[index_here, cdf_flag == 6] = weight_mlp3b_cdf[index_here, cdf_flag == 6] + weight_mlp3[cdf_flag == 6]
-            weight_mlp3b_cdf[index_here, cdf_flag == 10] = weight_mlp3b_cdf[index_here, cdf_flag == 10] + weight_mlp3[cdf_flag == 10]
-            weight_mlp3b_cdf[index_here, cdf_flag == 14] = weight_mlp3b_cdf[index_here, cdf_flag == 14] + weight_mlp3[cdf_flag == 14]
-            weight_mlp4b_cdf[index_here, cdf_flag == 4] = weight_mlp4b_cdf[index_here, cdf_flag == 4] + weight_mlp4[cdf_flag == 4]
-            weight_mlp4b_cdf[index_here, cdf_flag == 6] = weight_mlp4b_cdf[index_here, cdf_flag == 6] + weight_mlp4[cdf_flag == 6]
-            weight_mlp4b_cdf[index_here, cdf_flag == 12] = weight_mlp4b_cdf[index_here, cdf_flag == 12] + weight_mlp4[cdf_flag == 12]
-            weight_mlp4b_cdf[index_here, cdf_flag == 14] = weight_mlp4b_cdf[index_here, cdf_flag == 14] + weight_mlp4[cdf_flag == 14]
-            weight_mlp5b_cdf[index_here, cdf_flag == 8] = weight_mlp5b_cdf[index_here, cdf_flag == 8] + weight_mlp5[cdf_flag == 8]
-            weight_mlp5b_cdf[index_here, cdf_flag == 10] = weight_mlp5b_cdf[index_here, cdf_flag == 10] + weight_mlp5[cdf_flag == 10]
-            weight_mlp5b_cdf[index_here, cdf_flag == 12] = weight_mlp5b_cdf[index_here, cdf_flag == 12] + weight_mlp5[cdf_flag == 12]
-            weight_mlp5b_cdf[index_here, cdf_flag == 14] = weight_mlp5b_cdf[index_here, cdf_flag == 14] + weight_mlp5[cdf_flag == 14]
+
+
+        row,col = np.where(cdf_flag>=1)
+        n_total[0, row, col] = n_total[0, row, col] + 1
+        n_total[index_month, row, col] = n_total[index_month, row, col] + 1
+
+        row, col = np.where(cdf_flag >= 2)
+        n_cdf_total[0, row, col] = n_cdf_total[0, row, col] + 1
+        n_cdf_total[index_month, row, col] = n_cdf_total[index_month, row, col] + 1
+
+        row, col = np.where(cdf_flag == 1)
+        n_nocdf_total[0, row, col] = n_nocdf_total[0, row, col] + 1
+        n_nocdf_total[index_month, row, col] = n_nocdf_total[index_month, row, col] + 1
+
+        row, col = np.where(cdf_flag == 2)
+        weight_mlp3b_cdf[0, row,col] = weight_mlp3b_cdf[0,row,col] + weight_mlp3[row,col]
+        weight_mlp3b_cdf[index_month, row, col] = weight_mlp3b_cdf[index_month, row, col] + weight_mlp3[row, col]
+
+        row, col = np.where(cdf_flag == 4)
+        weight_mlp4b_cdf[0, row, col] = weight_mlp4b_cdf[0, row, col] + weight_mlp4[row, col]
+        weight_mlp4b_cdf[index_month, row, col] = weight_mlp4b_cdf[index_month, row, col] + weight_mlp4[row, col]
+
+        row, col = np.where(cdf_flag == 8)
+        weight_mlp5b_cdf[0, row, col] = weight_mlp5b_cdf[0, row, col] + weight_mlp5[row, col]
+        weight_mlp5b_cdf[index_month, row, col] = weight_mlp5b_cdf[index_month, row, col] + weight_mlp5[row, col]
+
+        row, col = np.where(cdf_flag == 6)
+        weight_mlp3b_cdf[0, row, col] = weight_mlp3b_cdf[0, row, col] + weight_mlp3[row, col]
+        weight_mlp3b_cdf[index_month, row, col] = weight_mlp3b_cdf[index_month, row, col] + weight_mlp3[row, col]
+        weight_mlp4b_cdf[0, row, col] = weight_mlp4b_cdf[0, row, col] + weight_mlp4[row, col]
+        weight_mlp4b_cdf[index_month, row, col] = weight_mlp4b_cdf[index_month, row, col] + weight_mlp4[row, col]
+
+        row, col = np.where(cdf_flag == 10)
+        weight_mlp3b_cdf[0, row, col] = weight_mlp3b_cdf[0, row, col] + weight_mlp3[row, col]
+        weight_mlp3b_cdf[index_month, row, col] = weight_mlp3b_cdf[index_month, row, col] + weight_mlp3[row, col]
+        weight_mlp5b_cdf[0, row, col] = weight_mlp5b_cdf[0, row, col] + weight_mlp5[row, col]
+        weight_mlp5b_cdf[index_month, row, col] = weight_mlp5b_cdf[index_month, row, col] + weight_mlp5[row, col]
+
+        row, col = np.where(cdf_flag == 12)
+        weight_mlp4b_cdf[0, row, col] = weight_mlp4b_cdf[0, row, col] + weight_mlp4[row, col]
+        weight_mlp4b_cdf[index_month, row, col] = weight_mlp4b_cdf[index_month, row, col] + weight_mlp4[row, col]
+        weight_mlp5b_cdf[0, row, col] = weight_mlp5b_cdf[0, row, col] + weight_mlp5[row, col]
+        weight_mlp5b_cdf[index_month, row, col] = weight_mlp5b_cdf[index_month, row, col] + weight_mlp5[row, col]
+
+        row, col = np.where(cdf_flag == 14)
+        weight_mlp3b_cdf[0, row, col] = weight_mlp3b_cdf[0, row, col] + weight_mlp3[row, col]
+        weight_mlp3b_cdf[index_month, row, col] = weight_mlp3b_cdf[index_month, row, col] + weight_mlp3[row, col]
+        weight_mlp4b_cdf[0, row, col] = weight_mlp4b_cdf[0, row, col] + weight_mlp4[row, col]
+        weight_mlp4b_cdf[index_month, row, col] = weight_mlp4b_cdf[index_month, row, col] + weight_mlp4[row, col]
+        weight_mlp5b_cdf[0, row, col] = weight_mlp5b_cdf[0, row, col] + weight_mlp5[row, col]
+        weight_mlp5b_cdf[index_month, row, col] = weight_mlp5b_cdf[index_month, row, col] + weight_mlp5[row, col]
+
+
 
 
         input_dataset.close()
 
         date_here = date_here + timedelta(hours=24)
 
-    coverage_cdf[n_total>0] = n_cdf_total[n_total>0]/n_total[n_total>0]
-    coverage_no_cdf[n_total>0] = n_nocdf_total[n_total>0]/n_total[n_total>0]
+    coverage_cdf[np.where(n_total>0)] = n_cdf_total[np.where(n_total>0)]/n_total[np.where(n_total>0)]
+    coverage_no_cdf[np.where(n_total>0)] = n_nocdf_total[np.where(n_total>0)]/n_total[np.where(n_total>0)]
 
-    coverage_cdf_mlp3[n_cdf_total > 0] = weight_mlp3b_cdf[n_cdf_total > 0]/ n_cdf_total[n_cdf_total > 0]
-    coverage_cdf_mlp4[n_cdf_total > 0] = weight_mlp4b_cdf[n_cdf_total > 0]/ n_cdf_total[n_cdf_total > 0]
-    coverage_cdf_mlp5[n_cdf_total > 0] = weight_mlp5b_cdf[n_cdf_total > 0]/ n_cdf_total[n_cdf_total > 0]
+    coverage_cdf_mlp3[np.where(n_cdf_total > 0)] = weight_mlp3b_cdf[np.where(n_cdf_total > 0)]/ n_cdf_total[np.where(n_cdf_total > 0)]
+    coverage_cdf_mlp4[np.where(n_cdf_total > 0)] = weight_mlp4b_cdf[np.where(n_cdf_total > 0)]/ n_cdf_total[np.where(n_cdf_total > 0)]
+    coverage_cdf_mlp5[np.where(n_cdf_total > 0)] = weight_mlp5b_cdf[np.where(n_cdf_total > 0)]/ n_cdf_total[np.where(n_cdf_total > 0)]
     weight_mlp3b_total = n_nocdf_total.copy()
-    weight_mlp3b_total[n_nocdf_total == 0] = weight_mlp3b_cdf[n_nocdf_total==0]
-    weight_mlp3b_total[n_nocdf_total > 0] = weight_mlp3b_cdf[n_nocdf_total > 0]+ weight_mlp3b_total[n_nocdf_total > 0]
-    coverage_total_mlp3 = weight_mlp3b_total[n_total > 0]/ n_total[n_total > 0]
-    coverage_total_mlp4 = weight_mlp4b_cdf[n_total > 0]/ n_total[n_total > 0]
-    coverage_total_mlp5 = weight_mlp5b_cdf[n_total > 0]/ n_total[n_total > 0]
+    weight_mlp3b_total[np.where(n_nocdf_total == 0)] = weight_mlp3b_cdf[np.where(n_nocdf_total==0)]
+    weight_mlp3b_total[np.where(n_nocdf_total > 0)] = weight_mlp3b_cdf[np.where(n_nocdf_total > 0)]+ weight_mlp3b_total[np.where(n_nocdf_total > 0)]
+    coverage_total_mlp3 = weight_mlp3b_total[np.where(n_total > 0)]/ n_total[np.where(n_total > 0)]
+    coverage_total_mlp4 = weight_mlp4b_cdf[np.where(n_total > 0)]/ n_total[np.where(n_total > 0)]
+    coverage_total_mlp5 = weight_mlp5b_cdf[np.where(n_total > 0)]/ n_total[np.where(n_total > 0)]
 
     n_total = np.ma.masked_equal(n_total,0)
     n_cdf_total = np.ma.masked_equal(n_cdf_total,0)
