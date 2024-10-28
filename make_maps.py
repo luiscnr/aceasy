@@ -854,7 +854,10 @@ def main():
     #     file_out = os.path.join(os.path.dirname(file_nc), f'{variable}_{year}.tif')
     #     plot_map_general(file_nc,file_out,variable,title,label,vmin,vmax)
 
-    compute_year_coverage_cci(2008)
+    for year in range(1997,2024):
+        if year==2008:
+            continue
+        compute_year_coverage_cci(year)
 
     if finisce():
         return
