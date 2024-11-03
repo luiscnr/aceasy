@@ -56,17 +56,17 @@ class QI_ADD():
     def add_qi_bal(self,var_list):
         if self.date_image is None:
             print(f'[WARNING] Date is not available. QI band was not added')
-            return
+            return None
         file_clima = self.clima_paths['bal']['all']
         if not os.path.exists(file_clima):
             print(f'[WARNING] Climatology file is not available. QI band was not added')
-            return
+            return None
         climafile = Dataset(file_clima)
         lons_in = self.nc_input.variables['lon'][:]
         lats_in = self.nc_input.variables['lat'][::-1]
         lons_cl = climafile.variables['lon'][:]
         lats_cl = climafile.variables['lat'][:]
-        lons_sub, lats_sub = np.meshgrid(lons_in, lats_in)
+
         first_day = climafile.variables['day'][:].min()  # 40!
         last_day = climafile.variables['day'][:].max()  # 320
         jday = int(self.date_image.strftime('%j'))
@@ -84,11 +84,16 @@ class QI_ADD():
             'lon': True if self.nc_input.variables['lon'][0] > self.nc_input.variables['lon'][nx - 1] else False
         }
         lons_in = self.nc_input.variables['lon'][:]
-        if flip_latlon['lon']: lons_in = np.flipud(lons_in)
+        if flip_latlon['lon']: lons_in = np.fliplr(lons_in)
         lats_in = self.nc_input.variables['lat'][:]
         if flip_latlon['lat']:lats_in = np.flipud(lats_in)
+        lons_sub, lats_sub = np.meshgrid(lons_in, lats_in)
+
+
         if var_list is None:
             var_list = list(self.nc_input.variables.keys())
+
+        qi_bands_done = []
         for vname in var_list:
             if not vname.upper() in clim_bands:
                 continue
@@ -122,6 +127,12 @@ class QI_ADD():
             stringa = self.nc_input.variables[vname].long_name if hasattr(self.nc_input.variables[vname], 'long_name') else vname.upper()
             qi_var.setncattr('long_name', f'Quality Index for OLCI {stringa}')
             qi_var.setncattr('climatology_file', os.path.basename(file_clima))
+            qi_bands_done.append(name_qi)
+
+        if len(qi_bands_done)==0:
+            return None
+        else:
+            return qi_bands_done
 
     def Interp(self,datain, xin, yin, xout, yout, interpolation='NearestNeighbour'):
         """

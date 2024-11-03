@@ -205,6 +205,14 @@ class BalOutputFile:
                 for at in varattr[varname]:
                     var.setncattr(at,varattr[varname][at])
 
+    def copy_var(self,var_name,var_orig):
+        fillvalue = None
+        if '_FillValue' in var_orig.ncattrs():
+            fillvalue = var_orig.getncattr('_FillValue')
+        var = self.OFILE.createVariable(var_name, var_orig.datatype, var_orig.dimensions, fill_value=fillvalue, zlib=True, complevel=6)
+        var.setncatts(var_orig.__dict__)
+        var[:] = var_orig[:]
+
     def create_var_flag_general(self, array, varname, varattr):
         var = self.create_flag_variable(varname, array)
         var.coordinates = "lat long"

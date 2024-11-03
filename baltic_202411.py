@@ -18,10 +18,8 @@ from split_202411 import Splitter
 class BALTIC_202411_PROCESSOR():
 
     def __init__(self, fconfig, verbose):
+
         self.verbose = verbose
-        if fconfig is None:
-            fconfig = 'aceasy_config.ini'
-            if not os.path.exists(fconfig): fconfig = os.path.join(os.path.dirname(__file__), 'aceasy_config.ini')
         self.bal_proc = BALTIC_202411()
         self.bal_proc_old = BALTIC_MLP(fconfig, verbose)
 
@@ -57,7 +55,6 @@ class BALTIC_202411_PROCESSOR():
                                'MICRO', 'NANO', 'PICO', 'DIATO', 'DINO', 'GREEN', 'CRYPTO', 'PROKAR']
         self.iop_bands = ['ADG443', 'APH443', 'BBP443']
 
-
         # defining tile sizes
         self.tileX = 1500
         self.tileY = 1500
@@ -74,15 +71,86 @@ class BALTIC_202411_PROCESSOR():
             self.varattr = json.load(f)
             f.close()
 
+        ##defining splits for l3_olci
+        self.splits = {
+            'chl': ['CHL', 'CYANOBLOOM','SENSORMASK'],
+            'pft': ['PICO', 'NANO', 'MICRO', 'CRYPTO', 'GREEN', 'DIATO', 'DINO', 'PROKAR','SENSORMASK'],
+            'kd490': ['KD490','SENSORMASK'],
+            'adg443': ['ADG443','SENSORMASK'],
+            'aph443': ['APH443','SENSORMASK'],
+            'bbp443': ['BBP443','SENSORMASK']
+        }
+        ##defining rrs file for applying mask
+        self.rrs_l3_olci = ['rrs400','rrs412_5', 'rrs442_5', 'rrs490', 'rrs510', 'rrs560', 'rrs620', 'rrs665', 'rrs673_75', 'rrs681_25',
+                            'rrs708_75', 'rrs753_75','rrs778_75', 'rrs865']
+
+
+        self.mask_file = None
+        self.mask_var = None
+
+        if fconfig is not None:
+            self.start_balmlp_options(fconfig)
+
+    def start_balmlp_options(self,fconfig):
+        import configparser
+        options = configparser.ConfigParser()
+        options.read(fconfig)
+        if not options.has_section('BALMLP'):
+            return
+
+
+        if options.has_option('BALMLP','tile_x'):
+            try:
+                tile_x = int(options['BALMLP']['tile_x'])
+            except:
+                print(f'[WARNING] Not valid option {options["BALMLP"]["tile_x"]} for tile_x in configuration file. It shoud be a int value greater than zero')
+            if tile_x>0:
+                self.tileX = tile_x
+            else:
+                print(
+                    f'[WARNING] Not valid option {options["BALMLP"]["TILE_X"]} for TILE_X in configuration file. It shoud be a int value greater than zero')
+
+        if options.has_option('BALMLP', 'tile_y'):
+            try:
+                tile_y = int(options['BALMLP']['tile_y'])
+            except:
+                print(
+                    f'[WARNING] Not valid option {options["BALMLP"]["tyle_y"]} for tyle_y in configuration file. It shoud be a int value greater than zero')
+            if tile_y > 0:
+                self.tileY = tile_y
+            else:
+                print(
+                    f'[WARNING] Not valid option {options["BALMLP"]["TILE_X"]} for TILE_X in configuration file. It shoud be a int value greater than zero')
+
+
+        if options.has_option('BALMLP','mask'):
+            mask_s = options['BALMLP']['mask']
+            mask_l = [x.strip() for x in mask_s.split(';')]
+            if os.path.exists(mask_l[0]):
+                self.mask_file = mask_l[0]
+                self.mask_var = 'Land_Mask'
+                if len(mask_l)==2:
+                    self.mask_var = mask_l[1]
+                dmask = Dataset(self.mask_file)
+                if self.mask_var not in dmask.variables:
+                    print(f'[WARNING] Variable {self.mask_var} is not available in {self.mask_file}. Mask will no be implemented')
+                    self.mask_file = None
+                    self.mask_var = None
+                else:
+                    print(f'[INFO] Mask set to variable {self.mask_var} in file {self.mask_file}')
+                dmask.close()
+            else:
+                print(f'[WARNING] File mask: {mask_l} does not exist. Mask will no be implemented')
+
     def check_runac(self):
         return self.bal_proc.VALID
 
-    def update_attrs_l3_olci(self,date_olci):
+    def update_attrs_l3_olci(self, date_olci):
         timeliness = self.product_type.split('_')[2].upper()
         self.varattr['GLOBAL']['start_date'] = date_olci.strftime('%Y-%m-%d')
         self.varattr['GLOBAL']['stop_date'] = date_olci.strftime('%Y-%m-%d')
         self.varattr['GLOBAL']['timeliness'] = timeliness
-        if timeliness=='NR':
+        if timeliness == 'NR':
             product_name = 'OCEANCOLOUR_BAL_BGC_L3_NRT_009_131'
             dataset_name = 'cmems_obs-oc_bal_bgc-plankton_nrt_l3-olci-300m_P1D'
         else:
@@ -109,16 +177,15 @@ class BALTIC_202411_PROCESSOR():
             self.varattr = json.load(f)
             f.close()
 
+
+
     def run_process_multiple_files(self, prod_path, output_dir):
         if not self.product_type.startswith('l3_olci_'):
             print('Only OLCI L3 is implemented')
+            return
 
-
-
-
-
-        self.tileY = 250
-        self.tileX = 250
+        # self.tileY = 250
+        # self.tileX = 250
 
         from datetime import datetime as dt
 
@@ -139,19 +206,16 @@ class BALTIC_202411_PROCESSOR():
         fileout = os.path.join(output_dir, f'O{olci_date_str}-bal-fr_BAL202411.nc')
 
         if os.path.exists(fileout):
-            ##SPLIT
-            splits = {
-                'chl': ['CHL', 'CYANOBLOOM'],
-                'pft': ['PICO', 'NANO', 'MICRO', 'CRYPTO', 'GREEN', 'DIATO', 'DINO', 'PROKAR']
-            }
             splitter = Splitter(fileout, olci_date)
-            splitter.make_multiple_split(os.path.dirname(fileout), splits)
+            splitter.mask_array = self.get_mask_array()
+            splitter.make_multiple_split(os.path.dirname(fileout), self.splits)
+            self.apply_mask_to_olci_l3_rrs(prod_path,olci_date_str)
             return
-
 
         if self.verbose:
             print(f'[INFO] Date: {olci_date.strftime("%Y-%m-%d")}')
         self.retrieve_info_wlbands_olci_l3(prod_path, olci_date_str)
+
         if self.applyBandShifting:
             print(f'[INFO] Band shifting is activated:')
             print(f'[INFO]   Input bands: {self.central_wl_chla}')
@@ -185,8 +249,6 @@ class BALTIC_202411_PROCESSOR():
             ycheck = y - startY
             if self.verbose and (ycheck == 0 or ((ycheck % self.tileY) == 0)):
                 print(f'[INFO] Processing line {ycheck}/{ny}')
-            if y == 250:
-                break
             for x in range(startX, endX, self.tileX):
                 yini = y
                 yend = y + self.tileY
@@ -200,18 +262,25 @@ class BALTIC_202411_PROCESSOR():
                     print(f'[INFO] Processing {nvalid} valid pixels...')
                     input_rrs, iop = self.get_valid_rrs_olci_l3(valid_mask, nvalid, yini, yend, xini, xend)
 
-                    for iop_index,iop_band in enumerate(self.iop_bands):
+                    for iop_index, iop_band in enumerate(self.iop_bands):
                         array_here = np.ma.masked_all(valid_mask.shape)
-                        array_here[valid_mask == 1] = iop[:,iop_index]
-                        all_arrays[iop_band][yini - startY:yend - startY,xini - startX:xend - startX] = array_here[:, :]
+                        array_here[valid_mask == 1] = iop[:, iop_index]
+                        all_arrays[iop_band][yini - startY:yend - startY, xini - startX:xend - startX] = array_here[:,:]
 
+
+                    cyano_info = self.get_cyano_info_olci_l3(input_rrs)
+                    for cyano_band in cyano_info:
+                        array_here = np.ma.masked_all(valid_mask.shape)
+                        array_cyano = cyano_info[cyano_band]
+                        array_here[valid_mask==1] = array_cyano[:]
+                        all_arrays[cyano_band][yini - startY:yend - startY, xini - startX:xend - startX] = array_here[:,:]
 
 
                     res_algorithm = self.bal_proc.compute_ensemble(input_rrs)
 
                     for key in res_algorithm.keys():
                         if key.upper() in all_arrays.keys():
-                            #print('-->',key.upper(),yini-startY,yend-startY,xini-startX,xend-startX)
+                            # print('-->',key.upper(),yini-startY,yend-startY,xini-startX,xend-startX)
                             array_here = np.ma.masked_all(valid_mask.shape)
                             array_here[valid_mask == 1] = res_algorithm[key]
                             all_arrays[key.upper()][yini - startY:yend - startY,
@@ -221,7 +290,7 @@ class BALTIC_202411_PROCESSOR():
                     kd_res = self.bal_proc_old.compute_kd(input_rrs[:, 1], input_rrs[:, 3])
                     kd_here = np.ma.masked_all(valid_mask.shape)
                     kd_here[valid_mask == 1] = kd_res[:]
-                    all_arrays['KD490'][yini - startY:yend - startY, xini - startX:xend - startX] = kd_here[:,:]
+                    all_arrays['KD490'][yini - startY:yend - startY, xini - startX:xend - startX] = kd_here[:, :]
 
                     psc, pft = self.bal_proc_old.compute_psc_pft(res_algorithm['chl'])
                     for var in self.bal_proc_old.psc_var:
@@ -233,36 +302,18 @@ class BALTIC_202411_PROCESSOR():
                         pft_here[valid_mask == 1] = pft[var][:]
                         all_arrays[var][yini - startY:yend - startY, xini - startX:xend - startX] = pft_here[:, :]
 
-
-
-
         if self.verbose:
             print(f'[INFO] Water processing completed')
             print(f'[INFO] Generating output file: {fileout}')
-        # input_file = list(self.central_wavelength.keys())[0]
-        # ncinput = Dataset(input_file)
 
-        # chl_test = all_arrays['CHL'][0:250,750:1000]
-        # cdf_test = all_arrays['CDF_FLAG_MULTIPLE'][0:250,750:1000]
-        # chl_test = chl_test.filled(-999.0)
-        # cdf_test = cdf_test.filled(-999.0)
-        # chl_test = np.ma.where(chl_test==-999.0,0,1)
-        # cdf_test = np.ma.where(cdf_test == -999.0, 0, 1)
-        # print('n chl',np.sum(chl_test))
-        # print('n cdf',np.sum(cdf_test))
-        # diff = chl_test-cdf_test
-        # print('diff',np.min(diff[:]),np.max(diff[:]))
 
-        self.create_file(fileout, prod_path, all_arrays, startY, endY + 1, startX, endX + 1,olci_date)
-        # ncinput.close()
+        self.create_file(fileout, prod_path, all_arrays, startY, endY + 1, startX, endX + 1, olci_date)
+
 
         ##SPLIT
-        splits = {
-            'chl': ['CHL','CYANOBLOOM'],
-            'pft': ['PICO','NANO','MICRO','CRYPTO','GREEN','DIATO','DINO','PROKAR']
-        }
-        splitter = Splitter(fileout,olci_date)
-        splitter.make_multiple_split(os.path.dirname(fileout),splits)
+        splitter = Splitter(fileout, olci_date)
+        splitter.mask_array = self.get_mask_array()
+        splitter.make_multiple_split(os.path.dirname(fileout), self.splits)
 
     def run_process(self, prod_path, output_dir):
         if self.product_type.startswith('l3_olci_') and os.path.isdir(prod_path):
@@ -328,7 +379,7 @@ class BALTIC_202411_PROCESSOR():
                 endY = ncinput.dimensions['height'].size - 1
             else:
                 startY, endY, startX, endX = self.get_geo_limits(ncinput)
-                if startY==-1 and endY==-1 and startX==-1 and endX==-1:
+                if startY == -1 and endY == -1 and startX == -1 and endX == -1:
                     print(f'[WARNING] Image is not covering the Baltic Sea. Skipping...')
                     return
                 if self.verbose:
@@ -379,7 +430,6 @@ class BALTIC_202411_PROCESSOR():
                     if self.product_type == 'polymer':
                         input_rrs, iop, cyano_info = self.get_valid_rrs_polymer(ncinput, valid_mask, nvalid, yini, yend,
                                                                                 xini, xend)
-
                     res_algorithm = self.bal_proc.compute_ensemble(input_rrs)
 
                     for key in cyano_info.keys():
@@ -488,6 +538,60 @@ class BALTIC_202411_PROCESSOR():
                 self.central_wavelength = {}
                 self.central_wl_chla = []
 
+    def apply_mask_to_olci_l3_rrs(self,prod_path, olci_date_str):
+        mask_array = self.get_mask_array()
+        if mask_array is None:
+            return
+        for band in self.rrs_l3_olci:
+            input_file = os.path.join(prod_path, f'O{olci_date_str}-{band}-bal-fr.nc')
+            if os.path.exists(input_file):
+                print(f'[INFO] Applying mask to file: {input_file}')
+                temp_file = os.path.join(prod_path, f'O{olci_date_str}-{band}-bal-fr_temp.nc')
+                mask_applied = self.apply_mask_impl(input_file,mask_array,temp_file)
+                if mask_applied:
+                    os.rename(temp_file,input_file)
+                else:
+                    if os.path.exists(temp_file):os.remove(temp_file)
+
+    def apply_mask_impl(self,input_file, mask, output_file):
+        mask_applied = False
+        from netCDF4 import Dataset
+        nc_input = Dataset(input_file, 'r')
+        nc_out = Dataset(output_file, 'w')
+
+        # copy global attributes all at once via dictionary
+        nc_out.setncatts(nc_input.__dict__)
+
+        # copy dimensions
+        for name, dimension in nc_input.dimensions.items():
+            nc_out.createDimension(
+                name, (len(dimension) if not dimension.isunlimited() else None))
+
+        for name, variable in nc_input.variables.items():
+            fill_value = -999.0
+            if '_FillValue' in list(variable.ncattrs()):
+                fill_value = variable._FillValue
+
+            nc_out.createVariable(name, variable.datatype, variable.dimensions, fill_value=fill_value, zlib=True,
+                                  complevel=6)
+
+            # copy variable attributes all at once via dictionary
+            nc_out[name].setncatts(nc_input[name].__dict__)
+
+            if len(variable.dimensions) == 3 and nc_input.variables[name].shape[1] == mask.shape[0] and \
+                    nc_input.variables[name].shape[2] == mask.shape[1]:
+                print(f'[INFO] Applying mask to variable: {name}')
+                array = np.squeeze(nc_input[name][:])
+                array[mask == 1] = fill_value
+                nc_out[name][0, :, :] = array[:, :]
+                mask_applied = True
+            else:
+                nc_out[name][:] = nc_input[name][:]
+
+        nc_input.close()
+        nc_out.close()
+        return mask_applied
+
     def retrieve_info_wlbands_olci_l3(self, prod_path, olci_date_str):
         for band in self.wlbands_chla_olci_l3:
             input_file = os.path.join(prod_path, f'O{olci_date_str}-{band}-bal-fr.nc')
@@ -501,18 +605,19 @@ class BALTIC_202411_PROCESSOR():
     def get_geo_limits(self, ncpolymer):
         array_lat = np.array(ncpolymer.variables['latitude'][:, :])
         array_lon = np.array(ncpolymer.variables['longitude'][:, :])
-        geovalid = np.logical_and(np.logical_and(array_lat >= self.geo_limits[0], array_lat <= self.geo_limits[1]),np.logical_and(array_lon >= self.geo_limits[2],array_lon <= self.geo_limits[3]))
-        if np.count_nonzero(geovalid)>0:
+        geovalid = np.logical_and(np.logical_and(array_lat >= self.geo_limits[0], array_lat <= self.geo_limits[1]),
+                                  np.logical_and(array_lon >= self.geo_limits[2], array_lon <= self.geo_limits[3]))
+        if np.count_nonzero(geovalid) > 0:
             r, c = np.where(geovalid)
             startY = r.min()
             endY = r.max()
             startX = c.min()
             endX = c.max()
         else:
-            startY=-1
-            endY=-1
-            startX=-1
-            endX=-1
+            startY = -1
+            endY = -1
+            startX = -1
+            endX = -1
 
         return startY, endY, startX, endX
 
@@ -646,6 +751,29 @@ class BALTIC_202411_PROCESSOR():
 
         return rrsdata, iop
 
+    def get_cyano_info_olci_l3(self, input_rrs):
+        index555 = self.wl_chla.index(555)  # index555 es 3
+        index670 = self.wl_chla.index(670)  # index670 es 4
+        rrs555 = input_rrs[:, index555]
+        rrs670 = input_rrs[:, index670]
+        flag_cyano = np.zeros(rrs555.shape)
+        flag_cyano[rrs555 >= self.th_cyano_555] = flag_cyano[rrs555 >= self.th_cyano_555] + 1
+        flag_cyano[rrs670 >= self.th_cyano_670] = flag_cyano[rrs670 >= self.th_cyano_670] + 2
+        cyano_info = {
+            'RRS555': rrs555,
+            'RRS670': rrs670,
+            'CYANOBLOOM': flag_cyano
+        }
+        return cyano_info
+
+    def get_mask_array(self):
+        mask_array = None
+        if self.mask_file is not None and self.mask_var is not None:
+            dmask = Dataset(self.mask_file)
+            mask_array = dmask.variables[self.mask_var][:]
+            dmask.close()
+        return mask_array
+
     def create_file(self, fileout, ncinput, all_arrays, yini, yend, xini, xend, date_file):
 
         if self.verbose:
@@ -667,8 +795,6 @@ class BALTIC_202411_PROCESSOR():
         if self.product_type.startswith('l3_olci_'):
             self.update_attrs_l3_olci(date_file)
             ncoutput.set_global_attributes_from_dict(self.varattr)
-
-
 
         array_chl = all_arrays['CHL']
         ny = array_chl.shape[0]
@@ -696,8 +822,6 @@ class BALTIC_202411_PROCESSOR():
         elif len(ncinput.variables[var_lon_name].dimensions) == 1:
             array_lon = np.array(ncinput.variables[var_lon_name][xini:xend])
 
-
-
         if self.product_type == 'cci':
             array_lat = np.flip(array_lat)
 
@@ -719,8 +843,8 @@ class BALTIC_202411_PROCESSOR():
                 if self.verbose:
                     print(f'[INFO]     {rrsvar}->{name_band}')
                 array = ncinput.variables[rrsvar][yini:yend, xini:xend]
+                array = np.ma.squeeze(array)
                 array = np.flipud(array)
-
                 ncoutput.create_rrs_variable(array, name_band, wl, self.varattr, self.product_type)
 
         if self.product_type == 'polymer':
@@ -739,15 +863,20 @@ class BALTIC_202411_PROCESSOR():
 
         ##l3_olci
         if self.product_type.startswith('l3_olci_'):
+            added_sensor_mask = False
             for name in os.listdir(input_dir):
                 if name.startswith('Oa') or name.startswith('Ob'): continue
                 if name.startswith('O') and name.endswith('bal-fr.nc') and name.find('rrs') > 0:
                     input_file = os.path.join(input_dir, name)
                     nchere = Dataset(input_file)
+                    if not added_sensor_mask and 'SENSORMASK' in nchere.variables:
+                        var_sensor_mask = nchere.variables['SENSORMASK']
+                        ncoutput.copy_var('SENSORMASK',var_sensor_mask)
+                        added_sensor_mask = True
                     rrsvar = input_file[input_file.find('rrs'):input_file.find('-bal-fr.nc')].upper()
                     array = np.ma.array(nchere.variables[rrsvar][0, yini:yend, xini:xend])
                     wl = float(rrsvar[3:].replace('_', '.'))
-                    ncoutput.create_rrs_variable(array, rrsvar, wl, self.varattr,self.product_type)
+                    ncoutput.create_rrs_variable(array, rrsvar, wl, self.varattr, self.product_type)
                     nchere.close()
 
         # chl
@@ -763,7 +892,7 @@ class BALTIC_202411_PROCESSOR():
             if self.verbose:
                 print(f'[INFO]    Adding extra variable {ovar}....')
             array_here = all_arrays[ovar]
-            if self.product_type=='cci':
+            if self.product_type == 'cci':
                 array_here = np.flipud(array_here)
             if ovar.startswith('FLAG'):
                 ncoutput.create_var_flag_general(array_here, ovar, self.varattr)
@@ -805,7 +934,7 @@ class BALTIC_202411_PROCESSOR():
         time_var.axis = "T"
         time_var.calendar = "Gregorian"
         time_var.units = "seconds since 1981-01-01 00:00:00"
-        epoch_copernicus = datetime.datetime(1981, 1, 1,0,0,0)
+        epoch_copernicus = datetime.datetime(1981, 1, 1, 0, 0, 0).replace(tzinfo=pytz.utc)
         time_var[0] = int((date_file - epoch_copernicus).total_seconds())
 
         # other variables
@@ -844,4 +973,3 @@ class BALTIC_202411_PROCESSOR():
                 ncout[name][0, :, :] = ncref[name][:, :]
 
         ncout.close()
-

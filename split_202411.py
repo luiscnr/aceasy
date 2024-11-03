@@ -18,6 +18,7 @@ class Splitter():
         self.dimension_input_lon = 'lon'
         self.date_file  = date_file
         self.epoch_copernicus =dt(1981, 1, 1,0,0,0)
+        self.mask_array  =None
 
     def make_multiple_split(self,output_path,splits):
         for ref in splits:
@@ -85,10 +86,16 @@ class Splitter():
             ov = ncout.createVariable(vname, vin.datatype, ('time',) + vin.dimensions, fill_value=fillvalue, zlib=True,
                                  complevel=6)
             ov.setncatts(vin.__dict__)
+
+            vin = vin[:]
+            vin = np.squeeze(vin)
             if flip_latlon['lat']:
                 vin = np.flipud(vin)
             if flip_latlon['lon']:
                 vin = np.fliplr(vin)
+            if self.mask_array is not None:
+                vin[self.mask_array==1]=fillvalue
+
             ov[0, :, :] = vin[:, :]
 
         nc_input.close()
@@ -96,7 +103,16 @@ class Splitter():
         ##adding qi
         if self.add_qi:
             qiadd  = QI_ADD(ncout,None,self.date_file)
-            qiadd.add_qi_bal(var_list)
+            qibands = qiadd.add_qi_bal(var_list)
+            if qibands is not None and self.mask_array is not None:
+                for qiband in qibands:
+                    vin = ncout.variables[qiband]
+                    fillvalue = -999.0
+                    if '_FillValue' in vin.ncattrs():
+                        fillvalue = vin.getncattr('_FillValue')
+                    array = np.squeeze(np.array(vin[:]))
+                    array[self.mask_array == 1] = fillvalue
+                    vin[0,:,:] = array[:,:]
             qiadd.close_input_dataset()
         else:
             ncout.close()
