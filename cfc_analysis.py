@@ -47,8 +47,9 @@ class CFC_Analysis():
         self.path_cfc_daily = None
 
     def set_daily_paths(self, path_cfc, path_data):
-        if os.path.isdir(path_data): self.path_data_daily = path_data
         if os.path.isdir(path_cfc): self.path_cfc_daily = path_cfc
+        if os.path.isdir(path_data): self.path_data_daily = path_data
+
 
     def set_daily_data_date(self, work_date):
         yyyy = work_date.strftime('%Y')
@@ -63,7 +64,7 @@ class CFC_Analysis():
             return False
         if os.path.isdir(self.path_data_daily):
             name_data = f'C{work_date.strftime("%Y%j")}-chl-bal-hr.nc'
-            file_data = os.path.join(self.path_cfc_daily, yyyy, jjj, name_data)
+            file_data = os.path.join(self.path_data_daily, yyyy, jjj, name_data)
             if not os.path.isfile(file_data):
                 print(f'[ERROR] Data file {file_data} is not available')
                 return False
