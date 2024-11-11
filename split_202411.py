@@ -83,7 +83,10 @@ class Splitter():
             if '_FillValue' in vin.ncattrs():
                 fillvalue = vin.getncattr('_FillValue')
 
-            ov = ncout.createVariable(vname, vin.datatype, ('time',) + vin.dimensions, fill_value=fillvalue, zlib=True,
+            dims_out = vin.dimensions
+            if dims_out[0]!='time':
+                dims_out = ('time',)+vin.dimensions
+            ov = ncout.createVariable(vname, vin.datatype, dims_out, fill_value=fillvalue, zlib=True,
                                  complevel=6)
             ov.setncatts(vin.__dict__)
 
