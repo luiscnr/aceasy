@@ -192,10 +192,15 @@ def make_test():
     from cfc_analysis import  CFC_Analysis
     from datetime import datetime as dt
     import os
-    dir_base = '/mnt/c/DATA_LUIS/OCTAC_WORK/BAL_EVOLUTION_202411/COVERAGE_ANALYSIS'
+    #dir_base = '/mnt/c/DATA_LUIS/OCTAC_WORK/BAL_EVOLUTION_202411/COVERAGE_ANALYSIS'
+    dir_base = '/store/COP2-OC-TAC/BAL_Evolutions/slurmscripts_202411'
     file_mask = os.path.join(dir_base,'BAL_Land_Mask_hr_CFC.nc')
+    dir_data = '/store3/OC/CCI_v2017/daily_v202411'
+    dir_cfc = '/store3/OC/CLOUD_COVER_CLARA_AVHRR_V003'
+    # dir_data = dir_base
+    # dir_cfc = dir_base
     cdfA = CFC_Analysis(file_mask)
-    cdfA.set_daily_paths(dir_base,dir_base)
+    cdfA.set_daily_paths(dir_cfc,dir_data)
     if cdfA.set_daily_data_date(dt(1998,7,30)):
         cdfA.get_daily_cfc_cloud_free()
 
