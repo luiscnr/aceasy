@@ -145,21 +145,26 @@ class CFC_Analysis():
         ntotal_water_cfc = self.nc_mask['NTotal_Water_CFC'][:]
         nindices = len(ntotal_water_cfc)
         daily_cloud_free_map = 100 - self.cfc_day[cfc_mask == 0]
-        daily_cfc_n = np.ma.count(daily_cloud_free_map)  ##in theory, it should be zero or nindices
+        daily_cfc_n = np.ma.count(daily_cloud_free_map)  ##between 0 and nindices(=721)
 
         print(self.work_date.strftime('%Y-%m-%d'),'->',daily_cfc_n)
+        print(daily_cloud_free_map.shape,np.ma.count(daily_cloud_free_map),np.ma.count_masked(daily_cloud_free_map))
 
-        # n_expected_map = np.ma.round((daily_cloud_free_map / 100) * ntotal_water_cfc)
-        #
-        # thersholds = [10, 25, 40, 50, 60, 75, 90]
-        # nth = len(thersholds)
-        # daily_cloud_free_p_map = np.ma.zeros((nth, nindices))
-        # n_expected_p_map = np.ma.zeros((nth,nindices))
-        # for i in range(nth):
-        #     th = thersholds[i]
-        #     daily_cloud_free_p_map[i, daily_cloud_free_map >= th] = 1
-        #     n_expected_p_map[i,:] = daily_cloud_free_p_map[i,:]*ntotal_water_cfc[:]
-        #
+        n_expected_map = np.ma.round((daily_cloud_free_map / 100) * ntotal_water_cfc)
+        print(n_expected_map.shape,np.ma.count(n_expected_map),np.ma.count_masked(n_expected_map))
+
+        thersholds = [10, 25, 40, 50, 60, 75, 90]
+        nth = len(thersholds)
+        daily_cloud_free_p_map = np.ma.zeros((nth, nindices))
+        n_expected_p_map = np.ma.zeros((nth,nindices))
+        for i in range(nth):
+            th = thersholds[i]
+            daily_cloud_free_p_map[i, daily_cloud_free_map >= th] = 1
+            daily_cloud_free_p_map[i, daily_cloud_free_map.mask] = np.ma.masked
+            n_expected_p_map[i,:] = daily_cloud_free_p_map[i,:]*ntotal_water_cfc[:]
+            print(daily_cloud_free_p_map.shape, np.ma.count(daily_cloud_free_p_map[i,:]), np.ma.count_masked(daily_cloud_free_p_map[i,:]))
+            print(n_expected_p_map.shape, np.ma.count(n_expected_p_map[i,:]),np.ma.count_masked(n_expected_p_map[i,:]))
+
         # daily_cloud_free_sum = np.ma.sum(daily_cloud_free_map)
         # daily_cloud_free_percent = (daily_cloud_free_sum / (daily_cfc_n * 100)) * 100
         #

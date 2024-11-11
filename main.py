@@ -907,12 +907,15 @@ if __name__ == '__main__':
             print('--------------------------------------------------')
     else:  ##WORKING WITH FOLDERS
         ##DATE INTERVAL
+        print('date interval')
         if start_date is not None and end_date is not None:  # formato year/jjj
             ##first we obtain list of param (corrector,input_path,output_path,iszipped)
             param_list = []
             date_here = start_date
             while date_here <= end_date:
+                print('date here',date_here)
                 input_path_date = get_input_path_folder(input_path, date_here, input_path_organization)
+                print('input_path_date',input_path_date)
                 if os.path.exists(input_path_date):
                     output_path_jday = get_output_path_jday(output_path, date_here)
                     if args.verbose:
