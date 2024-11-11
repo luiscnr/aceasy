@@ -907,7 +907,7 @@ if __name__ == '__main__':
             print('--------------------------------------------------')
     else:  ##WORKING WITH FOLDERS
         ##DATE INTERVAL
-        print('date interval')
+        print('date interval',start_date,end_date)
         if start_date is not None and end_date is not None:  # formato year/jjj
             ##first we obtain list of param (corrector,input_path,output_path,iszipped)
             param_list = []
