@@ -50,7 +50,6 @@ class CFC_Analysis():
         if os.path.isdir(path_cfc): self.path_cfc_daily = path_cfc
         if os.path.isdir(path_data): self.path_data_daily = path_data
 
-
     def set_daily_data_date(self, work_date):
         yyyy = work_date.strftime('%Y')
         jjj = work_date.strftime('%j')
@@ -58,7 +57,7 @@ class CFC_Analysis():
             name_cfc = f'CFCdm{work_date.strftime("%Y%m%d")}0000003UDAVPOS01UD.nc'
             file_cfc = os.path.join(self.path_cfc_daily, yyyy, name_cfc)
             if not os.path.isfile(file_cfc):
-                print(f'[ERROR] CDF file {file_cfc} is not available')
+                print(f'[ERROR] CFC file {file_cfc} is not available')
                 return False
         else:
             return False
@@ -145,35 +144,47 @@ class CFC_Analysis():
         ntotal_water_cfc = self.nc_mask['NTotal_Water_CFC'][:]
         nindices = len(ntotal_water_cfc)
         daily_cloud_free_map = 100 - self.cfc_day[cfc_mask == 0]
-        daily_cfc_n = np.ma.count(daily_cloud_free_map)  ##between 0 and nindices(=721)
-
-        print(self.work_date.strftime('%Y-%m-%d'),'->',daily_cfc_n)
-        print(daily_cloud_free_map.shape,np.ma.count(daily_cloud_free_map),np.ma.count_masked(daily_cloud_free_map))
-
+        nindices_valid = np.ma.count(daily_cloud_free_map)  ##between 0 and nindices(=721)
         n_expected_map = np.ma.round((daily_cloud_free_map / 100) * ntotal_water_cfc)
-        print(n_expected_map.shape,np.ma.count(n_expected_map),np.ma.count_masked(n_expected_map))
-
         thersholds = [10, 25, 40, 50, 60, 75, 90]
         nth = len(thersholds)
         daily_cloud_free_p_map = np.ma.zeros((nth, nindices))
-        n_expected_p_map = np.ma.zeros((nth,nindices))
+        n_expected_p_map = np.ma.zeros((nth, nindices))
         for i in range(nth):
             th = thersholds[i]
             daily_cloud_free_p_map[i, daily_cloud_free_map >= th] = 1
             daily_cloud_free_p_map[i, daily_cloud_free_map.mask] = np.ma.masked
-            n_expected_p_map[i,:] = daily_cloud_free_p_map[i,:]*ntotal_water_cfc[:]
-            print(daily_cloud_free_p_map.shape, np.ma.count(daily_cloud_free_p_map[i,:]), np.ma.count_masked(daily_cloud_free_p_map[i,:]))
-            print(n_expected_p_map.shape, np.ma.count(n_expected_p_map[i,:]),np.ma.count_masked(n_expected_p_map[i,:]))
+            n_expected_p_map[i, :] = daily_cloud_free_p_map[i, :] * ntotal_water_cfc[:]
 
-        # daily_cloud_free_sum = np.ma.sum(daily_cloud_free_map)
-        # daily_cloud_free_percent = (daily_cloud_free_sum / (daily_cfc_n * 100)) * 100
-        #
-        # daily_cloud_free_p_sum = np.ma.sum(daily_cloud_free_p_map,axis=1)
-        #
-        # n_expected_sum = np.ma.sum(n_expected_map)
-        # n_expected_p_sum = np.ma.sum(n_expected_p_map,axis=1)
-        # n_expected_percent = (n_expected_sum / np.ma.sum(ntotal_water_cfc)) * 100
-        # n_expected_p_percent = (n_expected_p_sum / np.ma.sum(ntotal_water_cfc)) * 100
+        sum_n_total_water_cfc = np.ma.sum(ntotal_water_cfc[~daily_cloud_free_map.mask])
+
+        daily_cloud_free_sum = np.ma.sum(daily_cloud_free_map)
+        daily_cloud_free_percent = (daily_cloud_free_sum / (nindices_valid * 100)) * 100
+        n_expected_sum = np.ma.sum(n_expected_map)
+        n_expected_percent = (n_expected_sum / sum_n_total_water_cfc) * 100
+
+        daily_cloud_free_p_sum = np.ma.sum(daily_cloud_free_p_map, axis=1)
+        daily_cloud_free_p_percent = (daily_cloud_free_p_sum / (nindices_valid)) * 100
+        n_expected_p_sum = np.ma.sum(n_expected_p_map, axis=1)
+        n_expected_p_percent = (n_expected_p_sum / sum_n_total_water_cfc) * 100
+
+        results = {
+            'daily_cloud_free_map': daily_cloud_free_map,
+            'n_expected_map': n_expected_map,
+            'daily_cloud_free_p_map': daily_cloud_free_p_map,
+            'n_expected_p_map': n_expected_p_map,
+            'nindices_valid': nindices_valid,
+            'sum_n_total_water_cfc': sum_n_total_water_cfc,
+            'daily_cloud_free_sum':daily_cloud_free_sum,
+            'daily_cloud_free_percent':daily_cloud_free_percent,
+            'n_expected_sum':n_expected_sum,
+            'n_expected_percent':n_expected_percent,
+            'daily_cloud_free_p_sum': daily_cloud_free_p_sum,
+            'daily_cloud_free_p_percent': daily_cloud_free_p_percent,
+            'n_expected_p_sum': n_expected_p_sum,
+            'n_expected_p_percent': n_expected_p_percent
+        }
+        return results
 
 
     def close_mask(self):
