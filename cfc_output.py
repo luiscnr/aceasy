@@ -25,6 +25,18 @@ class CFC_Output():
             'daily_cloud_free_p_percent': ('time', 'indices_porc'),
             'n_expected_p_sum': ('time', 'indices_porc'),
             'n_expected_p_percent': ('time', 'indices_porc'),
+            'n_coverage_map': ('time', 'indices_cfc'),
+            'n_bloom_map': ('time', 'indices_cfc'),
+            'n_nobloom_map': ('time', 'indices_cfc'),
+            'n_subsurface_map': ('time', 'indices_cfc'),
+            'n_surface_map': ('time', 'indices_cfc'),
+            'n_concurrent_map': ('time', 'indices_cfc'),
+            'n_coverage': ('time',),
+            'n_bloom': ('time',),
+            'n_nobloom': ('time',),
+            'n_subsurface': ('time',),
+            'n_surface': ('time',),
+            'n_concurrent':('time',)
         }
 
     def start_output(self, file_mask, start_date, end_date):
