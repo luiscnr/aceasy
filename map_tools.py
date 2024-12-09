@@ -9,7 +9,7 @@ from datetime import timedelta
 parser = argparse.ArgumentParser(description='Check upload')
 parser.add_argument("-v", "--verbose", help="Verbose mode.", action="store_true")
 parser.add_argument("-m", "--mode", help="Mode.", type=str, required=True,
-                    choices=['TEST', 'CREATE_MASK', 'APPLY_MASK', 'CREATE_MASK_CFC','CREATE_CFC_OUTPUT_ANALYSIS'])
+                    choices=['TEST', 'CREATE_MASK', 'APPLY_MASK', 'CREATE_MASK_CFC','CREATE_CFC_OUTPUT_ANALYSIS','UPDATE_CFC'])
 parser.add_argument("-p", "--path", help="Input path")
 parser.add_argument("-o", "--output_path", help="Output path")
 parser.add_argument("-p_cfc","--path_cfc",help="Path to CFC (CLARA) files. Default: /store3/OC/CLOUD_COVER_CLARA_AVHRR_V003",default='/store3/OC/CLOUD_COVER_CLARA_AVHRR_V003')
@@ -227,19 +227,43 @@ def make_test():
     # #     work_date = work_date + timedelta(hours=24)
     # cdfA.close_mask()
 
-    dir_base = '/mnt/c/DATA_LUIS/OCTAC_WORK/BAL_EVOLUTION_202411/COVERAGE_ANALYSIS'
-    output_file =  os.path.join(dir_base,'CoverageAnalysis_1.nc')
-    file_mask = os.path.join(dir_base,'BAL_Land_Mask_hr_CFC.nc')
-    cfcO = CFC_Output(output_file)
-    cfcO.start_output(file_mask,dt(2004,3,1),dt(2004,3,5))
-    cdfA = CFC_Analysis(file_mask)
-    cdfA.set_daily_paths(dir_base,dir_base)
-    work_date = dt(2004,3,4)
-    if cdfA.set_daily_data_date(work_date):
-        results = cdfA.get_daily_cfc_cloud_free()
-        cfcO.add_results(results,work_date)
-        cdfA.close_day()
-    cfcO.close_output_stream()
+    # dir_base = '/mnt/c/DATA_LUIS/OCTAC_WORK/BAL_EVOLUTION_202411/COVERAGE_ANALYSIS'
+    # output_file =  os.path.join(dir_base,'CoverageAnalysis_1.nc')
+    # file_mask = os.path.join(dir_base,'BAL_Land_Mask_hr_CFC.nc')
+    # cfcO = CFC_Output(output_file)
+    # cfcO.start_output(file_mask,dt(2004,3,1),dt(2004,3,5))
+    # cdfA = CFC_Analysis(file_mask)
+    # cdfA.set_daily_paths(dir_base,dir_base)
+    # work_date = dt(2004,3,4)
+    # if cdfA.set_daily_data_date(work_date):
+    #     results = cdfA.get_daily_cfc_cloud_free()
+    #     cfcO.add_results(results,work_date)
+    #     cdfA.close_day()
+    # cfcO.close_output_stream()
+
+    #dir_base = '/mnt/c/DATA_LUIS/OCTAC_WORK/BAL_EVOLUTION_202411/COVERAGE_ANALYSIS'
+    dir_base = '/store3/OC/CCI_v2017/daily_v202411'
+    file_out = os.path.join(dir_base,'CCICoverageWithCoast.csv')
+    fw = open(file_out,'w')
+    fw.write('DATE;NCHL')
+    work_date = dt(1997,9,4)
+    end_date = dt(2024,8,31)
+    while work_date<=end_date:
+        dir_date = os.path.join(dir_base,work_date.strftime('%Y'),work_date.strftime('%j'))
+        name_file = f'C{work_date.strftime("%Y")}{work_date.strftime("%j")}-chl-bal-hr.nc'
+        file_nc = os.path.join(dir_date,name_file)
+        if os.path.exists(file_nc):
+            print(f'[INFO] Working with date {work_date}')
+            dataset = Dataset(file_nc)
+            chl = dataset.variables['CHL'][:]
+            dataset.close()
+            nchl = np.ma.count(chl)
+            line = f'{work_date.strftime("%Y-%m-%d")};{nchl}'
+            fw.write('\n')
+            fw.write(line)
+        work_date = work_date + timedelta(hours=24)
+
+    fw.close()
 
 def main():
     if args.mode == 'TEST':
@@ -292,6 +316,24 @@ def main():
             work_date = work_date + timedelta(hours=24)
         cfcA.close_mask()
         cfcO.close_output_stream()
+
+    if args.mode == 'UPDATE_CFC':
+        if not args.path_cfc:
+            print(f'[ERROR] CFC file (option --path_cfc or -p_cfc) is required')
+            return
+        if not args.file_mask:
+            print(f'[ERROR] Mask file (option --file_mask or -fmask) is required')
+            return
+        path_cfc = args.path_cfc
+        file_mask = args.file_mask
+        if not os.path.isfile(path_cfc):
+            print(f'[ERROR] CFC file {path_cfc} does not exist or is not a valid file')
+            return
+        if not os.path.isfile(file_mask):
+            print(f'[ERROR] Mask file {file_mask} does not exist of is not a valid file')
+            return
+        cfcO = CFC_Output(path_cfc)
+        cfcO.update_output_file(file_mask)
 
 
 def get_dates_from_arg():
