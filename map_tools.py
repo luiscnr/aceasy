@@ -9,7 +9,7 @@ from datetime import timedelta
 parser = argparse.ArgumentParser(description='Check upload')
 parser.add_argument("-v", "--verbose", help="Verbose mode.", action="store_true")
 parser.add_argument("-m", "--mode", help="Mode.", type=str, required=True,
-                    choices=['TEST', 'CREATE_MASK', 'APPLY_MASK', 'CREATE_MASK_CFC','CREATE_CFC_OUTPUT_ANALYSIS','UPDATE_CFC'])
+                    choices=['TEST', 'CREATE_MASK', 'APPLY_MASK', 'CREATE_MASK_CFC','CREATE_CFC_OUTPUT_ANALYSIS','UPDATE_CFC','DISTANCE_MASK'])
 parser.add_argument("-p", "--path", help="Input path")
 parser.add_argument("-o", "--output_path", help="Output path")
 parser.add_argument("-p_cfc","--path_cfc",help="Path to CFC (CLARA) files. Default: /store3/OC/CLOUD_COVER_CLARA_AVHRR_V003",default='/store3/OC/CLOUD_COVER_CLARA_AVHRR_V003')
@@ -167,6 +167,64 @@ def create_mask_cfc(file_mask, mask_variable, file_cfc):
 
     print(f'[INFO] Completed')
 
+def create_mask_distance(file_mask,mask_variable):
+    if not os.path.isfile(file_mask):
+        print(f'[ERROR] {file_mask} is not a valid file or does not exist.')
+        return
+
+    dataset = Dataset(file_mask)
+    mask_land = dataset.variables[mask_variable][:]
+
+    indices_water = np.where(mask_land==0)
+    indices_land = np.where(mask_land==1)
+    y_water = indices_water[0]
+    x_water = indices_water[1]
+    y_land = indices_land[0]
+    x_land = indices_land[1]
+    n_water = len(y_water)
+    dist_w = np.zeros((n_water))
+    for i_water in range(n_water):
+        if (i_water%1000)==0:
+            print(f'[INFO] Computing distances {i_water}/{n_water}')
+        y_here = y_water[i_water]
+        x_here = x_water[i_water]
+        d_here = ((y_land-y_here)**2) + ((x_land-x_here)**2)
+        index_min = np.argmin(d_here)
+        dist_w[i_water] = d_here[index_min]
+
+    dist_w = np.sqrt(dist_w)
+    dist_map = np.zeros(mask_land.shape)
+    dist_map[indices_water]=dist_w
+
+    name_out = f'{os.path.basename(file_mask)[:-3]}_distance.nc'
+    file_out = os.path.join(os.path.dirname(file_mask),name_out)
+    ncout = Dataset(file_out,'w')
+
+    # copy global attributes all at once via dictionary
+    ncout.setncatts(dataset.__dict__)
+
+    # copy dimensions
+    for name, dimension in dataset.dimensions.items():
+        ncout.createDimension(
+            name, (len(dimension) if not dimension.isunlimited() else None))
+
+        # copy variables
+    for name, variable in dataset.variables.items():
+        fill_value = None
+        if '_FillValue' in list(variable.ncattrs()):
+            fill_value = variable._FillValue
+
+        ncout.createVariable(name, variable.datatype, variable.dimensions, fill_value=fill_value, zlib=True,complevel=6)
+        # copy variable attributes all at once via dictionary
+        ncout[name].setncatts(dataset[name].__dict__)
+        ncout[name][:] = dataset[name][:]
+
+    var_distance = ncout.createVariable('LandDistance','f4',dataset.variables[mask_variable].dimensions,fill_value=-999.0,zlib=True,complevel=6)
+    var_distance[:] = dist_map[:]
+    ncout.close()
+    dataset.close()
+
+
 
 def find_row_column_from_lat_lon(lat, lon, lat0, lon0):
     if contain_location(lat, lon, lat0, lon0):
@@ -188,6 +246,8 @@ def contain_location(lat, lon, in_situ_lat, in_situ_lon):
     else:
         contain_flag = 0
     return contain_flag
+
+
 
 def make_test():
     print('[INFO] TEST CODE')
@@ -268,6 +328,11 @@ def make_test():
 def main():
     if args.mode == 'TEST':
         make_test()
+    if args.mode == 'DISTANCE_MASK':
+        mask_variable = args.mask_variable if args.mask_variable else 'Land_Mask'
+        create_mask_distance(args.path,mask_variable)
+
+
     if args.mode == 'CREATE_MASK_CFC':
         mask_variable = 'Land_Mask'
         if args.mask_variable:
