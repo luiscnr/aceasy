@@ -186,7 +186,7 @@ def create_mask_distance(file_mask,mask_variable):
     n_land = len(y_land)
     dist_w = np.zeros((n_water))
 
-    nrep = 100
+    nrep = 50
     y_land_m = np.repeat(y_land.reshape((1, n_land)), nrep, axis=0).transpose()
     x_land_m = np.repeat(x_land.reshape((1, n_land)), nrep, axis=0).transpose()
     indices_col = np.arange(0,nrep)
