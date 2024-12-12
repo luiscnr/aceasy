@@ -23,6 +23,7 @@ parser.add_argument("-sd", "--start_date", help="Start date (yyyy-mm-dd)")
 parser.add_argument("-ed", "--end_date", help="Start date (yyyy-mm-dd)")
 parser.add_argument("-pr", "--preffix", help="Preffix")
 parser.add_argument("-sf", "--suffix", help="Suffix")
+parser.add_argument("-if", "--ifile", help="iFile")
 
 
 args = parser.parse_args()
@@ -167,7 +168,8 @@ def create_mask_cfc(file_mask, mask_variable, file_cfc):
 
     print(f'[INFO] Completed')
 
-def create_mask_distance(file_mask,mask_variable):
+def create_mask_distance(file_mask,mask_variable,i_file):
+    i_file = int(i_file)
     if not os.path.isfile(file_mask):
         print(f'[ERROR] {file_mask} is not a valid file or does not exist.')
         return
@@ -191,11 +193,23 @@ def create_mask_distance(file_mask,mask_variable):
     x_land_m = np.repeat(x_land.reshape((1, n_land)), nrep, axis=0).transpose()
     indices_col = np.arange(0,nrep)
     for i_water in range(0,n_water,nrep):
+        if i_file>=0:
+            limit_min = i_file*10000
+            limit_max = limit_min+10000
+            if i_water<limit_min:
+                continue
+            if i_water==limit_max:
+                break
         print(f'[INFO] Processing {i_water} / {n_water}')
         i_min = i_water
         i_max = i_water+nrep
         if i_max>n_water:
             i_max = n_water
+            nrep = i_max-i_min
+            indices_col = np.arange(0, nrep)
+            y_land_m = y_land_m[:,0:nrep]
+            x_land_m = x_land_m[:,0:nrep]
+
         y_water_here = np.repeat(y_water[i_min:i_max],n_land).reshape((nrep,n_land)).transpose()
         x_water_here = np.repeat(x_water[i_min:i_max],n_land).reshape((nrep,n_land)).transpose()
         d_here = ((y_land_m - y_water_here) ** 2) + ((x_land_m - x_water_here) ** 2)
@@ -222,7 +236,10 @@ def create_mask_distance(file_mask,mask_variable):
     dist_map = np.zeros(mask_land.shape)
     dist_map[indices_water]=dist_w
 
-    name_out = f'{os.path.basename(file_mask)[:-3]}_distance.nc'
+    if i_file<0:
+        name_out = f'{os.path.basename(file_mask)[:-3]}_distance.nc'
+    else:
+        name_out = f'{os.path.basename(file_mask)[:-3]}_distance_{i_file}.nc'
     file_out = os.path.join(os.path.dirname(file_mask),name_out)
     ncout = Dataset(file_out,'w')
 
@@ -356,8 +373,9 @@ def main():
     if args.mode == 'TEST':
         make_test()
     if args.mode == 'DISTANCE_MASK':
+        ifile = args.ifile if args.ifile else -1
         mask_variable = args.mask_variable if args.mask_variable else 'Land_Mask'
-        create_mask_distance(args.path,mask_variable)
+        create_mask_distance(args.path,mask_variable,ifile)
 
 
     if args.mode == 'CREATE_MASK_CFC':
