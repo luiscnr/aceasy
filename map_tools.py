@@ -175,6 +175,7 @@ def create_mask_distance(file_mask,mask_variable):
     dataset = Dataset(file_mask)
     mask_land = dataset.variables[mask_variable][:]
 
+
     indices_water = np.where(mask_land==0)
     indices_land = np.where(mask_land==1)
     y_water = indices_water[0]
@@ -182,15 +183,40 @@ def create_mask_distance(file_mask,mask_variable):
     y_land = indices_land[0]
     x_land = indices_land[1]
     n_water = len(y_water)
+    n_land = len(y_land)
     dist_w = np.zeros((n_water))
-    for i_water in range(n_water):
-        if (i_water%1000)==0:
-            print(f'[INFO] Computing distances {i_water}/{n_water}')
-        y_here = y_water[i_water]
-        x_here = x_water[i_water]
-        d_here = ((y_land-y_here)**2) + ((x_land-x_here)**2)
-        index_min = np.argmin(d_here)
-        dist_w[i_water] = d_here[index_min]
+
+    nrep = 100
+    y_land_m = np.repeat(y_land.reshape((1, n_land)), nrep, axis=0).transpose()
+    x_land_m = np.repeat(x_land.reshape((1, n_land)), nrep, axis=0).transpose()
+    indices_col = np.arange(0,nrep)
+    for i_water in range(0,n_water,nrep):
+        print(f'[INFO] Processing {i_water} / {n_water}')
+        i_min = i_water
+        i_max = i_water+nrep
+        if i_max>n_water:
+            i_max = n_water
+        y_water_here = np.repeat(y_water[i_min:i_max],n_land).reshape((nrep,n_land)).transpose()
+        x_water_here = np.repeat(x_water[i_min:i_max],n_land).reshape((nrep,n_land)).transpose()
+        d_here = ((y_land_m - y_water_here) ** 2) + ((x_land_m - x_water_here) ** 2)
+        index_min = np.argmin(d_here,axis=0)
+        dist_w[i_min:i_max] = d_here[index_min,indices_col]
+
+
+
+
+
+    # dist_w = np.zeros((n_water))
+    #
+    # for i_water in range(3000,3100):
+    #     if (i_water%1000)==0:
+    #         print(f'[INFO] Computing distances {i_water}/{n_water}')
+    #     y_here = y_water[i_water]
+    #     x_here = x_water[i_water]
+    #     d_here = ((y_land-y_here)**2) + ((x_land-x_here)**2)
+    #     index_min = np.argmin(d_here)
+    #     print(i_water,'->',index_min,'->',d_here[index_min],'->',tal[i_water-3000])
+    #     dist_w[i_water] = d_here[index_min]
 
     dist_w = np.sqrt(dist_w)
     dist_map = np.zeros(mask_land.shape)
@@ -208,7 +234,7 @@ def create_mask_distance(file_mask,mask_variable):
         ncout.createDimension(
             name, (len(dimension) if not dimension.isunlimited() else None))
 
-        # copy variables
+    # copy variables
     for name, variable in dataset.variables.items():
         fill_value = None
         if '_FillValue' in list(variable.ncattrs()):
@@ -223,6 +249,7 @@ def create_mask_distance(file_mask,mask_variable):
     var_distance[:] = dist_map[:]
     ncout.close()
     dataset.close()
+    print('[INFO] Completed')
 
 
 
