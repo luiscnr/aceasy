@@ -18,7 +18,7 @@ def test():
     from datetime import datetime as dt
     from datetime import timedelta
     work_date = dt(2024,8,1)
-    end_date = dt(2024,31,8)
+    end_date = dt(2024,8,31)
     dir_base = '/dst04-data1/OC/OLCI/daily_v202311_bc'
     output_dir = '/store/COP2-OC-TAC/temp'
     while work_date<=end_date:
