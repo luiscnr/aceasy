@@ -1,4 +1,5 @@
 import argparse, configparser, calendar, os
+import shutil
 from datetime import timedelta
 from datetime import datetime as dt
 from netCDF4 import Dataset
@@ -12,8 +13,32 @@ parser.add_argument("-sd", "--start_date", help="Start date", required=True)
 parser.add_argument("-ed", "--end_date", help="End date")
 args = parser.parse_args()
 
-
+def test():
+    print('TEST')
+    from datetime import datetime as dt
+    from datetime import timedelta
+    work_date = dt(2024,8,1)
+    end_date = dt(2024,31,8)
+    dir_base = '/dst04-data1/OC/OLCI/daily_v202311_bc'
+    output_dir = '/store/COP2-OC-TAC/temp'
+    while work_date<=end_date:
+        yyyy = work_date.strftime('%Y')
+        jjj = work_date.strftime('%j')
+        input_file = os.path.join(dir_base,yyyy,jjj,f'O{yyyy}{jjj}-chl-bal-fr.nc')
+        output_dir_year = os.path.join(output_dir,yyyy)
+        if not os.path.exists(output_dir_year):
+            os.mkdir(output_dir_year)
+        output_dir_jday = os.path.join(output_dir_year,jjj)
+        if not os.path.exists(output_dir_jday):
+            os.mkdir(output_dir_jday)
+        output_file = os.path.join(output_dir_jday,f'O{yyyy}{jjj}-chl-bal-fr.nc')
+        if os.path.exists(input_file):
+            shutil.copy(input_file,output_file)
+        work_date = work_date + timedelta(hours=24)
+    return True
 def main():
+    if test():
+        return
     print('[INFO] Started MONTHLY PROCESSING')
     start_date, end_date = get_dates_from_arg()
     if start_date is None or end_date is None:

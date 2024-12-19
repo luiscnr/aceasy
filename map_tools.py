@@ -1,5 +1,8 @@
 import argparse,os
+import shutil
+
 import numpy as np
+import pandas as pd
 from netCDF4 import Dataset
 from cfc_analysis import CFC_Analysis
 from cfc_output import CFC_Output
@@ -9,7 +12,7 @@ from datetime import timedelta
 parser = argparse.ArgumentParser(description='Check upload')
 parser.add_argument("-v", "--verbose", help="Verbose mode.", action="store_true")
 parser.add_argument("-m", "--mode", help="Mode.", type=str, required=True,
-                    choices=['TEST', 'CREATE_MASK', 'APPLY_MASK', 'CREATE_MASK_CFC','CREATE_CFC_OUTPUT_ANALYSIS','UPDATE_CFC','DISTANCE_MASK'])
+                    choices=['TEST', 'CREATE_MASK', 'APPLY_MASK', 'CREATE_MASK_CFC','CREATE_CFC_OUTPUT_ANALYSIS','UPDATE_CFC','DISTANCE_MASK','ADD_DISTANCE_CSV'])
 parser.add_argument("-p", "--path", help="Input path")
 parser.add_argument("-o", "--output_path", help="Output path")
 parser.add_argument("-p_cfc","--path_cfc",help="Path to CFC (CLARA) files. Default: /store3/OC/CLOUD_COVER_CLARA_AVHRR_V003",default='/store3/OC/CLOUD_COVER_CLARA_AVHRR_V003')
@@ -269,6 +272,65 @@ def create_mask_distance(file_mask,mask_variable,i_file):
     print('[INFO] Completed')
 
 
+def combine_mask_distance(dir_base,name_base):
+    print(name_base)
+    file_data = os.path.join(dir_base,name_base.replace('$','0'))
+    name_out = name_base.replace('_$','')
+    name_out = name_out.replace('$','')
+    file_out = os.path.join(dir_base,name_out)
+    print(file_data)
+    print(file_out)
+    shutil.copy(file_data,file_out)
+    dataset_w = Dataset(file_out,'a')
+    distance = dataset_w.variables['LandDistance'][:]
+    index = 1
+    while os.path.exists(file_data):
+        file_data = os.path.join(dir_base, name_base.replace('$', f'{index:.0f}'))
+        if not os.path.exists(file_data):break
+        print(f'[INFO] Working with file data: {file_data}')
+        dataset_r = Dataset(file_data)
+        distance_here = dataset_r.variables['LandDistance'][:]
+        dataset_r.close()
+        distance = distance + distance_here
+        index= index + 1
+
+    distance_m = np.ma.masked_equal(distance,0)
+    distance_m[0,:] =  np.ma.masked
+    dataset_w.variables['LandDistance'][:] = distance_m[:]
+    dataset_w.close()
+    print('COMPLETE')
+
+def add_distance_to_csv_file(file_csv,file_out,file_mask_distance):
+    df = pd.read_csv(file_csv,sep=';')
+    lat_csv = np.array(df['LATITUDE'])
+    lon_csv = np.array(df['LONGITUDE'])
+    dataset = Dataset(file_mask_distance)
+    distance = dataset.variables['LandDistance'][:]
+    lat_array = dataset.variables['lat'][:]
+    lon_array = dataset.variables['lon'][:]
+    dataset.close()
+
+    ncsv = len(lat_csv)
+    distance_csv = np.zeros((ncsv,))
+    for idx in range(ncsv):
+        lat_here = lat_csv[idx]
+        lon_here = lon_csv[idx]
+        r, c = find_row_column_from_lat_lon(lat_array,lon_array,lat_here,lon_here)
+        if r>=0 and c>=0:
+            if np.ma.is_masked(distance[r,c]):
+                if lon_here<13:
+                    distance_csv[idx]=-999.0
+                else:
+                    distance_csv[idx]=1.0
+            else:
+                distance_csv[idx] = distance[r,c]
+
+        else:
+            distance_csv[idx] = -999.0
+
+    df['DISTANCE'] = distance_csv
+    df.to_csv(file_out,index=False,sep=';')
+
 
 def find_row_column_from_lat_lon(lat, lon, lat0, lon0):
     if contain_location(lat, lon, lat0, lon0):
@@ -371,8 +433,45 @@ def make_test():
 
 def main():
     if args.mode == 'TEST':
-        make_test()
+        #make_test()
+        file_oab = '/mnt/c/DATA_LUIS/OCTACWORK/CCOC-Laura/O2024158-rrs1020-med-fr.nc'
+        dataset  = Dataset(file_oab)
+        data = dataset.variables['RRS1020'][:]
+        print(data[0,2783,1449])
+        dataset.close()
+
+        file_oa = '/mnt/c/DATA_LUIS/OCTACWORK/CCOC-Laura/Oa2024158-rrs1020-med-fr.nc'
+        dataset = Dataset(file_oa)
+        data = dataset.variables['RRS1020'][:]
+        print(data[0, 2783, 1449])
+        dataset.close()
+
+        file_ob = '/mnt/c/DATA_LUIS/OCTACWORK/CCOC-Laura/Ob2024158-rrs1020-med-fr.nc'
+        dataset = Dataset(file_ob)
+        data = dataset.variables['RRS1020'][:]
+        print(data[0, 2783, 1449])
+        dataset.close()
+
+    if args.mode == 'ADD_DISTANCE_CSV':
+        file_csv = args.path
+        if args.output_path:
+            file_out = args.output_path
+        else:
+            file_out = file_csv[:-4]+'_distance.csv'
+        file_mask_distance = args.file_mask
+        if not os.path.exists(file_csv):
+            print(f'[ERROR] Input CSV file {file_csv} does not exist')
+            return
+        if not os.path.exists(file_mask_distance):
+            print(f'[ERROR] File mask distance {file_mask_distance} does not exist')
+            return
+        add_distance_to_csv_file(file_csv,file_out,file_mask_distance)
+
     if args.mode == 'DISTANCE_MASK':
+        if os.path.isdir(args.path):
+            print('here')
+            combine_mask_distance(args.path,args.input_file_name)
+            return
         ifile = args.ifile if args.ifile else -1
         mask_variable = args.mask_variable if args.mask_variable else 'Land_Mask'
         create_mask_distance(args.path,mask_variable,ifile)
