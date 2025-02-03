@@ -48,6 +48,7 @@ def test2():
     nfiles = len(list_json.keys())
     print(nfiles)
     return True
+
 def main():
     # if test2():
     #     return
@@ -160,7 +161,16 @@ def launch_monthly_processing_impl(options, year, month):
     if options['name_file_output_format_date'] == '%Y%j%j':
         date_out_str = f'{first_date.strftime("%Y%j")}{last_date.strftime("%j")}'
         name_out = options['name_file_output_format'].replace('DATE', date_out_str)
-        file_out = os.path.join(options['output_dir'], first_date.strftime('%Y'), name_out)
+        output_dir = options['output_dir']
+        output_dir_day = os.path.join(output_dir,first_date.strftime('%Y'))
+        if not os.path.isdir(output_dir_day):
+            try:
+                os.mkdir(output_dir_day)
+            except:
+                print(f'[ERROR] Output directory {output_dir_day} is not a valid directory and could not be created')
+                return
+        file_out = os.path.join(output_dir_day, name_out)
+
     if file_out is None:
         print(
             f'[ERROR] Output file could not be started. Review name_file_output_format_date option, you should use %%Y%%j%%j')
