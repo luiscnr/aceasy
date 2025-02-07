@@ -25,7 +25,7 @@ args = parser.parse_args()
 def check_neg_olci_values(input_path, output_file, start_date, end_date, region):
     work_date = start_date
     fw = open(output_file, 'w')
-    fw.write('Date;WL;OaFile;ObFile;OFile')
+    fw.write('Date;WL;OFile')
     bands = ['400', '412_5', '442_5', '490', '510', '560', '620', '665', '673_75', '681_25', '708_75', '753_75',
              '778_75', '865', '885', '1020']
     bands_n = [float(x.replace('_','.')) for x in bands]
@@ -35,19 +35,21 @@ def check_neg_olci_values(input_path, output_file, start_date, end_date, region)
         yyyymmdd =work_date.strftime('%Y-%m-%d')
         print(f'[INFO] Work date: {yyyymmdd}')
         for iband,band in enumerate(bands):
-            file_a = os.path.join(input_path, yyyy, jjj, f'Oa{yyyy}{jjj}-rrs{band}-{region.lower()}-fr.nc')
-            file_b = os.path.join(input_path, yyyy, jjj, f'Ob{yyyy}{jjj}-rrs{band}-{region.lower()}-fr.nc')
+            # file_a = os.path.join(input_path, yyyy, jjj, f'Oa{yyyy}{jjj}-rrs{band}-{region.lower()}-fr.nc')
+            # file_b = os.path.join(input_path, yyyy, jjj, f'Ob{yyyy}{jjj}-rrs{band}-{region.lower()}-fr.nc')
             file_o = os.path.join(input_path, yyyy, jjj, f'O{yyyy}{jjj}-rrs{band}-{region.lower()}-fr.nc')
-            min_a = 'N/A'
-            min_b = 'N/A'
+            print(f'[INFO]--> File: {file_o}')
+            # min_a = 'N/A'
+            # min_b = 'N/A'
             min_o = 'N/A'
-            if os.path.exists(file_a):
-                min_a = get_min_rrs_value(file_a,band)
-            if os.path.exists(file_b):
-                min_b = get_min_rrs_value(file_b,band)
+            # if os.path.exists(file_a):
+            #     min_a = get_min_rrs_value(file_a,band)
+            # if os.path.exists(file_b):
+            #     min_b = get_min_rrs_value(file_b,band)
             if os.path.exists(file_o):
-                min_o = get_min_rrs_value(file_b,band)
-            line = f'{yyyymmdd};{bands_n[iband]};{min_a};{min_b};{min_o}'
+                min_o = get_min_rrs_value(file_o,band)
+            #line = f'{yyyymmdd};{bands_n[iband]};{min_a};{min_b};{min_o}'
+            line = f'{yyyymmdd};{bands_n[iband]};{min_o}'
             fw.write('\n')
             fw.write(line)
 
@@ -63,6 +65,14 @@ def get_min_rrs_value(file,band):
 
 def main():
     print('[INFO] Started utils')
+
+    # file = '/mnt/c/DATA_LUIS/OCTACWORK/2022/139/O2022139-rrs400-bs-fr.nc'
+    # dataset  = Dataset(file)
+    # array = dataset.variables['RRS400'][:]
+    # print(np.ma.min(array))
+    # print(np.min(array))
+    # dataset.close()
+
     if args.mode == 'check_neg_olci_values':
         arguments = ['input_path', 'output', 'start_date', 'end_date','region']
         if not check_required_params(arguments):
