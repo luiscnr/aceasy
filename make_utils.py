@@ -137,6 +137,8 @@ def correct_neg_olci_values_impl(input_file,output_file,file_a,file_b,neg_band):
 def correct_neg_olci_values_slurm(dir_log,start_date, end_date, region):
     work_path = '/home/gosuser/Processing/gos-oc-processingchains_v202411/s3olciProcessing'
     line_py = f'python {work_path}/make_merge_olci_202311.new.py -d DATE -a {region.lower()} -p RRS -v'
+    file_list = []
+    date_str_list = []
     work_date = start_date
     while work_date<=end_date:
         fslurm = os.path.join(dir_log,f'LaunchMergeOLCI_{work_date.strftime("%Y%m%d")}.slurm')
@@ -151,14 +153,64 @@ def correct_neg_olci_values_slurm(dir_log,start_date, end_date, region):
         add_new_line(fw,'')
         add_new_line(fw,'source /home/gosuser/load_miniconda3.source')
         add_new_line(fw,'conda activate op_proc_202211v2')
+        add_new_line(fw,f'cd {work_path}')
         add_new_line(fw,'')
         line_py = line_py.replace("DATE",work_date.strftime('%Y-%m-%d'))
         add_new_line(fw,line_py)
+        fw.close()
+        file_list.append(fslurm)
+        date_str_list.append(work_date.strftime("%Y-%m-%d"))
         work_date = work_date + timedelta(hours=24)
+
+    file_sh = os.path.join(dir_log,f'Launcher_{int(dt.now().timestamp())}.sh')
+    file_mail = os.path.join(dir_log,f'Launcher_{int(dt.now().timestamp())}.mail')
+    fmail = open(file_mail,'w')
+    fmail.write('LAUNCHING MULTIPLE CORRECTION OF NEGATIVE OLCI VALUES')
+    add_new_line(fmail,f'Region: {region}')
+    add_new_line(fmail, f'Start date: {start_date.strftime("%Y-%m-%d")}')
+    add_new_line(fmail, f'End date: {end_date.strftime("%Y-%m-%d")}')
+    add_new_line(fmail, f'SH file: {file_sh}')
+    add_new_line(fmail,'')
+    fmail.close()
+
+    nmax = 12
+
+    fw = open(file_sh,'w')
+    fw.write('#!/bin/bash')
+    add_new_line(fw,'')
+    add_new_line(fw,f'tfile={file_mail}')
+    add_new_line(fw,'')
+
+    for ifile,file in enumerate(file_list):
+        if ifile>=nmax:
+            iwait = ifile-nmax
+            line = f'job{ifile}=$(sbatch --dependency=afterany:$jobid{iwait} {file})'
+        else:
+            line = f'job{ifile}=$(sbatch {file})'
+        add_new_line(fw, line)
+        line = f'jobid{ifile}=$(echo "$job{ifile}" | awk \'{{print $NF}}\')'
+        add_new_line(fw, line)
+        if ifile>=nmax:
+            line = f'echo " Date: {date_str_list[ifile]} Slurm id: $jobid{ifile} Processed after slurm id: $jobid{iwait}">>$tfile'
+        else:
+            line = f'echo " Date: {date_str_list[ifile]} Slurm id: $jobid{ifile}">>$tfile'
+        add_new_line(fw, line)
+        add_new_line(fw,'')
+
+
+    add_new_line(fw,'')
+    add_new_line(fw,'')
+    add_new_line(fw,'')
+    add_new_line(fw,'##start e-mail')
+    add_new_line(fw,f'mailrcpt="luis.gonzalezvilas@artov.ismar.cnr.it,lorenzo.amodio@artov.ismar.cnr.it,filippo.manfredonia@artov.ismar.cnr.it"')
+    add_new_line(fw,f'cat $tfile | mail -s "$subject" "$mailrcpt"')
+
+    fw.close()
 
 def add_new_line(fw,line):
     fw.write('\n')
     fw.write(line)
+
 def get_min_rrs_value(file,band):
     dataset = Dataset(file, 'r')
     array = dataset.variables[f'RRS{band}'][:]
