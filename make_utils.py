@@ -25,7 +25,7 @@ args = parser.parse_args()
 def check_neg_olci_values(input_path, output_file, start_date, end_date, region):
     work_date = start_date
     fw = open(output_file, 'w')
-    fw.write('Date;WL;OFile')
+    fw.write('Date;OFile;WL;MinValue;MinAttr;NInvalid')
     bands = ['400', '412_5', '442_5', '490', '510', '560', '620', '665', '673_75', '681_25', '708_75', '753_75',
              '778_75', '865', '885', '1020']
     bands_n = [float(x.replace('_','.')) for x in bands]
@@ -42,14 +42,16 @@ def check_neg_olci_values(input_path, output_file, start_date, end_date, region)
             # min_a = 'N/A'
             # min_b = 'N/A'
             min_o = 'N/A'
+            attr = 'N/A'
+            n_invalid = -1
             # if os.path.exists(file_a):
             #     min_a = get_min_rrs_value(file_a,band)
             # if os.path.exists(file_b):
             #     min_b = get_min_rrs_value(file_b,band)
             if os.path.exists(file_o):
-                min_o = get_min_rrs_value(file_o,band)
+                min_o,attr,n_invalid = get_min_rrs_value(file_o,band)
             #line = f'{yyyymmdd};{bands_n[iband]};{min_a};{min_b};{min_o}'
-            line = f'{yyyymmdd};{bands_n[iband]};{min_o}'
+            line = f'{yyyymmdd};O{yyyy}{jjj}-rrs{band}-{region.lower()}-fr.nc;{bands_n[iband]};{min_o};{attr};{n_invalid}'
             fw.write('\n')
             fw.write(line)
 
@@ -165,6 +167,8 @@ def correct_neg_olci_values_slurm(dir_log,start_date, end_date, region):
         line_py = line_py.replace("DATE",work_date.strftime('%Y-%m-%d'))
         add_new_line(fw,line_py)
         add_new_line(fw,'')
+        add_new_line(fw,'wait')
+        add_new_line(fw,'')
         for iband,band in enumerate(bands):
             file_o = os.path.join(input_olci_path, yyyy, jjj, f'O{yyyy}{jjj}-rrs{band}-{region.lower()}-fr.nc')
             if os.path.exists(file_o):
@@ -216,7 +220,7 @@ def correct_neg_olci_values_slurm(dir_log,start_date, end_date, region):
     add_new_line(fw,'')
     add_new_line(fw,'')
     add_new_line(fw,'##start e-mail')
-    add_new_line(fw,f'subject=LAUNCH MULTIPLE OLCI MERGING - {region} {start_date.strftime("%Y-%m-%d")} - {end_date.strftime("%Y-%m-%d")}')
+    add_new_line(fw,f'subject="LAUNCH MULTIPLE OLCI MERGING - {region} {start_date.strftime("%Y-%m-%d")} - {end_date.strftime("%Y-%m-%d")}"')
     add_new_line(fw,f'mailrcpt="luis.gonzalezvilas@artov.ismar.cnr.it,lorenzo.amodio@artov.ismar.cnr.it,filippo.manfredonia@artov.ismar.cnr.it"')
     add_new_line(fw,f'cat $tfile | mail -s "$subject" "$mailrcpt"')
 
@@ -237,8 +241,10 @@ def get_min_rrs_value(file,band):
     dataset = Dataset(file, 'r')
     array = dataset.variables[f'RRS{band}'][:]
     min_v = np.ma.min(array)
+    attr = dataset.variables[f'RRS{band}'].min_value
+    ninvalid_s = np.ma.count(array[array < (-400)])
     dataset.close()
-    return f'{min_v}'
+    return f'{min_v}',attr,ninvalid_s
 
 def main():
     print('[INFO] Started utils')
@@ -262,9 +268,9 @@ def main():
             dataset_b = Dataset(file_b)
             dataset_s = Dataset(file_s)
             array_b = dataset_b.variables[f'RRS{band}'][:]
-            ninvalid_b = len(array_b[array_b<(-400)])
+            ninvalid_b = np.ma.count(array_b[array_b<(-400)])
             array_s = dataset_s.variables[f'RRS{band}'][:]
-            ninvalid_s = len(array_b[array_s < (-400)])
+            ninvalid_s = np.ma.count(array_s[array_s < (-400)])
             print(f'{band} Original: {np.ma.min(array_b)} {np.ma.max(array_b)} Valid min.: {dataset_b.variables[f"RRS{band}"].valid_min} Invalid: {ninvalid_b}')
             print(
                 f'{band} Slurm: {np.ma.min(array_s)} {np.ma.max(array_s)} Valid min.: {dataset_s.variables[f"RRS{band}"].valid_min} Invalid: {ninvalid_s}')
