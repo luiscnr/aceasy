@@ -139,7 +139,7 @@ def correct_neg_olci_values_impl(input_file,output_file,file_a,file_b,neg_band):
 def correct_neg_olci_values_slurm(dir_log,start_date, end_date, region):
     input_olci_path = '/dst04-data1/OC/OLCI/daily_v202311_bc'
     work_path = '/home/gosuser/Processing/gos-oc-processingchains_v202411/s3olciProcessing'
-    line_py = f'python {work_path}/make_merge_olci_202311.py -d DATE -a {region.lower()} -p RRS -v'
+    line_py_base = f'python {work_path}/make_merge_olci_202311.py -d DATE -a {region.lower()} -p RRS -v'
     file_list = []
     date_str_list = []
 
@@ -164,7 +164,7 @@ def correct_neg_olci_values_slurm(dir_log,start_date, end_date, region):
         add_new_line(fw,'conda activate op_proc_202211v2')
         add_new_line(fw,f'cd {work_path}')
         add_new_line(fw,'')
-        line_py = line_py.replace("DATE",work_date.strftime('%Y-%m-%d'))
+        line_py = line_py_base.replace("DATE",work_date.strftime('%Y-%m-%d'))
         add_new_line(fw,line_py)
         add_new_line(fw,'')
         add_new_line(fw,'wait')
