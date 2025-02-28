@@ -17,6 +17,7 @@ parser.add_argument('-o', "--output", help="Output file.")
 parser.add_argument("-sd", "--start_date", help="Start date.")
 parser.add_argument("-ed", "--end_date", help="End date.")
 parser.add_argument("-r", "--region", help="Region.", choices=["BS","MED","BAL","ARC"])
+parser.add_argument("-ncores","--num_cores",help="Number of cores for correct_neg_olci_values_slurm mode (Deafult:12)",default=12)
 # parser.add_argument('-s', "--source_path", help="Source path.",default="/dst04-data1/OC/OLCI/daily_v202311_bc")
 # parser.add_argument('-p', "--param", help="Param for TEST")
 args = parser.parse_args()
@@ -137,6 +138,11 @@ def correct_neg_olci_values_impl(input_file,output_file,file_a,file_b,neg_band):
 
 
 def correct_neg_olci_values_slurm(dir_log,start_date, end_date, region):
+    try:
+        nmax = int(args.num_cores)
+    except:
+        print(f'[ERROR] Number of cores option -ncores (--num_cores) must be an integer value')
+        return
     input_olci_path = '/dst04-data1/OC/OLCI/daily_v202311_bc'
     work_path = '/home/gosuser/Processing/gos-oc-processingchains_v202411/s3olciProcessing'
     line_py_base = f'python {work_path}/make_merge_olci_202311.py -d DATE -a {region.lower()} -p RRS -v'
@@ -191,7 +197,7 @@ def correct_neg_olci_values_slurm(dir_log,start_date, end_date, region):
     add_new_line(fmail,'')
     fmail.close()
 
-    nmax = 12
+
 
     fw = open(file_sh,'w')
     fw.write('#!/bin/bash')
@@ -241,20 +247,16 @@ def get_min_rrs_value(file,band):
     dataset = Dataset(file, 'r')
     array = dataset.variables[f'RRS{band}'][:]
     min_v = np.ma.min(array)
-    attr = dataset.variables[f'RRS{band}'].min_value
+    attr = dataset.variables[f'RRS{band}'].valid_min
     ninvalid_s = np.ma.count(array[array < (-400)])
     dataset.close()
     return f'{min_v}',attr,ninvalid_s
 
+
+
 def main():
     print('[INFO] Started utils')
 
-    # file = '/mnt/c/DATA_LUIS/OCTACWORK/2022/139/O2022139-rrs400-bs-fr.nc'
-    # dataset  = Dataset(file)
-    # array = dataset.variables['RRS400'][:]
-    # print(np.ma.min(array))
-    # print(np.min(array))
-    # dataset.close()
 
     if args.mode == 'test':
         input_basic = '/mnt/c/DATA_LUIS/OCTAC_WORK/INC_NEG_OLCI_VALUES/original/2022/139'
@@ -278,6 +280,7 @@ def main():
 
             dataset_b.close()
             dataset_s.close()
+
 
     if args.mode == 'check_neg_olci_values':
         arguments = ['input_path', 'output', 'start_date', 'end_date','region']
