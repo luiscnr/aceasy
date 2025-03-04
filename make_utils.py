@@ -260,7 +260,9 @@ def main():
 
     if args.mode == 'test':
 
-        from netCDF4 import Dataset
+
+
+
         folder_olci = '/dst04-data1/OC/OLCI/daily_v202311_bc'
         start_date = dt(2024,5,15)
         end_date = dt(2024,12,31)
@@ -269,10 +271,15 @@ def main():
             yyyy = work_date.strftime('%Y')
             jjj = work_date.strftime('%j')
             file = os.path.join(folder_olci,yyyy,jjj,f'Oa{yyyy}{jjj}-rrs490-bs-hr.nc')
+            if not os.path.exists(file):
+                continue
             dataset  = Dataset(file,'r')
             array = dataset.variables['RRS490'][:]
             array = np.ma.masked_invalid(array)
-            print(f'{work_date.strftime("%Y-%m-%d")}->{np.ma.min(array)}')
+            min_v = np.ma.min(array)
+            if min_v<0:
+                indices = np.where(array<0)
+                print(f'{work_date.strftime("%Y-%m-%d")}->{np.ma.min(array)}:{len(indices[0])}')
             dataset.close()
             work_date = work_date+timedelta(hours=24)
 
