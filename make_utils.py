@@ -10,14 +10,17 @@ warnings.filterwarnings("ignore", category=UserWarning)
 parser = argparse.ArgumentParser(
     description="Obtaining information for running MDB_builder.")
 
-parser.add_argument('-m', "--mode", help='Mode option', choices=["test","check_neg_olci_values", "correct_neg_olci_values","correct_neg_olci_values_slurm"],
+parser.add_argument('-m', "--mode", help='Mode option',
+                    choices=["test", "check_neg_olci_values", "correct_neg_olci_values",
+                             "correct_neg_olci_values_slurm"],
                     required=True)
 parser.add_argument('-i', "--input_path", help="Input path.")
 parser.add_argument('-o', "--output", help="Output file.")
 parser.add_argument("-sd", "--start_date", help="Start date.")
 parser.add_argument("-ed", "--end_date", help="End date.")
-parser.add_argument("-r", "--region", help="Region.", choices=["BS","MED","BAL","ARC"])
-parser.add_argument("-ncores","--num_cores",help="Number of cores for correct_neg_olci_values_slurm mode (Deafult:12)",default=12)
+parser.add_argument("-r", "--region", help="Region.", choices=["BS", "MED", "BAL", "ARC"])
+parser.add_argument("-ncores", "--num_cores",
+                    help="Number of cores for correct_neg_olci_values_slurm mode (Deafult:12)", default=12)
 # parser.add_argument('-s', "--source_path", help="Source path.",default="/dst04-data1/OC/OLCI/daily_v202311_bc")
 # parser.add_argument('-p', "--param", help="Param for TEST")
 args = parser.parse_args()
@@ -29,13 +32,13 @@ def check_neg_olci_values(input_path, output_file, start_date, end_date, region)
     fw.write('Date;OFile;WL;MinValue;MinAttr;NInvalid')
     bands = ['400', '412_5', '442_5', '490', '510', '560', '620', '665', '673_75', '681_25', '708_75', '753_75',
              '778_75', '865', '885', '1020']
-    bands_n = [float(x.replace('_','.')) for x in bands]
+    bands_n = [float(x.replace('_', '.')) for x in bands]
     while work_date <= end_date:
         yyyy = work_date.strftime('%Y')
         jjj = work_date.strftime('%j')
-        yyyymmdd =work_date.strftime('%Y-%m-%d')
+        yyyymmdd = work_date.strftime('%Y-%m-%d')
         print(f'[INFO] Work date: {yyyymmdd}')
-        for iband,band in enumerate(bands):
+        for iband, band in enumerate(bands):
             # file_a = os.path.join(input_path, yyyy, jjj, f'Oa{yyyy}{jjj}-rrs{band}-{region.lower()}-fr.nc')
             # file_b = os.path.join(input_path, yyyy, jjj, f'Ob{yyyy}{jjj}-rrs{band}-{region.lower()}-fr.nc')
             file_o = os.path.join(input_path, yyyy, jjj, f'O{yyyy}{jjj}-rrs{band}-{region.lower()}-fr.nc')
@@ -50,14 +53,15 @@ def check_neg_olci_values(input_path, output_file, start_date, end_date, region)
             # if os.path.exists(file_b):
             #     min_b = get_min_rrs_value(file_b,band)
             if os.path.exists(file_o):
-                min_o,attr,n_invalid = get_min_rrs_value(file_o,band)
-            #line = f'{yyyymmdd};{bands_n[iband]};{min_a};{min_b};{min_o}'
+                min_o, attr, n_invalid = get_min_rrs_value(file_o, band)
+            # line = f'{yyyymmdd};{bands_n[iband]};{min_a};{min_b};{min_o}'
             line = f'{yyyymmdd};O{yyyy}{jjj}-rrs{band}-{region.lower()}-fr.nc;{bands_n[iband]};{min_o};{attr};{n_invalid}'
             fw.write('\n')
             fw.write(line)
 
         work_date = work_date + timedelta(hours=24)
     fw.close()
+
 
 def correct_neg_olci_values(input_path, start_date, end_date, region):
     work_date = start_date
@@ -75,17 +79,17 @@ def correct_neg_olci_values(input_path, start_date, end_date, region):
             file_out = f'{file_o[:-3]}_temp.nc'
             neg_band = f'RRS{band}'
             print(f'[INFO]--> File: {file_o}')
-            correct_neg_olci_values_impl(file_o,file_out,file_a,file_b,neg_band)
-            os.rename(file_out,file_o)
+            correct_neg_olci_values_impl(file_o, file_out, file_a, file_b, neg_band)
+            os.rename(file_out, file_o)
 
         work_date = work_date + timedelta(hours=24)
 
-def correct_neg_olci_values_impl(input_file,output_file,file_a,file_b,neg_band):
+
+def correct_neg_olci_values_impl(input_file, output_file, file_a, file_b, neg_band):
     input_dataset = Dataset(input_file)
     ncout = Dataset(output_file, 'w', format='NETCDF4')
 
-
-    #new_array = input_array.copy()
+    # new_array = input_array.copy()
     dataset_a = Dataset(file_a)
     array_a = dataset_a.variables[neg_band][:]
     dataset_a.close()
@@ -93,8 +97,7 @@ def correct_neg_olci_values_impl(input_file,output_file,file_a,file_b,neg_band):
     array_b = dataset_b.variables[neg_band][:]
     dataset_b.close()
 
-    new_array = np.ma.mean(np.ma.concatenate([array_a,array_b],axis=0),axis=0)
-
+    new_array = np.ma.mean(np.ma.concatenate([array_a, array_b], axis=0), axis=0)
 
     ##TESTING CHECK CODE
     # input_array = np.ma.squeeze(input_dataset.variables[neg_band][:])
@@ -107,9 +110,6 @@ def correct_neg_olci_values_impl(input_file,output_file,file_a,file_b,neg_band):
     # print(np.ma.min(ratio),np.ma.max(ratio))
     # print('old', np.ma.min(input_array),np.ma.max(input_array))
     # print('new', np.ma.min(new_array), np.ma.max(new_array))
-
-
-
 
     # copy global attributes all at once via dictionary
     ncout.setncatts(input_dataset.__dict__)
@@ -137,7 +137,7 @@ def correct_neg_olci_values_impl(input_file,output_file,file_a,file_b,neg_band):
     input_dataset.close()
 
 
-def correct_neg_olci_values_slurm(dir_log,start_date, end_date, region):
+def correct_neg_olci_values_slurm(dir_log, start_date, end_date, region):
     try:
         nmax = int(args.num_cores)
     except:
@@ -151,84 +151,84 @@ def correct_neg_olci_values_slurm(dir_log,start_date, end_date, region):
 
     bands = ['400', '412_5', '442_5', '490', '510', '560', '620', '665', '673_75', '681_25', '708_75', '753_75',
              '778_75', '865', '885', '1020']
-    min_values = [-0.0063,-0.0058,-0.0046,-0.0029,-0.0024,-0.0017,-0.0012,-0.00083,-0.000794,-0.00071,-0.00065,0.0,0.0,0.0,0.0,0.0]
+    min_values = [-0.0063, -0.0058, -0.0046, -0.0029, -0.0024, -0.0017, -0.0012, -0.00083, -0.000794, -0.00071,
+                  -0.00065, 0.0, 0.0, 0.0, 0.0, 0.0]
     work_date = start_date
-    while work_date<=end_date:
+    while work_date <= end_date:
         yyyy = work_date.strftime('%Y')
         jjj = work_date.strftime('%j')
-        fslurm = os.path.join(dir_log,f'LaunchMergeOLCI_{work_date.strftime("%Y%m%d")}.slurm')
-        fw = open(fslurm,'w')
+        fslurm = os.path.join(dir_log, f'LaunchMergeOLCI_{work_date.strftime("%Y%m%d")}.slurm')
+        fw = open(fslurm, 'w')
         fw.write('#!/bin/bash')
-        add_new_line(fw,'#SBATCH --nodes=1')
-        add_new_line(fw,'#SBATCH --ntasks=1')
-        add_new_line(fw, f'#SBATCH --output {fslurm.replace(".slurm",".log")}')
-        add_new_line(fw,'#SBATCH -p octac_rep')
-        add_new_line(fw,'#SBATCH --mail-type=BEGIN,END,FAIL')
-        add_new_line(fw,'#SBATCH --mail-user=luis.gonzalezvilas@artov.ismar.cnr.it,lorenzo.amodio@artov.ismar.cnr.it')
-        add_new_line(fw,'')
-        add_new_line(fw,'source /home/gosuser/load_miniconda3.source')
-        add_new_line(fw,'conda activate op_proc_202211v2')
-        add_new_line(fw,f'cd {work_path}')
-        add_new_line(fw,'')
-        line_py = line_py_base.replace("DATE",work_date.strftime('%Y-%m-%d'))
-        add_new_line(fw,line_py)
-        add_new_line(fw,'')
-        add_new_line(fw,'wait')
-        add_new_line(fw,'')
-        for iband,band in enumerate(bands):
+        add_new_line(fw, '#SBATCH --nodes=1')
+        add_new_line(fw, '#SBATCH --ntasks=1')
+        add_new_line(fw, f'#SBATCH --output {fslurm.replace(".slurm", ".log")}')
+        add_new_line(fw, '#SBATCH -p octac_rep')
+        add_new_line(fw, '#SBATCH --mail-type=BEGIN,END,FAIL')
+        add_new_line(fw, '#SBATCH --mail-user=luis.gonzalezvilas@artov.ismar.cnr.it,lorenzo.amodio@artov.ismar.cnr.it')
+        add_new_line(fw, '')
+        add_new_line(fw, 'source /home/gosuser/load_miniconda3.source')
+        add_new_line(fw, 'conda activate op_proc_202211v2')
+        add_new_line(fw, f'cd {work_path}')
+        add_new_line(fw, '')
+        line_py = line_py_base.replace("DATE", work_date.strftime('%Y-%m-%d'))
+        add_new_line(fw, line_py)
+        add_new_line(fw, '')
+        add_new_line(fw, 'wait')
+        add_new_line(fw, '')
+        for iband, band in enumerate(bands):
             file_o = os.path.join(input_olci_path, yyyy, jjj, f'O{yyyy}{jjj}-rrs{band}-{region.lower()}-fr.nc')
             if os.path.exists(file_o):
                 line = f'ncatted -h -a  valid_min,RRS{band},o,d,{min_values[iband]} {file_o}'
-                add_new_line(fw,line)
+                add_new_line(fw, line)
 
         fw.close()
         file_list.append(fslurm)
         date_str_list.append(work_date.strftime("%Y-%m-%d"))
         work_date = work_date + timedelta(hours=24)
 
-    file_sh = os.path.join(dir_log,f'Launcher_{int(dt.now().timestamp())}.sh')
-    file_mail = os.path.join(dir_log,f'Launcher_{int(dt.now().timestamp())}.mail')
-    fmail = open(file_mail,'w')
+    file_sh = os.path.join(dir_log, f'Launcher_{int(dt.now().timestamp())}.sh')
+    file_mail = os.path.join(dir_log, f'Launcher_{int(dt.now().timestamp())}.mail')
+    fmail = open(file_mail, 'w')
     fmail.write('LAUNCHING MULTIPLE CORRECTION OF NEGATIVE OLCI VALUES')
-    add_new_line(fmail,f'Region: {region}')
+    add_new_line(fmail, f'Region: {region}')
     add_new_line(fmail, f'Start date: {start_date.strftime("%Y-%m-%d")}')
     add_new_line(fmail, f'End date: {end_date.strftime("%Y-%m-%d")}')
     add_new_line(fmail, f'SH file: {file_sh}')
-    add_new_line(fmail,'')
+    add_new_line(fmail, '')
     fmail.close()
 
-
-
-    fw = open(file_sh,'w')
+    fw = open(file_sh, 'w')
     fw.write('#!/bin/bash')
-    add_new_line(fw,'')
-    add_new_line(fw,f'tfile={file_mail}')
-    add_new_line(fw,'')
+    add_new_line(fw, '')
+    add_new_line(fw, f'tfile={file_mail}')
+    add_new_line(fw, '')
 
-    for ifile,file in enumerate(file_list):
-        if ifile>=nmax:
-            iwait = ifile-nmax
+    for ifile, file in enumerate(file_list):
+        if ifile >= nmax:
+            iwait = ifile - nmax
             line = f'job{ifile}=$(sbatch --dependency=afterany:$jobid{iwait} {file})'
         else:
             line = f'job{ifile}=$(sbatch {file})'
         add_new_line(fw, line)
         line = f'jobid{ifile}=$(echo "$job{ifile}" | awk \'{{print $NF}}\')'
         add_new_line(fw, line)
-        if ifile>=nmax:
-            line = f'echo " Date: {date_str_list[ifile]} Slurm id: $jobid{ifile} Log file: {file.replace(".slurm",".log")} Processed after slurm id: $jobid{iwait}">>$tfile'
+        if ifile >= nmax:
+            line = f'echo " Date: {date_str_list[ifile]} Slurm id: $jobid{ifile} Log file: {file.replace(".slurm", ".log")} Processed after slurm id: $jobid{iwait}">>$tfile'
         else:
-            line = f'echo " Date: {date_str_list[ifile]} Slurm id: $jobid{ifile} Log file: {file.replace(".slurm",".log")} ">>$tfile'
+            line = f'echo " Date: {date_str_list[ifile]} Slurm id: $jobid{ifile} Log file: {file.replace(".slurm", ".log")} ">>$tfile'
         add_new_line(fw, line)
-        add_new_line(fw,'')
+        add_new_line(fw, '')
 
-
-    add_new_line(fw,'')
-    add_new_line(fw,'')
-    add_new_line(fw,'')
-    add_new_line(fw,'##start e-mail')
-    add_new_line(fw,f'subject="LAUNCH MULTIPLE OLCI MERGING - {region} {start_date.strftime("%Y-%m-%d")} - {end_date.strftime("%Y-%m-%d")}"')
-    add_new_line(fw,f'mailrcpt="luis.gonzalezvilas@artov.ismar.cnr.it,lorenzo.amodio@artov.ismar.cnr.it,filippo.manfredonia@artov.ismar.cnr.it"')
-    add_new_line(fw,f'cat $tfile | mail -s "$subject" "$mailrcpt"')
+    add_new_line(fw, '')
+    add_new_line(fw, '')
+    add_new_line(fw, '')
+    add_new_line(fw, '##start e-mail')
+    add_new_line(fw,
+                 f'subject="LAUNCH MULTIPLE OLCI MERGING - {region} {start_date.strftime("%Y-%m-%d")} - {end_date.strftime("%Y-%m-%d")}"')
+    add_new_line(fw,
+                 f'mailrcpt="luis.gonzalezvilas@artov.ismar.cnr.it,lorenzo.amodio@artov.ismar.cnr.it,filippo.manfredonia@artov.ismar.cnr.it"')
+    add_new_line(fw, f'cat $tfile | mail -s "$subject" "$mailrcpt"')
 
     fw.close()
 
@@ -239,51 +239,67 @@ def correct_neg_olci_values_slurm(dir_log,start_date, end_date, region):
     if err:
         print(f'[ERROR]{err}')
 
-def add_new_line(fw,line):
+
+def add_new_line(fw, line):
     fw.write('\n')
     fw.write(line)
 
-def get_min_rrs_value(file,band):
+
+def get_min_rrs_value(file, band):
     dataset = Dataset(file, 'r')
     array = dataset.variables[f'RRS{band}'][:]
     min_v = np.ma.min(array)
     attr = dataset.variables[f'RRS{band}'].valid_min
     ninvalid_s = np.ma.count(array[array < (-400)])
     dataset.close()
-    return f'{min_v}',attr,ninvalid_s
-
+    return f'{min_v}', attr, ninvalid_s
 
 
 def main():
     print('[INFO] Started utils')
 
-
     if args.mode == 'test':
-        input_basic = '/mnt/c/DATA_LUIS/OCTAC_WORK/INC_NEG_OLCI_VALUES/original/2022/139'
-        input_slurm = '/mnt/c/DATA_LUIS/OCTAC_WORK/INC_NEG_OLCI_VALUES/slurm/2022/139'
-        bands = ['400', '412_5', '442_5', '490', '510', '560', '620', '665', '673_75', '681_25', '708_75', '753_75',
-                 '778_75', '865', '885', '1020']
 
-        for iband,band in enumerate(bands):
-            file_b = os.path.join(input_basic, f'O2022139-rrs{band}-bs-fr.nc')
-            file_s = os.path.join(input_slurm, f'O2022139-rrs{band}-bs-fr.nc')
-            dataset_b = Dataset(file_b)
-            dataset_s = Dataset(file_s)
-            array_b = dataset_b.variables[f'RRS{band}'][:]
-            ninvalid_b = np.ma.count(array_b[array_b<(-400)])
-            array_s = dataset_s.variables[f'RRS{band}'][:]
-            ninvalid_s = np.ma.count(array_s[array_s < (-400)])
-            print(f'{band} Original: {np.ma.min(array_b)} {np.ma.max(array_b)} Valid min.: {dataset_b.variables[f"RRS{band}"].valid_min} Invalid: {ninvalid_b}')
-            print(
-                f'{band} Slurm: {np.ma.min(array_s)} {np.ma.max(array_s)} Valid min.: {dataset_s.variables[f"RRS{band}"].valid_min} Invalid: {ninvalid_s}')
-            print('-----------------------')
+        from netCDF4 import Dataset
+        folder_olci = '/dst04-data1/OC/OLCI/daily_v202311_bc'
+        start_date = dt(2024,5,15)
+        end_date = dt(2024,12,31)
+        work_date = start_date
+        while work_date<=end_date:
+            yyyy = work_date.strftime('%Y')
+            jjj = work_date.strftime('%j')
+            file = os.path.join(folder_olci,yyyy,jjj,f'Oa{yyyy}{jjj}-rrs490-bs-hr.nc')
+            dataset  = Dataset(file,'r')
+            array = dataset.variables['RRS490'][:]
+            array = np.ma.masked_invalid(array)
+            print(f'{work_date.strftime("%Y-%m-%d")}->{np.ma.min(array)}')
+            dataset.close()
+            work_date = work_date+timedelta(hours=24)
 
-            dataset_b.close()
-            dataset_s.close()
-
+        # input_basic = '/mnt/c/DATA_LUIS/OCTAC_WORK/INC_NEG_OLCI_VALUES/original/2022/139'
+        # input_slurm = '/mnt/c/DATA_LUIS/OCTAC_WORK/INC_NEG_OLCI_VALUES/slurm/2022/139'
+        # bands = ['400', '412_5', '442_5', '490', '510', '560', '620', '665', '673_75', '681_25', '708_75', '753_75',
+        #          '778_75', '865', '885', '1020']
+        #
+        # for iband,band in enumerate(bands):
+        #     file_b = os.path.join(input_basic, f'O2022139-rrs{band}-bs-fr.nc')
+        #     file_s = os.path.join(input_slurm, f'O2022139-rrs{band}-bs-fr.nc')
+        #     dataset_b = Dataset(file_b)
+        #     dataset_s = Dataset(file_s)
+        #     array_b = dataset_b.variables[f'RRS{band}'][:]
+        #     ninvalid_b = np.ma.count(array_b[array_b<(-400)])
+        #     array_s = dataset_s.variables[f'RRS{band}'][:]
+        #     ninvalid_s = np.ma.count(array_s[array_s < (-400)])
+        #     print(f'{band} Original: {np.ma.min(array_b)} {np.ma.max(array_b)} Valid min.: {dataset_b.variables[f"RRS{band}"].valid_min} Invalid: {ninvalid_b}')
+        #     print(
+        #         f'{band} Slurm: {np.ma.min(array_s)} {np.ma.max(array_s)} Valid min.: {dataset_s.variables[f"RRS{band}"].valid_min} Invalid: {ninvalid_s}')
+        #     print('-----------------------')
+        #
+        #     dataset_b.close()
+        #     dataset_s.close()
 
     if args.mode == 'check_neg_olci_values':
-        arguments = ['input_path', 'output', 'start_date', 'end_date','region']
+        arguments = ['input_path', 'output', 'start_date', 'end_date', 'region']
         if not check_required_params(arguments):
             return
         if not check_directory(args.input_path, False):
@@ -293,9 +309,9 @@ def main():
         start_date, end_date = get_dates_from_arg()
         if start_date is None or end_date is None:
             return
-        check_neg_olci_values(args.input_path, args.output, start_date, end_date,args.region)
+        check_neg_olci_values(args.input_path, args.output, start_date, end_date, args.region)
 
-    if args.mode == 'correct_neg_olci_values' or args.mode=='correct_neg_olci_values_slurm':
+    if args.mode == 'correct_neg_olci_values' or args.mode == 'correct_neg_olci_values_slurm':
         arguments = ['input_path', 'start_date', 'end_date', 'region']
         if not check_required_params(arguments):
             return
@@ -304,11 +320,12 @@ def main():
         start_date, end_date = get_dates_from_arg()
         if start_date is None or end_date is None:
             return
-        if args.mode=='correct_neg_olci_values':
+        if args.mode == 'correct_neg_olci_values':
             correct_neg_olci_values(args.input_path, start_date, end_date, args.region)
 
         if args.mode == 'correct_neg_olci_values_slurm':
             correct_neg_olci_values_slurm(args.input_path, start_date, end_date, args.region)
+
 
 def check_required_params(param_list):
     b = True
