@@ -10,7 +10,7 @@ class BalMLP():
     def __init__(self, path_file):
 
         if path_file is None:
-            path_file = os.path.join('balticmlp')
+            path_file = os.path.dirname(__file__)
             if not os.path.exists(path_file) or not os.path.isdir(path_file):
                 path_file = None
 

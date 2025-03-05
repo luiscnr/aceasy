@@ -483,6 +483,52 @@ class BALTIC_202411_PROCESSOR():
     def allow_csv_test(self):
         return True
 
+
+    def run_from_mdb_file(self, path_mdb):
+        if not self.check_runac():
+            print(f'[ERROR] Error starting Baltic 202411 chl-a algorithm')
+            return
+        if not os.path.exists(path_mdb):  ##should be checked before
+            return
+        print(f'[INFO] Input MDB FILE: {path_mdb}')
+        dataset = Dataset(path_mdb)
+        rrs = dataset.variables['satellite_Rrs'][:]
+        wl_bands = dataset.variables['satellite_bands'][:]
+        dataset.close()
+        n_mu = rrs.shape[0]
+        print(f'[INFO] Number of match-ups: {n_mu}')
+        self.get_rrs_spectra_from_mdb(np.ma.squeeze(rrs[0,:,:,:]), wl_bands)
+
+    def get_rrs_spectra_from_mdb(self,rrs,wl_bands):
+        n_bands = rrs.shape[0]
+        n_data = rrs.shape[1]*rrs.shape[2]
+        all_spectra = np.transpose(np.ma.reshape(rrs,(n_bands,n_data)))
+        wl_output = self.bal_proc.input_bands
+        n_output = len(wl_output)
+        out_spectra = np.ma.masked_all((n_data,n_output))
+        print(wl_output)
+        print(wl_bands)
+
+        for iwl,wl in enumerate(wl_output):
+            print('-->',wl)
+            index_wl = np.argmin(np.abs(wl-wl_bands))
+            diff_wl = abs(wl_bands[index_wl]-wl)
+            print(wl,index_wl,diff_wl,wl_bands[index_wl])
+            if diff_wl==0.0:
+                out_spectra[:,iwl]=all_spectra[:,index_wl]
+            else:##band shifting
+                # print(all_spectra.shape)
+                # print(wl_bands.shape)
+                all_spectra_bs = np.transpose(all_spectra)
+                print('--->',all_spectra_bs.shape)
+                rrsdata_out = bsc_qaa.bsc_qaa(all_spectra_bs,wl_bands,[wl])
+                print(rrsdata_out.shape)
+
+        print(rrs.shape)
+        print(all_spectra.shape)
+        print(type(all_spectra))
+        return None
+
     def run_from_csv_file(self, path_csv, output_path):
         if not self.check_runac():
             print(f'[ERROR] Error starting Baltic 202411 chl-a algorithm')
