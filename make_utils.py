@@ -266,7 +266,7 @@ def main():
         bands = ['412', '443', '490', '510', '555', '670']
         for band in bands:
             work_date = start_date
-            file_band = f'/store/COP2-OC-TAC/INCIDENTS/ISSUE_OLCI_NEGRRS/CSV_TEST/Band_{band}.csv'
+            file_band = f'/store/COP2-OC-TAC/INCIDENTS/ISSUE_OLCI_NEGRRS/CSV_TEST/OaBand_{band}.csv'
             fw = open(file_band, 'w')
             fw.write('Date;MinValue;NMin')
             while work_date <= end_date:
@@ -281,7 +281,7 @@ def main():
                 array = np.ma.masked_invalid(array)
                 min_v = np.ma.min(array)
                 if min_v < 0:
-                    indices = np.where(array < 0)
+                    indices = np.where(np.logical_and(array.mask==False,array < 0))
                     line = f'{work_date.strftime("%Y-%m-%d")};{np.ma.min(array)};{len(indices[0])}'
                     fw.write('\n')
                     fw.write(line)
