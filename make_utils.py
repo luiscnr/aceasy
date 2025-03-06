@@ -266,13 +266,13 @@ def main():
         bands = ['412', '443', '490', '510', '555', '670']
         for band in bands:
             work_date = start_date
-            file_band = f'/store/COP2-OC-TAC/INCIDENTS/ISSUE_OLCI_NEGRRS/CSV_TEST/OaBand_{band}.csv'
+            file_band = f'/store/COP2-OC-TAC/INCIDENTS/ISSUE_OLCI_NEGRRS/CSV_TEST/ObBand_{band}.csv'
             fw = open(file_band, 'w')
             fw.write('Date;MinValue;NMin')
             while work_date <= end_date:
                 yyyy = work_date.strftime('%Y')
                 jjj = work_date.strftime('%j')
-                file = os.path.join(folder_olci, yyyy, jjj, f'Oa{yyyy}{jjj}-rrs{band}-bs-hr.nc')
+                file = os.path.join(folder_olci, yyyy, jjj, f'Ob{yyyy}{jjj}-rrs{band}-bs-hr.nc')
                 if not os.path.exists(file):
                     work_date = work_date + timedelta(hours=24)
                     continue
