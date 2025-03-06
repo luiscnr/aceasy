@@ -261,18 +261,20 @@ def main():
     if args.mode == 'test':
 
         folder_olci = '/dst04-data1/OC/OLCI/daily_v202311_bc'
+        folder_multi ='/store3/OC/MULTI/daily_v202311_x'
         start_date = dt(2018, 5, 15)
         end_date = dt(2024, 12, 31)
         bands = ['412', '443', '490', '510', '555', '670']
         for band in bands:
             work_date = start_date
-            file_band = f'/store/COP2-OC-TAC/INCIDENTS/ISSUE_OLCI_NEGRRS/CSV_TEST/ObBand_{band}.csv'
+            file_band = f'/store/COP2-OC-TAC/INCIDENTS/ISSUE_OLCI_NEGRRS/CSV_TEST/XBand_{band}.csv'
             fw = open(file_band, 'w')
             fw.write('Date;MinValue;NMin')
             while work_date <= end_date:
                 yyyy = work_date.strftime('%Y')
                 jjj = work_date.strftime('%j')
-                file = os.path.join(folder_olci, yyyy, jjj, f'Ob{yyyy}{jjj}-rrs{band}-bs-hr.nc')
+                #file = os.path.join(folder_olci, yyyy, jjj, f'Ob{yyyy}{jjj}-rrs{band}-bs-hr.nc')
+                file = os.path.join(folder_multi, yyyy, jjj, f'X{yyyy}{jjj}-rrs{band}-bs-hr.nc')
                 if not os.path.exists(file):
                     work_date = work_date + timedelta(hours=24)
                     continue
@@ -280,11 +282,13 @@ def main():
                 array = dataset.variables[f'RRS{band}'][:]
                 array = np.ma.masked_invalid(array)
                 min_v = np.ma.min(array)
+                n_neg = 0
                 if min_v < 0:
                     indices = np.where(np.logical_and(array.mask==False,array < 0))
-                    line = f'{work_date.strftime("%Y-%m-%d")};{np.ma.min(array)};{len(indices[0])}'
-                    fw.write('\n')
-                    fw.write(line)
+                    n_neg = len(indices[0])
+                line = f'{work_date.strftime("%Y-%m-%d")};{np.ma.min(array)};{n_neg}'
+                fw.write('\n')
+                fw.write(line)
                 dataset.close()
                 work_date = work_date + timedelta(hours=24)
             fw.close()
