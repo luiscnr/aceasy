@@ -73,17 +73,17 @@ class BALTIC_202411_PROCESSOR():
 
         ##defining splits for l3_olci
         self.splits = {
-            'chl': ['CHL', 'CYANOBLOOM','SENSORMASK'],
-            'pft': ['PICO', 'NANO', 'MICRO', 'CRYPTO', 'GREEN', 'DIATO', 'DINO', 'PROKAR','SENSORMASK'],
-            'kd490': ['KD490','SENSORMASK'],
-            'adg443': ['ADG443','SENSORMASK'],
-            'aph443': ['APH443','SENSORMASK'],
-            'bbp443': ['BBP443','SENSORMASK']
+            'chl': ['CHL', 'CYANOBLOOM', 'SENSORMASK'],
+            'pft': ['PICO', 'NANO', 'MICRO', 'CRYPTO', 'GREEN', 'DIATO', 'DINO', 'PROKAR', 'SENSORMASK'],
+            'kd490': ['KD490', 'SENSORMASK'],
+            'adg443': ['ADG443', 'SENSORMASK'],
+            'aph443': ['APH443', 'SENSORMASK'],
+            'bbp443': ['BBP443', 'SENSORMASK']
         }
         ##defining rrs file for applying mask
-        self.rrs_l3_olci = ['rrs400','rrs412_5', 'rrs442_5', 'rrs490', 'rrs510', 'rrs560', 'rrs620', 'rrs665', 'rrs673_75', 'rrs681_25',
-                            'rrs708_75', 'rrs753_75','rrs778_75', 'rrs865']
-
+        self.rrs_l3_olci = ['rrs400', 'rrs412_5', 'rrs442_5', 'rrs490', 'rrs510', 'rrs560', 'rrs620', 'rrs665',
+                            'rrs673_75', 'rrs681_25',
+                            'rrs708_75', 'rrs753_75', 'rrs778_75', 'rrs865']
 
         self.mask_file = None
         self.mask_var = None
@@ -91,20 +91,20 @@ class BALTIC_202411_PROCESSOR():
         if fconfig is not None:
             self.start_balmlp_options(fconfig)
 
-    def start_balmlp_options(self,fconfig):
+    def start_balmlp_options(self, fconfig):
         import configparser
         options = configparser.ConfigParser()
         options.read(fconfig)
         if not options.has_section('BALMLP'):
             return
 
-
-        if options.has_option('BALMLP','tile_x'):
+        if options.has_option('BALMLP', 'tile_x'):
             try:
                 tile_x = int(options['BALMLP']['tile_x'])
             except:
-                print(f'[WARNING] Not valid option {options["BALMLP"]["tile_x"]} for tile_x in configuration file. It shoud be a int value greater than zero')
-            if tile_x>0:
+                print(
+                    f'[WARNING] Not valid option {options["BALMLP"]["tile_x"]} for tile_x in configuration file. It shoud be a int value greater than zero')
+            if tile_x > 0:
                 self.tileX = tile_x
             else:
                 print(
@@ -122,18 +122,18 @@ class BALTIC_202411_PROCESSOR():
                 print(
                     f'[WARNING] Not valid option {options["BALMLP"]["TILE_X"]} for TILE_X in configuration file. It shoud be a int value greater than zero')
 
-
-        if options.has_option('BALMLP','mask'):
+        if options.has_option('BALMLP', 'mask'):
             mask_s = options['BALMLP']['mask']
             mask_l = [x.strip() for x in mask_s.split(';')]
             if os.path.exists(mask_l[0]):
                 self.mask_file = mask_l[0]
                 self.mask_var = 'Land_Mask'
-                if len(mask_l)==2:
+                if len(mask_l) == 2:
                     self.mask_var = mask_l[1]
                 dmask = Dataset(self.mask_file)
                 if self.mask_var not in dmask.variables:
-                    print(f'[WARNING] Variable {self.mask_var} is not available in {self.mask_file}. Mask will no be implemented')
+                    print(
+                        f'[WARNING] Variable {self.mask_var} is not available in {self.mask_file}. Mask will no be implemented')
                     self.mask_file = None
                     self.mask_var = None
                 else:
@@ -177,8 +177,6 @@ class BALTIC_202411_PROCESSOR():
             self.varattr = json.load(f)
             f.close()
 
-
-
     def run_process_multiple_files(self, prod_path, output_dir):
         if not self.product_type.startswith('l3_olci_'):
             print('Only OLCI L3 is implemented')
@@ -209,7 +207,7 @@ class BALTIC_202411_PROCESSOR():
             splitter = Splitter(fileout, olci_date)
             splitter.mask_array = self.get_mask_array()
             splitter.make_multiple_split(os.path.dirname(fileout), self.splits)
-            self.apply_mask_to_olci_l3_rrs(prod_path,olci_date_str)
+            self.apply_mask_to_olci_l3_rrs(prod_path, olci_date_str)
             return
 
         if self.verbose:
@@ -265,16 +263,16 @@ class BALTIC_202411_PROCESSOR():
                     for iop_index, iop_band in enumerate(self.iop_bands):
                         array_here = np.ma.masked_all(valid_mask.shape)
                         array_here[valid_mask == 1] = iop[:, iop_index]
-                        all_arrays[iop_band][yini - startY:yend - startY, xini - startX:xend - startX] = array_here[:,:]
-
+                        all_arrays[iop_band][yini - startY:yend - startY, xini - startX:xend - startX] = array_here[:,
+                                                                                                         :]
 
                     cyano_info = self.get_cyano_info_olci_l3(input_rrs)
                     for cyano_band in cyano_info:
                         array_here = np.ma.masked_all(valid_mask.shape)
                         array_cyano = cyano_info[cyano_band]
-                        array_here[valid_mask==1] = array_cyano[:]
-                        all_arrays[cyano_band][yini - startY:yend - startY, xini - startX:xend - startX] = array_here[:,:]
-
+                        array_here[valid_mask == 1] = array_cyano[:]
+                        all_arrays[cyano_band][yini - startY:yend - startY, xini - startX:xend - startX] = array_here[:,
+                                                                                                           :]
 
                     res_algorithm = self.bal_proc.compute_ensemble(input_rrs)
 
@@ -306,9 +304,7 @@ class BALTIC_202411_PROCESSOR():
             print(f'[INFO] Water processing completed')
             print(f'[INFO] Generating output file: {fileout}')
 
-
         self.create_file(fileout, prod_path, all_arrays, startY, endY + 1, startX, endX + 1, olci_date)
-
 
         ##SPLIT
         splitter = Splitter(fileout, olci_date)
@@ -483,51 +479,106 @@ class BALTIC_202411_PROCESSOR():
     def allow_csv_test(self):
         return True
 
-
-    def run_from_mdb_file(self, path_mdb):
+    def run_from_mdb_file(self, path_mdb, output_path):
         if not self.check_runac():
             print(f'[ERROR] Error starting Baltic 202411 chl-a algorithm')
             return
         if not os.path.exists(path_mdb):  ##should be checked before
             return
         print(f'[INFO] Input MDB FILE: {path_mdb}')
-        dataset = Dataset(path_mdb)
-        rrs = dataset.variables['satellite_Rrs'][:]
-        wl_bands = dataset.variables['satellite_bands'][:]
-        dataset.close()
-        n_mu = rrs.shape[0]
-        print(f'[INFO] Number of match-ups: {n_mu}')
-        self.get_rrs_spectra_from_mdb(np.ma.squeeze(rrs[0,:,:,:]), wl_bands)
 
-    def get_rrs_spectra_from_mdb(self,rrs,wl_bands):
+        variables_bal202411 = {
+            'satellite_CHL_202411': 'chl',
+            'satellite_CDF_AVG': 'cdf_avg',
+            'satellite_CDF_FLAG_MULTIPLE': 'cdf_flag_multiple',
+            'satellite_CDF_MLP3B': 'cdf_mlp3b',
+            'satellite_CDF_MLP4B': 'cdf_mlp4b',
+            'satellite_CDF_MLP5B': 'cdf_mlp5b',
+            'satellite_CHL_MLP3B': 'chl_mlp3b',
+            'satellite_CHL_MLP4B': 'chl_mlp4b',
+            'satellite_CHL_MLP5B': 'chl_mlp5b',
+            'satellite_WEIGHT_MLP3B': 'weight_mlp3b',
+            'satellite_WEIGHT_MLP4B': 'weight_mlp4b',
+            'satellite_WEIGHT_MLP5B': 'weight_mlp5b'
+        }
+        variable_list = list(variables_bal202411.keys())
+
+        dataset_w = self.start_output_dataset(path_mdb, output_path, variable_list)
+        rrs = dataset_w.variables['satellite_Rrs'][:]
+        wl_bands = dataset_w.variables['satellite_bands'][:]
+
+        n_mu = rrs.shape[0]
+        n_rows = rrs.shape[2]
+        n_cols = rrs.shape[3]
+        print(f'[INFO] Number of match-ups: {n_mu}')
+
+        for imu in range(n_mu):
+            if imu==0 or imu%100==0:
+                print(f'[INFO] Processing data for match-up: {imu}')
+
+            spectra = self.get_rrs_spectra_from_mdb(np.ma.squeeze(rrs[imu, :, :, :]), wl_bands)
+            res_all = self.bal_proc.compute_ensemble(spectra)
+            for name_var in variables_bal202411:
+                key = variables_bal202411[name_var]
+                array = res_all[key]
+                array = np.ma.reshape(array, (n_rows, n_cols))
+                dataset_w[name_var][imu, :, :] = array[:, :]
+
+        dataset_w.close()
+        print(f'[INFO] Completed')
+
+    def start_output_dataset(self, input_file, output_file, new_variables):
+        print(f'[INFO] Making copy from {input_file} to {output_file}')
+        input_dataset = Dataset(input_file)
+        ncout = Dataset(output_file, 'w', format='NETCDF4')
+
+        # copy global attributes all at once via dictionary
+        ncout.setncatts(input_dataset.__dict__)
+
+        # copy dimensions
+        for name, dimension in input_dataset.dimensions.items():
+            ncout.createDimension(
+                name, (len(dimension) if not dimension.isunlimited() else None))
+
+        for name, variable in input_dataset.variables.items():
+            fill_value = None
+            if '_FillValue' in list(variable.ncattrs()):
+                fill_value = variable._FillValue
+            ncout.createVariable(name, variable.datatype, variable.dimensions, fill_value=fill_value, zlib=True,
+                                 complevel=6)
+            # copy variable attributes all at once via dictionary
+            ncout[name].setncatts(input_dataset[name].__dict__)
+            ncout[name][:] = input_dataset[name][:]
+
+        for name in new_variables:
+            ncout.createVariable(name, 'f4', ('satellite_id', 'rows', 'columns'), fill_value=-999.0, zlib=True,
+                                 complevel=6)
+
+        return ncout
+
+    def get_rrs_spectra_from_mdb(self, rrs, wl_bands):
         n_bands = rrs.shape[0]
-        n_data = rrs.shape[1]*rrs.shape[2]
-        all_spectra = np.transpose(np.ma.reshape(rrs,(n_bands,n_data)))
+        n_data = rrs.shape[1] * rrs.shape[2]
+        all_spectra = np.transpose(np.ma.reshape(rrs, (n_bands, n_data)))
+
+        ##to get original
+        ##all_spectra_cual = np.ma.reshape(np.transpose(all_spectra_tal),rrs.shape)
+
         wl_output = self.bal_proc.input_bands
         n_output = len(wl_output)
-        out_spectra = np.ma.masked_all((n_data,n_output))
-        print(wl_output)
-        print(wl_bands)
+        out_spectra = np.ma.masked_all((n_data, n_output))
 
-        for iwl,wl in enumerate(wl_output):
-            print('-->',wl)
-            index_wl = np.argmin(np.abs(wl-wl_bands))
-            diff_wl = abs(wl_bands[index_wl]-wl)
-            print(wl,index_wl,diff_wl,wl_bands[index_wl])
-            if diff_wl==0.0:
-                out_spectra[:,iwl]=all_spectra[:,index_wl]
-            else:##band shifting
-                # print(all_spectra.shape)
-                # print(wl_bands.shape)
+        for iwl, wl in enumerate(wl_output):
+            index_wl = np.argmin(np.abs(wl - wl_bands))
+            diff_wl = abs(wl_bands[index_wl] - wl)
+            if diff_wl == 0.0:
+                out_spectra[:, iwl] = all_spectra[:, index_wl]
+            else:  ##band shifting
                 all_spectra_bs = np.transpose(all_spectra)
-                print('--->',all_spectra_bs.shape)
-                rrsdata_out = bsc_qaa.bsc_qaa(all_spectra_bs,wl_bands,[wl])
-                print(rrsdata_out.shape)
+                rrsdata_out = bsc_qaa.bsc_qaa(all_spectra_bs, wl_bands, [wl])
+                out_spectra[:, iwl] = np.squeeze(rrsdata_out)
 
-        print(rrs.shape)
-        print(all_spectra.shape)
-        print(type(all_spectra))
-        return None
+        return out_spectra
 
     def run_from_csv_file(self, path_csv, output_path):
         if not self.check_runac():
@@ -584,7 +635,7 @@ class BALTIC_202411_PROCESSOR():
                 self.central_wavelength = {}
                 self.central_wl_chla = []
 
-    def apply_mask_to_olci_l3_rrs(self,prod_path, olci_date_str):
+    def apply_mask_to_olci_l3_rrs(self, prod_path, olci_date_str):
         mask_array = self.get_mask_array()
         if mask_array is None:
             return
@@ -593,13 +644,13 @@ class BALTIC_202411_PROCESSOR():
             if os.path.exists(input_file):
                 print(f'[INFO] Applying mask to file: {input_file}')
                 temp_file = os.path.join(prod_path, f'O{olci_date_str}-{band}-bal-fr_temp.nc')
-                mask_applied = self.apply_mask_impl(input_file,mask_array,temp_file)
+                mask_applied = self.apply_mask_impl(input_file, mask_array, temp_file)
                 if mask_applied:
-                    os.rename(temp_file,input_file)
+                    os.rename(temp_file, input_file)
                 else:
-                    if os.path.exists(temp_file):os.remove(temp_file)
+                    if os.path.exists(temp_file): os.remove(temp_file)
 
-    def apply_mask_impl(self,input_file, mask, output_file):
+    def apply_mask_impl(self, input_file, mask, output_file):
         mask_applied = False
         from netCDF4 import Dataset
         nc_input = Dataset(input_file, 'r')
@@ -917,7 +968,7 @@ class BALTIC_202411_PROCESSOR():
                     nchere = Dataset(input_file)
                     if not added_sensor_mask and 'SENSORMASK' in nchere.variables:
                         var_sensor_mask = nchere.variables['SENSORMASK']
-                        ncoutput.copy_var('SENSORMASK',var_sensor_mask)
+                        ncoutput.copy_var('SENSORMASK', var_sensor_mask)
                         added_sensor_mask = True
                     rrsvar = input_file[input_file.find('rrs'):input_file.find('-bal-fr.nc')].upper()
                     array = np.ma.array(nchere.variables[rrsvar][0, yini:yend, xini:xend])
