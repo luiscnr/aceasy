@@ -53,8 +53,9 @@ class QI_PROCESSING():
         print(f'[INFO] Started appending qi files....')
         if not self.check_date_qi_file(start_date):
             return
-        for nameoutput in self.namesoutput:
-            self.append_qi_files_impl(start_date, end_date, nameoutput)
+        for idx,nameoutput in enumerate(self.namesoutput):
+            dirbase_here = self.dirbase[idx] if len(self.dirbase)==len(self.namesoutput) else self.dirbase[0]
+            self.append_qi_files_impl(start_date, end_date, nameoutput,dirbase_here)
         print(f'[INFO] Appending qi files completed')
 
     def check_date_qi_file(self, start_date):
@@ -77,7 +78,7 @@ class QI_PROCESSING():
             fout.close()
         return True
 
-    def append_qi_files_impl(self, start_date, end_date, nameoutput):
+    def append_qi_files_impl(self, start_date, end_date, nameoutput, dirbase_here):
 
         file_output = self.final_qi_file
         proc_date = start_date
@@ -85,7 +86,7 @@ class QI_PROCESSING():
         while proc_date <= end_date:
             yearstr = proc_date.strftime('%Y')
             jjjstr = proc_date.strftime('%j')
-            folder_date = os.path.join(self.dirbase, yearstr, jjjstr)
+            folder_date = os.path.join(dirbase_here, yearstr, jjjstr)
             file_date = os.path.join(folder_date, nameoutput)
             if os.path.exists(file_date):
                 fr = open(file_date, 'r')
@@ -107,16 +108,23 @@ class QI_PROCESSING():
         date_here_str = date_here.strftime('%Y%m%d')
         yearstr = date_here.strftime('%Y')
         jjjstr = date_here.strftime('%j')
-        folder_date = os.path.join(self.dirbase, yearstr, jjjstr)
-        if not os.path.exists(folder_date):
-            print(f'[ERROR] No data directory for date: {date_here_str} Folder date: {folder_date} does not exist')
-            return None
+
+        #folder_date = os.path.join(self.dirbase, yearstr, jjjstr)
+        folder_date_list = [''] * len(self.dirbase)
+        for idx, dbase in enumerate(self.dirbase):
+            folder_date_list[idx] = os.path.join(dbase, yearstr, jjjstr)
+            if not os.path.exists(folder_date_list[idx]):
+                print(f'[ERROR] No data directory for date {date_here_str}. Folder date: {folder_date_list[idx]} does not exist')
+                return None
+
+
 
         nout = None
         f1 = None
 
         ##delete the previous files
-        for nameoutput in self.namesoutput:
+        for idx,nameoutput in enumerate(self.namesoutput):
+            folder_date = folder_date_list[idx] if len(self.datasets) == len(folder_date_list) else folder_date_list[0]
             fout = os.path.join(folder_date, nameoutput)
             if os.path.exists(fout):
                 os.remove(fout)
@@ -124,7 +132,8 @@ class QI_PROCESSING():
             if os.path.exists(fouttemp):
                 os.remove(fouttemp)
 
-        for dataset in self.datasets:
+        for idx,dataset in enumerate(self.datasets):
+            folder_date = folder_date_list[idx] if len(self.datasets) == len(folder_date_list) else folder_date_list[0]
             var = self.datasets[dataset]['var']
             prefix = self.info_sensor[self.sensor]['prefix']
             res = self.info_sensor[self.sensor]['resolution']
@@ -215,11 +224,18 @@ class QI_PROCESSING():
         date_here_str = date_here.strftime('%Y-%m-%d')
         yearstr = date_here.strftime('%Y')
         jjjstr = date_here.strftime('%j')
-        folder_date = os.path.join(self.dirbase, yearstr, jjjstr)
-        if not os.path.exists(folder_date):
-            print(f'[ERROR] No data directory for date: {date_here_str}')
-            return None
-        for dataset in self.datasets:
+
+        #folder_date = os.path.join(self.dirbase, yearstr, jjjstr)
+
+        folder_date_list = ['']*len(self.dirbase)
+        for idx,dbase in enumerate(self.dirbase):
+            folder_date_list[idx] = os.path.join(dbase, yearstr, jjjstr)
+            if not os.path.exists(folder_date_list[idx]):
+                print(f'[ERROR] No data directory for dir base {dbase} and date {date_here_str}')
+                return None
+
+        for idx,dataset in enumerate(self.datasets):
+            folder_date = folder_date_list[idx] if len(self.datasets)==len(folder_date_list) else folder_date_list[0]
             if dataset.find('plankton') >= 0:  ##MULTI_ARC
                 var = self.datasets[dataset]['var']
                 prefix = self.info_sensor[self.sensor]['prefix']
@@ -348,7 +364,7 @@ class QI_PROCESSING():
         if not self.options.has_option(region, 'BaseArch'):
             print(f'[ERROR] Option BaseArch is not defined in config file: {self.fconfig} for region {region}')
             return False
-        self.dirbase = self.options[region]['BaseArch'].strip()
+        self.dirbase = [x.strip() for x in self.options[region]['BaseArch'].split(';')]
 
         if not self.options.has_option(region, 'products'):
             print(f'[ERROR] Option products is not defined in config file: {self.fconfig} for region {region}')
