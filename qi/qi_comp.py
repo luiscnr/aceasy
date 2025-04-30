@@ -86,8 +86,7 @@ class QI_PROCESSING():
         while proc_date <= end_date:
             yearstr = proc_date.strftime('%Y')
             jjjstr = proc_date.strftime('%j')
-            folder_date = os.path.join(dirbase_here, yearstr, jjjstr)
-            file_date = os.path.join(folder_date, nameoutput)
+            file_date = os.path.join(dirbase_here, yearstr, jjjstr, nameoutput)
             if os.path.exists(file_date):
                 fr = open(file_date, 'r')
                 for line in fr:
@@ -122,9 +121,9 @@ class QI_PROCESSING():
         nout = None
         f1 = None
 
-        ##delete the previous files
+        ##delete the previous files (len(namesoutput) is suppposed to be equal to the number of products)
         for idx,nameoutput in enumerate(self.namesoutput):
-            folder_date = folder_date_list[idx] if len(self.datasets) == len(folder_date_list) else folder_date_list[0]
+            folder_date = folder_date_list[idx] if len(self.namesoutput) == len(folder_date_list) else folder_date_list[0]
             fout = os.path.join(folder_date, nameoutput)
             if os.path.exists(fout):
                 os.remove(fout)
@@ -132,8 +131,13 @@ class QI_PROCESSING():
             if os.path.exists(fouttemp):
                 os.remove(fouttemp)
 
-        for idx,dataset in enumerate(self.datasets):
-            folder_date = folder_date_list[idx] if len(self.datasets) == len(folder_date_list) else folder_date_list[0]
+        for dataset in self.datasets:
+            prodDataset = self.datasets[dataset]['prod']
+            try:
+                index_prod = self.products.index(prodDataset)
+            except:
+                index_prod = 0
+            folder_date = folder_date_list[index_prod]
             var = self.datasets[dataset]['var']
             prefix = self.info_sensor[self.sensor]['prefix']
             res = self.info_sensor[self.sensor]['resolution']
@@ -234,8 +238,13 @@ class QI_PROCESSING():
                 print(f'[ERROR] No data directory for dir base {dbase} and date {date_here_str}')
                 return None
 
-        for idx,dataset in enumerate(self.datasets):
-            folder_date = folder_date_list[idx] if len(self.datasets)==len(folder_date_list) else folder_date_list[0]
+        for dataset in self.datasets:
+            prodDataset = self.datasets[dataset]['prod']
+            try:
+                index_prod = self.products.index(prodDataset)
+            except:
+                index_prod = 0
+            folder_date = folder_date_list[index_prod]
             if dataset.find('plankton') >= 0:  ##MULTI_ARC
                 var = self.datasets[dataset]['var']
                 prefix = self.info_sensor[self.sensor]['prefix']
