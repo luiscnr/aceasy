@@ -509,6 +509,108 @@ def plot_map_general(file_nc, file_out, variable, title, label, vmin, vmax):
     fig.savefig(file_out, dpi=300, bbox_inches='tight')
     plt.close(fig)
 
+def compute_total_coverage_cci():
+    print(f'COMPUTING TOTAL COVERAGE....')
+    dir_base = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/BAL_EVOLUTION_202411/CODE_AND_MAP_ANALYSIS_202411/COVERAGE_ENS_YEAR'
+    sum_variables = ['n_cdf_total','n_nocdf_total','n_total','weight_mlp3b_cdf','weight_mlp3b_total','weight_mlp4b_cdf','weight_mlp5b_cdf']
+    coverage_variables = ['coverage_cdf','coverage_cdf_mlp_3','coverage_cdf_mlp_4','coverage_cdf_mlp_5','coverage_no_cdf','coverage_total_mlp3','coverage_total_mlp4','coverage_total_mlp5']
+    file_out = os.path.join(dir_base,'COVERAGE_ENS_CDF_ALL_YEARS.nc')
+    nlat = 1147
+    nlon = 1185
+    ntime = 13
+    print('[INFO] Creating output file: ')
+    nc_out = Dataset(file_out, 'w')
+    nc_out.createDimension('lat', nlat)
+    nc_out.createDimension('lon', nlon)
+    nc_out.createDimension('time', 13)
+
+    nc_out.createVariable('lat', 'f4', ('lat',), zlib=True, complevel=6, fill_value=-999.0)
+    nc_out.createVariable('lon', 'f4', ('lon',), zlib=True, complevel=6, fill_value=-999.0)
+    var_time = nc_out.createVariable('time', 'i4', ('time',), zlib=True, complevel=6, fill_value=-999.0)
+    var_time[:] = np.arange(13).astype(np.int32)
+    var_time.units = f'0 is all the year, 1-12 for each month.'
+
+    for name_var in sum_variables:
+        nc_out.createVariable(name_var, 'f4', ('time', 'lat', 'lon'), zlib=True, complevel=6, fill_value=-999.0)
+    for name_var in coverage_variables:
+        nc_out.createVariable(name_var, 'f4', ('time', 'lat', 'lon'), zlib=True, complevel=6, fill_value=-999.0)
+
+    for idx,var in enumerate(sum_variables):
+
+        var = sum_variables[idx]
+        print(f'[INFO] Variable {var} started...')
+        array_sum = np.zeros((ntime, nlat, nlon))
+        for year in range(1997,2024):
+            print(f'[INFO] -> {year}')
+            file_year = os.path.join(dir_base,f'COVERAGE_ENSCDF_{year}.nc')
+            dataset_y = Dataset(file_year)
+            if idx == 0 and year==1997:
+                nc_out.variables['lat'][:] = dataset_y.variables['lat'][:]
+                nc_out.variables['lon'][:] = dataset_y.variables['lon'][:]
+            array_y = dataset_y.variables[var][:]
+            dataset_y.close()
+            array_sum = array_sum + np.ma.filled(array_y,0)
+        nc_out.variables[var][:] = array_sum[:]
+        print(f'[INFO] Variable {var} completed')
+
+    print(f'[INFO] Setting coverage...')
+    coverage_cdf = np.ma.masked_all((ntime, nlat, nlon))
+    coverage_no_cdf = np.ma.masked_all((ntime, nlat, nlon))
+    n_total = nc_out.variables['n_total'][:]
+    n_cdf_total = nc_out.variables['n_cdf_total'][:]
+    n_nocdf_total = nc_out.variables['n_nocdf_total'][:]
+    coverage_cdf[np.where(n_total > 0)] = n_cdf_total[np.where(n_total > 0)] / n_total[np.where(n_total > 0)]
+    coverage_no_cdf[np.where(n_total > 0)] = n_nocdf_total[np.where(n_total > 0)] / n_total[np.where(n_total > 0)]
+
+    coverage_cdf_mlp3 = np.ma.masked_all((ntime, nlat, nlon))
+    coverage_cdf_mlp4 = np.ma.masked_all((ntime, nlat, nlon))
+    coverage_cdf_mlp5 = np.ma.masked_all((ntime, nlat, nlon))
+    weight_mlp3b_cdf = nc_out.variables['weight_mlp3b_cdf'][:]
+    weight_mlp4b_cdf = nc_out.variables['weight_mlp4b_cdf'][:]
+    weight_mlp5b_cdf = nc_out.variables['weight_mlp5b_cdf'][:]
+
+    coverage_cdf_mlp3[np.where(n_cdf_total > 0)] = weight_mlp3b_cdf[np.where(n_cdf_total > 0)] / n_cdf_total[
+        np.where(n_cdf_total > 0)]
+    coverage_cdf_mlp4[np.where(n_cdf_total > 0)] = weight_mlp4b_cdf[np.where(n_cdf_total > 0)] / n_cdf_total[
+        np.where(n_cdf_total > 0)]
+    coverage_cdf_mlp5[np.where(n_cdf_total > 0)] = weight_mlp5b_cdf[np.where(n_cdf_total > 0)] / n_cdf_total[
+        np.where(n_cdf_total > 0)]
+
+    coverage_total_mlp3 = np.ma.masked_all((ntime, nlat, nlon))
+    coverage_total_mlp4 = np.ma.masked_all((ntime, nlat, nlon))
+    coverage_total_mlp5 = np.ma.masked_all((ntime, nlat, nlon))
+    weight_mlp3b_total = nc_out.variables['weight_mlp3b_total'][:]
+    coverage_total_mlp3[np.where(n_total > 0)] = weight_mlp3b_total[np.where(n_total > 0)] / n_total[
+        np.where(n_total > 0)]
+    coverage_total_mlp4[np.where(n_total > 0)] = weight_mlp4b_cdf[np.where(n_total > 0)] / n_total[
+        np.where(n_total > 0)]
+    coverage_total_mlp5[np.where(n_total > 0)] = weight_mlp5b_cdf[np.where(n_total > 0)] / n_total[
+        np.where(n_total > 0)]
+
+
+
+    nc_out.variables['n_total'][:] = np.ma.masked_equal(n_total, 0)
+    nc_out.variables['n_cdf_total'][:] = np.ma.masked_equal(n_cdf_total, 0)
+    nc_out.variables['n_nocdf_total'][:] = np.ma.masked_equal(n_nocdf_total, 0)
+    nc_out.variables['weight_mlp3b_cdf'][:] = np.ma.masked_equal(weight_mlp3b_cdf, 0)
+    nc_out.variables['weight_mlp4b_cdf'][:] = np.ma.masked_equal(weight_mlp4b_cdf, 0)
+    nc_out.variables['weight_mlp5b_cdf'][:] = np.ma.masked_equal(weight_mlp5b_cdf, 0)
+    nc_out.variables['weight_mlp3b_total'][:] = np.ma.masked_equal(weight_mlp3b_total, 0)
+
+    coverage_variables = ['coverage_cdf', 'coverage_cdf_mlp_3', 'coverage_cdf_mlp_4', 'coverage_cdf_mlp_5',
+                          'coverage_no_cdf', 'coverage_total_mlp3', 'coverage_total_mlp4', 'coverage_total_mlp5']
+    nc_out.variables['coverage_cdf'][:] = coverage_cdf[:]
+    nc_out.variables['coverage_no_cdf'][:] = coverage_no_cdf[:]
+    nc_out.variables['coverage_cdf_mlp_3'][:] = coverage_cdf_mlp3
+    nc_out.variables['coverage_cdf_mlp_4'][:] = coverage_cdf_mlp4
+    nc_out.variables['coverage_cdf_mlp_5'][:] = coverage_cdf_mlp5
+    nc_out.variables['coverage_total_mlp3'][:] = coverage_total_mlp3
+    nc_out.variables['coverage_total_mlp4'][:] = coverage_total_mlp4
+    nc_out.variables['coverage_total_mlp5'][:] = coverage_total_mlp5
+
+    nc_out.close()
+
+    print(f'[INFO] Completed')
 
 def compute_year_coverage_cci(year):
     print(f'COMPUTING COVERAGE FOR YEAR....')
@@ -855,10 +957,15 @@ def main():
     #     file_out = os.path.join(os.path.dirname(file_nc), f'{variable}_{year}.tif')
     #     plot_map_general(file_nc,file_out,variable,title,label,vmin,vmax)
 
-    for year in range(1997,2024):
-        if year==2008:
-            continue
-        compute_year_coverage_cci(year)
+    ##CDF ENSEMBLE COVERAGE FOR EACH YEAR (WITH TOTAL AND MONTHLY RESULTS) BASED ON CCI DAILY DATA1 - RUN ON HPC-SERVERS
+    # for year in range(1997,2024):
+    #     if year==2008:
+    #         continue
+    #     compute_year_coverage_cci(year)
+
+    ##TOTAL CDF ENSEMBLE COVERAGE BASED ON YEAR COVERAGE FILES. IT INCLUCES TOTAL AND MONTHLY RESULTS - LOCAL RUN
+    compute_total_coverage_cci()
+
 
     if finisce():
         return

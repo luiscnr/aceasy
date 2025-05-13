@@ -98,6 +98,9 @@ class POLYMER:
                 return None, None
 
         if self.product_type == 's2_msi':
+            if self.version==5.0:
+                print(f'[ERROR] MSIS products are not implemented for version 5')
+                return None,None
             if prod_name.startswith('s2_msi') and prod_name.endswith('.SAFE') and os.path.isdir(prod_path):
                 if os.path.isdir(output_dir):
                     output_name = prod_name[0:-5] + '_POLYMER.nc'
@@ -111,6 +114,9 @@ class POLYMER:
                 return None, None
 
         if self.product_type == 'prisma':
+            if self.version==5.0:
+                print(f'[ERROR] PRISMA products are not implemented for version 5')
+                return None,None
             if prod_name.endswith('.he5'):
                 if os.path.isdir(output_dir):
                     output_name = prod_name[0:-4] + '_POLYMER.nc'
@@ -126,6 +132,8 @@ class POLYMER:
     def run_process(self, prod_path, output_dir):
         prod_name = os.path.basename(prod_path)
         output_path, output_name = self.check_product_path(prod_path, prod_name, output_dir)
+        if output_path is None:##file error
+            return False
         if os.path.exists(output_path):
             print(f'[INFO] Output file {output_path} already exists. Skiping...')
             return True
@@ -136,7 +144,8 @@ class POLYMER:
         if self.version <= 4.14:
             from polymer.main import run_atm_corr, Level1, Level2
             from polymer.level2_nc import Level2_NETCDF
-        if self.version > 4.14:
+
+        if 4.14 < self.version < 5.0:
             from polymer.main import run_atm_corr
             from polymer.level1 import Level1
             from polymer.level1_prisma import Level1_PRISMA
@@ -144,12 +153,24 @@ class POLYMER:
             from polymer.level2_nc import Level2_NETCDF
             from polymer.ancillary import Ancillary_NASA
 
+        if self.version == 5.0:
+            from polymer.main_v5 import run_polymer
+            # from polymer.level1 import Level1
+            # from polymer.level1_prisma import Level1_PRISMA
+            # from polymer.level2 import Level2
+            # from polymer.level2_nc import Level2_NETCDF
+            # from polymer.ancillary import Ancillary_NASA
+
+
+
         params = {}
         for key in self.extraoptions:
             if self.extraoptions[key]['apply']:
                 params[key] = self.extraoptions[key]['value']
 
         if self.product_type == 'prisma':
+            if self.version==5:##it shouldn't arrive here, type file is checked using check_product_path
+                return False
 
             # ancillary_folder = os.path.join(os.path.dirname(prod_path),'ANCILLARY')
             # if not os.path.isdir(ancillary_folder):
@@ -181,14 +202,33 @@ class POLYMER:
                 print(f'[ERROR] {error}')
                 return False
         else:
-            try:
-                res = run_atm_corr(Level1(prod_path), Level2(filename=output_path, fmt='netcdf4'), **params)
-            except Exception as error:
-                print(f'[ERROR] Polymer WAS NOT completed for product: {prod_name}. ')
-                print(f'[ERROR] {error}')
-                return False
+
+            if self.version==5:
+                try:
+                    res = run_polymer(prod_path,file_out=output_path,if_exists="overwrite")
+                except Exception as error:
+                    print(f'[ERROR] Polymer WAS NOT completed for product: {prod_name}. ')
+                    print(f'[ERROR] {error}')
+                    return False
+
+            else:
+                try:
+                    res = run_atm_corr(Level1(prod_path), Level2(filename=output_path, fmt='netcdf4'), **params)
+                except Exception as error:
+                    print(f'[ERROR] Polymer WAS NOT completed for product: {prod_name}. ')
+                    print(f'[ERROR] {error}')
+                    return False
         # res = run_atm_corr(Level1(prod_path), Level2('memory'), **params)
 
+        if self.version==5:
+            from pathlib import Path
+            if isinstance(res,Path) and os.path.exists(output_path):
+                if self.verbose:
+                    print(f'[INFO] Polymer completed. Output file name: {output_name}')
+                return True
+            else:
+                print(f'[ERROR] Polymer NOT completed for product: {prod_name}')
+                return False
         if isinstance(res, Level2_NETCDF) and os.path.exists(output_path):
             if self.verbose:
                 print(f'[INFO] Polymer completed. Output file name: {output_name}')

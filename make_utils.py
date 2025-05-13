@@ -1,6 +1,8 @@
-import warnings, argparse, os
+import warnings, argparse, os, configparser
 from datetime import datetime as dt
 from datetime import timedelta
+
+import pandas as pd
 from netCDF4 import Dataset
 
 import numpy as np
@@ -12,10 +14,11 @@ parser = argparse.ArgumentParser(
 
 parser.add_argument('-m', "--mode", help='Mode option',
                     choices=["test", "check_neg_olci_values", "correct_neg_olci_values",
-                             "correct_neg_olci_values_slurm"],
+                             "correct_neg_olci_values_slurm","image_stats"],
                     required=True)
 parser.add_argument('-i', "--input_path", help="Input path.")
 parser.add_argument('-o', "--output", help="Output file.")
+parser.add_argument('-c',"--config_file", help="Configuration file")
 parser.add_argument("-sd", "--start_date", help="Start date.")
 parser.add_argument("-ed", "--end_date", help="End date.")
 parser.add_argument("-r", "--region", help="Region.", choices=["BS", "MED", "BAL", "ARC"])
@@ -254,6 +257,230 @@ def get_min_rrs_value(file, band):
     dataset.close()
     return f'{min_v}', attr, ninvalid_s
 
+def make_stats(options_stats,start_date,end_date,output_file):
+    print(f'[INFO] Started making stats...')
+    basic_stats = ['N','AVG','STD','MEDIAN','MIN','MAX','P25','P75','RANGE','IQR']
+    corr_stats = ['N', 'SLOPE_I', 'SLOPE_II', 'OFFSET_I', 'OFFSET_II', 'STD_ERR_I', 'STD_SLOPE_II', 'STD_OFFSET_II',
+                   'R', 'P_VALUE', 'R2', 'RMSD','BIAS','MdBIAS','APD','RPD','MdAPD','MdRPD','CRMSE','MAD','MdAD']
+
+    col_names = ['DATE']
+    for var in options_stats['var_list']:
+        for stat in basic_stats:
+            col_names.append(f'{var}_{stat}')
+
+    if options_stats['alt_var_list'] is not None:
+        for var in options_stats['alt_var_list']:
+            for stat in basic_stats:
+                col_names.append(f'alt_{var}_{stat}')
+
+    if options_stats['correlation_stats_var'] is not None:
+        for var_pair in options_stats['correlation_stats_var']:
+            for stat in corr_stats:
+                col_names.append(f'{var_pair[0]}_{var_pair[1]}_{stat}')
+
+    if options_stats['alt_correlation_stats_var'] is not None:
+        for var_pair in options_stats['alt_correlation_stats_var']:
+            for stat in corr_stats:
+                col_names.append(f'{var_pair[0]}_alt_{var_pair[1]}_{stat}')
+
+    use_log = options_stats['use_log']
+    alt_use_log = options_stats['alt_use_log']
+    var_list = options_stats['var_list']
+    alt_var_list = options_stats['alt_var_list']
+    ndates = (end_date-start_date).days+1
+    df = pd.DataFrame(index=range(ndates),columns=col_names)
+    work_date = start_date
+    index = 0
+    while work_date<=end_date:
+        print(f'[INFO] Working stats for day: {work_date}')
+        df.loc[0,"DATE"] = work_date.strftime('%Y-%m-%d')
+        ##BASIC STATS
+        arrays = get_arrays_for_stats(options_stats,work_date,False)
+        if arrays is not None:
+            for ivar,var in enumerate(var_list):
+                use_log_here = use_log[ivar] if len(use_log)==len(var_list) else use_log[0]
+                results = compute_basic_stats(arrays[var],var,use_log_here)
+                df.loc[0,results.keys()] = results.values()
+
+        ##ALT BASIC STATS
+        if options_stats['alt_input_path'] is not None:
+            arrays_alt = get_arrays_for_stats(options_stats, work_date, True)
+            if arrays_alt is not None:
+                for ivar, var in enumerate(alt_var_list):
+                    use_log_here = alt_use_log[ivar] if len(alt_use_log) == len(alt_var_list) else alt_use_log[0]
+                    results = compute_basic_stats(arrays_alt[var], f'alt_{var}', use_log_here)
+                    df.loc[0, results.keys()] = results.values()
+
+        ##CORRELATION STATS
+        if options_stats['correlation_stats_var'] is not None:
+            for var_pair in enumerate(options_stats['correlation_stats_var']):
+                ivar_0 = var_list.index(var_pair[0])
+                use_log_here_0 = use_log[ivar_0] if len(use_log) == len(var_list) else use_log[0]
+                ivar_1 = var_list.index(var_pair[0])
+                use_log_here_1 = use_log[ivar_1] if len(use_log) == len(var_list) else use_log[0]
+                use_log_here = use_log_here_0 if use_log_here_0==use_log_here_1 else None
+                if use_log_here is None:
+                    print(f'[WARNING] Variables to compute correlations should both have the same use_log values')
+                else:
+                    array_0 = arrays[var_pair[0]]
+                    array_1 = arrays[var_pair[1]]
+                    var_prefix = f'{var_pair[0]}_{var_pair[1]}_'
+                    results = compute_correlation_stats(array_0,array_1,var_prefix,use_log_here)
+
+        index = index + 1
+        work_date = work_date+timedelta(hours=24)
+
+def compute_correlation_stats(xarray,yarray,var_prefix,use_log):
+    indices_non_mask = np.where(np.logical_and(xarray.mask==False,yarray.mask==False))
+    xarray = xarray[indices_non_mask].compressed()
+    yarray = yarray[indices_non_mask].compressed()
+
+
+    if use_log:
+        valid_array = np.logical_and(yarray > 0, xarray > 0)
+    else:
+        valid_array = np.ones((xarray.shape[0],))
+
+    xarray = xarray[valid_array]
+    yarray = yarray[valid_array]
+
+    rel_diff = 100 * ((yarray - xarray) / xarray) #for computing APD, RPD, MdRPD, MdAPD
+    if use_log:
+        xarray = np.log10(xarray)
+        yarray = np.log10(yarray)
+
+    try:
+        from scipy import stats
+        slope, intercept, r_value, p_value, std_err = stats.linregress(xarray, yarray)
+    except:
+        slope, intercept, r_value, p_value, std_err = [-999.0]*5
+
+    try:
+        from pylr2 import regress2
+        results_r2 = regress2(np.array(xarray, dtype=np.float64), np.array(yarray, dtype=np.float64),_method_type_2="reduced major axis")
+        slope_II = results_r2['slope']
+        intercept_II = results_r2['intercept']
+        std_slope_II = results_r2['std_slope']
+        std_intercept_II = results_r2['std_intercept']
+    except:
+        slope_II,intercept_II,std_slope_II,std_intercept_II = [-999.0]*4
+
+    xdiff = xarray - np.mean(xarray)
+    ydiff = yarray - np.mean(yarray)
+
+    results = {
+        f'{var_prefix}_N': xarray.shape[0],
+        f'{var_prefix}_SLOPE_I': slope,
+        f'{var_prefix}_SLOPE_II': slope_II,
+        f'{var_prefix}_OFFSET_I': intercept,
+        f'{var_prefix}_OFFSET_II': intercept_II,
+        f'{var_prefix}_STD_ERR_I': std_err,
+        f'{var_prefix}_STD_SLOPE_II': std_slope_II,
+        f'{var_prefix}_STD_OFFSET_II': std_intercept_II,
+        f'{var_prefix}_R': r_value,
+        f'{var_prefix}_PVALUE': p_value,
+        f'{var_prefix}_R2': r_value * r_value,
+        f'{var_prefix}_RMSD': rmse(yarray,xarray),
+        f'{var_prefix}_BIAS': np.mean(yarray - xarray),
+        f'{var_prefix}_MdBIAS': np.median(yarray-xarray),
+        f'{var_prefix}_APD': np.mean(np.abs(rel_diff)),
+        f'{var_prefix}_RPD': np.mean(rel_diff),
+        f'{var_prefix}_MdAPD': np.median(np.abs(rel_diff)),
+        f'{var_prefix}_MdRPD': np.median(rel_diff),
+        f'{var_prefix}_CRMSE': rmse(ydiff,xdiff),
+        f'{var_prefix}_MAD': np.mean(np.abs(yarray - xarray)),
+        f'{var_prefix}_MdMAD': np.median(np.abs(yarray - xarray))
+    }
+
+    if use_log:
+        ##convert statistict to linear scale again
+        stats_to_convert = ['RMSD', 'CRMSE', 'MAD', 'MdAD']
+        for stat in stats_to_convert:
+            results[f'{var_prefix}_{stat}'] = np.power(10,results[f'{var_prefix}_{stat}'])
+        sign_stats_to_convert = ['BIAS', 'MdBIAS']
+        for stat in sign_stats_to_convert:
+            bias_neg = results[f'{var_prefix}_{stat}'] < 0
+            results[f'{var_prefix}_{stat}'] = np.power(10, np.abs(results[f'{var_prefix}_{stat}']))
+            if bias_neg:
+                results[f'{var_prefix}_{stat}'] = results[f'{var_prefix}_{stat}'] * (-1)
+
+    return results
+
+
+
+
+    # self.valid_stats['RPD'] = np.mean(rel_diff)
+    # #  the mean of absolute (unsigned) percent differences
+    # self.valid_stats['APD'] = np.mean(np.abs(rel_diff))
+    # the median of relative (signed) percent differences
+    # rel_diff = 100 * ((sat_obs - ref_obs) / ref_obs)
+    # self.valid_stats['MdRPD'] = np.median(rel_diff)
+    # #  the median of absolute (unsigned) percent differences
+    # self.valid_stats['MdAPD'] = np.median(np.abs(rel_diff))
+
+
+
+def rmse(predictions, targets):
+    return np.sqrt(((np.asarray(predictions) - np.asarray(targets)) ** 2).mean())
+
+def compute_basic_stats(array,var_name,use_log):
+    #basic_stats = ['N', 'AVG', 'STD', 'MEDIAN', 'MIN', 'MAX', 'P25', 'P75', 'RANGE', 'IQR']
+    data = array.compressed()
+    if use_log:
+        data = np.log10(data)
+    results = {
+        f'{var_name}_N': data.shape[0],
+        f'{var_name}_AVG': np.mean(data),
+        f'{var_name}_STD': np.std(data),
+        f'{var_name}_MEDIAN': np.median(data),
+        f'{var_name}_MIN': np.min(data),
+        f'{var_name}_MAX': np.max(data),
+        f'{var_name}_P25': np.percentile(data,25),
+        f'{var_name}_P75': np.percentile(data,75),
+        f'{var_name}_RANGE': -999.0,
+        f'{var_name}_IQR': -999.0,
+    }
+    results[f'{var_name}_RANGE']=results[f'{var_name}_MAX']-results[f'{var_name}_MIN']
+    results[f'{var_name}_IQR'] = results[f'{var_name}_P75'] - results[f'{var_name}_P25']
+
+    return results
+
+def get_arrays_for_stats(options_stats,work_date,isalt):
+    input_path = options_stats['alt_input_path'] if isalt else options_stats['input_path']
+    org = options_stats['alt_input_path_organization'] if isalt else options_stats['input_path_organization']
+    dataset_name_file = options_stats['alt_dataset_name_file'] if isalt else options_stats['dataset_name_file']
+    dataset_name_format_date = options_stats['alt_dataset_name_format_date'] if isalt else options_stats['dataset_name_format_date']
+    file_date = get_file_date(input_path,org,dataset_name_file,dataset_name_format_date,work_date)
+    if file_date is None:
+        return None
+    arrays = {}
+    var_list = options_stats['alt_var_list'] if isalt else options_stats['var_list']
+    for var in var_list:
+        dataset = Dataset(file_date,'r')
+        arrays[var] = dataset.variables[var][:]
+        dataset.close()
+    return arrays
+
+def get_file_date(input_path,org,dataset_name_file,dataset_name_format_date,work_date):
+
+    input_path_date = input_path
+    if org!='NONE':
+        for tformat in org.split('/'):
+            input_path_date = os.path.join(input_path_date,work_date.strftime(tformat))
+
+    if not os.path.isdir(input_path_date):
+        print(f'[WARNING] Input path for date {work_date.strftime("%Y-%m-%d")}: {input_path_date} is not available. Skipping...')
+        return None
+
+    name_file = dataset_name_file.replace('$DATE$',work_date.strftime(dataset_name_format_date))
+    file_date = os.path.join(input_path_date,name_file)
+    if not os.path.isfile(file_date):
+        print(f'[WARNING] File date for date {work_date.strftime("%Y-%m-%d")}: {file_date} is not available. Skipping...')
+        return None
+
+    return file_date
+
+
 
 def main():
     print('[INFO] Started utils')
@@ -343,6 +570,218 @@ def main():
         if args.mode == 'correct_neg_olci_values_slurm':
             correct_neg_olci_values_slurm(args.input_path, start_date, end_date, args.region)
 
+    if args.mode == 'image_stats':
+        arguments = ['config_file', 'output', 'start_date', 'end_date']
+        if not check_required_params(arguments):
+            return
+        if not check_output_file(args.output, 'csv'):
+            return
+        if not check_input_file(args.config_file,'ini'):
+            return
+        start_date, end_date = get_dates_from_arg()
+        if start_date is None or end_date is None:
+            return
+        options_stats = get_options_stats()
+        if options_stats is None:
+            return
+
+        make_stats(options_stats,start_date,end_date,args.output)
+
+def get_options_stats():
+    options = configparser.ConfigParser()
+    options.read(args.config_file)
+    section = 'IMAGE_STATS'
+    if not options.has_section(section):
+        return None
+    option_list ={
+        'input_path':{
+            'type':'directory_input'
+        },
+        'input_path_organization':{
+            'type':'timeformat',
+            'default': '%Y/%j'
+        },
+        'dataset_name_file':{
+            'type':'str'
+        },
+        'dataset_name_format_date':{
+            'type':'timeformat',
+            'default': '%Y%m'
+        },
+        'var_list':{
+            'type': 'strlist'
+        },
+        'alt_input_path': {
+            'type': 'directory_input'
+        },
+        'alt_input_path_organization': {
+            'type': 'timeformat',
+            'default': '%Y/%j'
+        },
+        'alt_dataset_name_file': {
+            'type': 'str'
+        },
+        'alt_dataset_name_format_date': {
+            'type': 'timeformat',
+            'default': '%Y%m'
+        },
+        'alt_var_list': {
+            'type': 'strlist'
+        },
+        'correlation_stats_var': {
+            'type': 'doublelist'
+        },
+        'alt_correlation_stats_var': {
+            'type': 'doublelist'
+        },
+        'use_log':{
+            'type': 'booleanlist',
+            'default': [False]
+        },
+        'alt_use_log': {
+            'type': 'booleanlist',
+            'default': [False]
+        }
+    }
+
+    options_dict = {}
+    for opt in option_list:
+        pvalues = option_list[opt]['potential_values'] if 'potential_values' in option_list[opt].keys() else None
+        defaultv = option_list[opt]['default'] if 'default' in option_list[opt].keys() else None
+        options_dict[opt] = get_value_param(options,section,opt,defaultv,option_list[opt]['type'],pvalues)
+    option_list_l = list(option_list.keys())
+    if options_dict['alt_input_path'] is not None:
+        options_no_none = option_list_l[:10]
+    else:
+        options_no_none = option_list_l[:5]
+
+    valid = True
+    for opt in options_no_none:
+        if options_dict[opt] is None:
+            print(f'[ERROR] Option {opt} in section {section} is missing or not valid')
+            valid = False
+
+    if options_dict['correlation_stats_var'] is not None:
+        for var_pair in options_dict['correlation_stats_var']:
+            if len(var_pair)!=2:
+                print(f'[ERROR] Option correlation_stats_var in section {section} should be a list of pairs of variables: var1;var2, var3;var4')
+                valid=False
+            if var_pair[0] not in options_dict['var_list']:
+                print(f'[ERROR] {var_pair[0]} in correlation_stats_var should also be included in var_list')
+                valid = False
+            if var_pair[1] not in options_dict['var_list']:
+                print(f'[ERROR] {var_pair[1]} in correlation_stats_var should also be included in var_list')
+                valid = False
+
+    if options_dict['alt_correlation_stats_var'] is not None:
+        for var_pair in options_dict['alt_correlation_stats_var']:
+            if len(var_pair)!=2:
+                print(f'[ERROR] Option alt_correlation_stats_var in section {section} should be a list of pairs of variables: var1;var2, var3;var4')
+                valid=False
+            if var_pair[0] not in options_dict['var_list']:
+                print(f'[ERROR] {var_pair[0]} in alt_correlation_stats_var should also be included in var_list')
+                valid = False
+            if var_pair[1] not in options_dict['alt_var_list']:
+                print(f'[ERROR] {var_pair[1]} in alt_correlation_stats_var should also be included in alt_var_list')
+                valid = False
+
+    if not valid:
+        return None
+    return options_dict
+
+
+
+
+def get_value(options, section, key):
+    value = None
+    if options.has_option(section, key):
+        try:
+            value = options[section][key]
+        except:
+            print(f'[ERROR] Parsing error in section {section} - {key}')
+    return value
+
+def get_value_param(options,section,key,default,type,potential_values):
+    value = get_value(options,section, key)
+    if value is None:
+        return default
+    if type == 'str':
+        if potential_values is None:
+            return value.strip()
+        else:
+            if value.strip().lower() in potential_values:
+                return value
+            else:
+                print(
+                    f'[ERROR] [{section}] {value} is not a valid  value for {key}. Valid values: {potential_values} ')
+                return default
+
+
+    if type == 'timeformat':
+        value = value.strip()
+        if value.upper()=='NONE':
+            return 'NONE'
+        dtcheck = dt.now()
+        try:
+            dtcheck.strftime(value)
+        except:
+            print(
+                f'[ERROR] [{section}] {value} is not a valid  time format value for {key}.')
+            return default
+        return value
+
+    if type == 'file':
+        if not os.path.exists(value.strip()):
+            return default
+        else:
+            return value.strip()
+    if type.startswith('directory'):
+        directory = value.strip()
+        if os.path.isdir(directory):
+            return directory
+        if type=='directory_output':##create the new directory
+            try:
+                os.mkdir(directory)
+                return directory
+            except:
+                return default
+        else:
+            return default
+
+    if type == 'int':
+        return int(value)
+    if type == 'float':
+        return float(value)
+    if type == 'boolean':
+        if value == '1' or value.upper() == 'TRUE':
+            return True
+        elif value == '0' or value.upper() == 'FALSE':
+            return False
+        else:
+            return True
+    if type == 'booleanlist':
+        list = []
+        for val in value.split(','):
+            if val == '1' or val.upper() == 'TRUE':
+                list.append(True)
+            elif val == '0' or val.upper() == 'FALSE':
+                list.append(False)
+            else:
+                list.append(False)
+        return list
+    if type == 'strlist':
+        # list_str = value.split(',')
+        # list = []
+        # for vals in list_str:
+        #     list.append(vals.strip())
+        list = [x.strip() for x in value.split(',')]
+        return list
+    if type == 'doublelist':
+        # list_str = value.split(',')
+        list = []
+        for vals in value.split(','):
+            list.append([x.strip() for x in vals.split(';')])
+        return list
 
 def check_required_params(param_list):
     b = True
@@ -358,6 +797,15 @@ def check_output_file(file, ext):
         print(f'[ERROR] {file} should be a {ext} file')
         return False
     if not check_directory(os.path.dirname(file), False):
+        return False
+    return True
+
+def check_input_file(file,ext):
+    if ext is not None and not file.endswith(ext):
+        print(f'[ERROR] {file} should be a {ext} file')
+        return False
+    if not os.path.isfile(file):
+        print(f'[ERROR] {file} in not a valid file or is not available')
         return False
     return True
 
