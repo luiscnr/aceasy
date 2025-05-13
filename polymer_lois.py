@@ -56,6 +56,7 @@ class POLYMER:
                         print(f'[INFO] Polymer path: {self.polymer_path}')
                 if options.has_option('POLYMER', 'version'):
                     self.version = float(options['POLYMER']['version'])
+                    print(f'[INFO] Polymer version: {self.version}')
                 if options.has_option('POLYMER', 'ancillary_path'):
                     self.ancillary_path = options['POLYMER']['ancillary_path']
                 if options.has_option('POLYMER', 'multiprocessing'):
@@ -84,6 +85,8 @@ class POLYMER:
         return True
 
     def check_product_path(self, prod_path, prod_name, output_dir):
+        if self.verbose:
+            print(f'[INFO] Checking {prod_path} for product type {self.product_type}')
         if self.product_type == 's3_olci':
             if prod_name.endswith('.SEN3') and os.path.isdir(prod_path):
                 if os.path.isdir(output_dir):
@@ -128,6 +131,8 @@ class POLYMER:
             else:
                 print(f'[ERROR] Product {prod_name} is not a correct *.h5 format')
                 return None, None
+
+        return None,None
 
     def run_process(self, prod_path, output_dir):
         prod_name = os.path.basename(prod_path)
