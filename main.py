@@ -39,8 +39,8 @@ parser.add_argument('-ac', "--atm_correction", help="Atmospheric correction",
                              "BAL202411"], required=True)
 parser.add_argument('-type', "--type_product", help="Type product for Baltic_2024", default="cci",
                     choices=["cci", "polymer", "l3_olci_nr","l3_olci_nt"])
-parser.add_argument('-type_polymer', "--type_product_polymer", help="Type product for POLYMER", default="cci",
-                    choices=["olci_l3", "s2_msi", "prisma"])
+parser.add_argument('-type_polymer', "--type_product_polymer", help="Type product for POLYMER", default="s3_olci",
+                    choices=["s3_olci", "s2_msi", "prisma"])
 
 args = parser.parse_args()
 
