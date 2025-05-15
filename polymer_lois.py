@@ -164,6 +164,7 @@ class POLYMER:
             from polymer.main import run_atm_corr
             from polymer.level1 import Level1
             from polymer.level2 import Level2
+            from polymer.level2_nc import Level2_NETCDF
 
         if self.version == 5.0:
             from polymer.main_v5 import run_polymer
