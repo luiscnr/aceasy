@@ -14,7 +14,7 @@ parser = argparse.ArgumentParser(
 
 parser.add_argument('-m', "--mode", help='Mode option',
                     choices=["test", "check_neg_olci_values", "correct_neg_olci_values",
-                             "correct_neg_olci_values_slurm","image_stats"],
+                             "correct_neg_olci_values_slurm","image_stats","compare_images"],
                     required=True)
 parser.add_argument('-i', "--input_path", help="Input path.")
 parser.add_argument('-o', "--output", help="Output file.")
@@ -338,11 +338,8 @@ def compute_correlation_stats(xarray,yarray,var_prefix,use_log):
 
     if use_log:
         valid_array = np.logical_and(yarray > 0, xarray > 0)
-    else:
-        valid_array = np.ones((xarray.shape[0],))
-
-    xarray = xarray[valid_array]
-    yarray = yarray[valid_array]
+        xarray = xarray[valid_array]
+        yarray = yarray[valid_array]
 
     rel_diff = 100 * ((yarray - xarray) / xarray) #for computing APD, RPD, MdRPD, MdAPD
     if use_log:
@@ -389,7 +386,7 @@ def compute_correlation_stats(xarray,yarray,var_prefix,use_log):
         f'{var_prefix}_MdRPD': np.median(rel_diff),
         f'{var_prefix}_CRMSE': rmse(ydiff,xdiff),
         f'{var_prefix}_MAD': np.mean(np.abs(yarray - xarray)),
-        f'{var_prefix}_MdMAD': np.median(np.abs(yarray - xarray))
+        f'{var_prefix}_MdAD': np.median(np.abs(yarray - xarray))
     }
 
     if use_log:
@@ -480,7 +477,70 @@ def get_file_date(input_path,org,dataset_name_file,dataset_name_format_date,work
 
     return file_date
 
+def make_image_comparison():
+    dir_out = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/POLYMER_TEST_V5/comparison_valid'
+    dir_1 = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/POLYMER_TEST_V5/v4_14'
+    dir_2 = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/POLYMER_TEST_V5/v5'
+    cols = ['v4_14','v5']
+    wl_list = ['400','412','443','490','510','560','620','665','674','681','709','754','779','865']
 
+    file_stats = os.path.join(dir_out,'Stats_Valid.csv')
+    col_stats = ['NAME','WL','N4_14','N15','NCOMMON','R2','RMSD','MdBIAS','MdAD','MdRPD','MdAPD']
+    df_stats = None
+
+    for name in os.listdir(dir_1):
+
+        file_1 = os.path.join(dir_1,name)
+        file_2 = os.path.join(dir_2,name)
+        if os.path.exists(file_1) and os.path.exists(file_2):
+            print(f'[INFO] File: {name}')
+            dataset_1 = Dataset(file_1)
+            dataset_2 = Dataset(file_2)
+            for wl in wl_list:
+                print(f'[INFO] --> {wl}')
+                stats_here = {key:[''] for key in col_stats}.copy()
+                stats_here['NAME'][0] = name
+                stats_here['WL'][0] = wl
+
+                array_1 = dataset_1.variables[f'Rw{wl}'][:]
+                bitmask_1 = dataset_1.variables['bitmask'][:]
+                array_1[(bitmask_1 & 1023)!=0] = np.ma.masked
+
+                array_2 = dataset_2.variables[f'rho_w_{wl}'][:]
+                bitmask_2 =dataset_2.variables['flags'][:]
+                array_2[(bitmask_2 & 1023) != 0] = np.ma.masked
+
+                stats_here['N4_14'][0] = np.ma.count(array_1)
+                stats_here['N15'][0] = np.ma.count(array_2)
+                ##working with common indices
+                results_here = compute_correlation_stats(array_1,array_2,'x',False)
+                indices_common = np.where(np.logical_and(array_1.mask==False,array_2.mask==False))
+                array_1 = array_1[indices_common].compressed()
+                array_2 = array_2[indices_common].compressed()
+                array_end = np.column_stack((array_1,array_2))
+                stats_here['NCOMMON'][0] = array_1.shape[0]
+                stats_here['R2'][0] = results_here['x_R2']
+                stats_here['RMSD'][0] = results_here['x_RMSD']
+                stats_here['MdBIAS'][0] = results_here['x_MdBIAS']
+                stats_here['MdAD'][0] = results_here['x_MdAD']
+                stats_here['MdRPD'][0] = results_here['x_MdRPD']
+                stats_here['MdAPD'][0] = results_here['x_MdAPD']
+
+                file_c = os.path.join(dir_out, name[:-3] + f'_{wl}.csv')
+                df = pd.DataFrame(index=range(array_1.shape[0]),columns=cols,data = array_end)
+                df.to_csv(file_c,sep=';',index=False)
+
+                if df_stats is None:
+                    df_stats = pd.DataFrame(stats_here)
+                else:
+                    df_stats = pd.concat([df_stats,pd.DataFrame(stats_here)],ignore_index=True)
+
+            dataset_1.close()
+            dataset_2.close()
+    print(f'[INFO] Saving stats...')
+    if df_stats is not None:
+        df_stats.to_csv(file_stats, sep=';', index=False)
+    print(f'[INFO] Completed')
 
 def main():
     print('[INFO] Started utils')
@@ -587,6 +647,8 @@ def main():
 
         make_stats(options_stats,start_date,end_date,args.output)
 
+    if args.mode == 'compare_images':
+        make_image_comparison()
 def get_options_stats():
     options = configparser.ConfigParser()
     options.read(args.config_file)

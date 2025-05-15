@@ -3,6 +3,7 @@ import configparser
 import os, stat
 import subprocess
 import sys
+import warnings
 from datetime import datetime
 from datetime import timedelta
 
@@ -44,6 +45,8 @@ parser.add_argument('-type_polymer', "--type_product_polymer", help="Type produc
 
 args = parser.parse_args()
 
+warnings.simplefilter('ignore',UserWarning)
+warnings.simplefilter('ignore',FutureWarning)
 
 # def save_areas(input_path, output_path):
 #     for name in os.listdir(input_path):

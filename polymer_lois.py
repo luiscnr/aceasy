@@ -51,7 +51,7 @@ class POLYMER:
                 if options.has_option('POLYMER', 'polymer_path'):
                     self.polymer_path = options['POLYMER']['polymer_path']
                     if not self.polymer_path.strip() == 'PWD':
-                        sys.path.append(self.polymer_path)
+                        sys.path.append(self.polymer_path.strip())
                     if self.verbose:
                         print(f'[INFO] Polymer path: {self.polymer_path}')
                 if options.has_option('POLYMER', 'version'):
@@ -146,17 +146,24 @@ class POLYMER:
             print(f'[INFO] Input product: {prod_name}')
             print(f'[INFO] Ouput path: {output_path}')
 
-        if self.version <= 4.14:
+        if self.version == 4.14:
             from polymer.main import run_atm_corr, Level1, Level2
             from polymer.level2_nc import Level2_NETCDF
 
-        if 4.14 < self.version < 5.0:
+
+        if self.version == 4.17:
             from polymer.main import run_atm_corr
             from polymer.level1 import Level1
             from polymer.level1_prisma import Level1_PRISMA
             from polymer.level2 import Level2
             from polymer.level2_nc import Level2_NETCDF
             from polymer.ancillary import Ancillary_NASA
+
+        if self.version == 4.0:
+            ##version 4
+            from polymer.main import run_atm_corr
+            from polymer.level1 import Level1
+            from polymer.level2 import Level2
 
         if self.version == 5.0:
             from polymer.main_v5 import run_polymer
@@ -174,7 +181,7 @@ class POLYMER:
                 params[key] = self.extraoptions[key]['value']
 
         if self.product_type == 'prisma':
-            if self.version==5:##it shouldn't arrive here, type file is checked using check_product_path
+            if self.version!=4.17:##it shouldn't arrive here, type file is checked using check_product_path
                 return False
 
             # ancillary_folder = os.path.join(os.path.dirname(prod_path),'ANCILLARY')
