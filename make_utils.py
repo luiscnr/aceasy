@@ -1,4 +1,6 @@
+import sys
 import warnings, argparse, os, configparser
+import xxlimited
 from datetime import datetime as dt
 from datetime import timedelta
 
@@ -330,10 +332,13 @@ def make_stats(options_stats,start_date,end_date,output_file):
         index = index + 1
         work_date = work_date+timedelta(hours=24)
 
-def compute_correlation_stats(xarray,yarray,var_prefix,use_log):
+def compute_correlation_stats(xarray,yarray,xbitmask,ybitmask,var_prefix,use_log):
     indices_non_mask = np.where(np.logical_and(xarray.mask==False,yarray.mask==False))
     xarray = xarray[indices_non_mask].compressed()
     yarray = yarray[indices_non_mask].compressed()
+    if xbitmask is not None and ybitmask is not None:
+        xbitmask = xbitmask[indices_non_mask].compressed()
+        ybitmask = ybitmask[indices_non_mask].compressed()
 
 
     if use_log:
@@ -365,6 +370,29 @@ def compute_correlation_stats(xarray,yarray,var_prefix,use_log):
     xdiff = xarray - np.mean(xarray)
     ydiff = yarray - np.mean(yarray)
 
+    abs_diff = np.abs(rel_diff)
+    adiff = np.abs(yarray - xarray)
+    histo,bin_edges = np.histogram(adiff,1000)
+    res_histo = pd.DataFrame(index=range(1000),columns=['min','max','num'])
+    res_histo['min'] = bin_edges[:-1]
+    res_histo['max'] = bin_edges[1:]
+    res_histo['num'] = histo[:]
+
+
+    #n_low_adiff = np.count_nonzero(adiff<1e-4)
+    # n_bad = np.count_nonzero(adiff>1e-4)
+    # xbitmask_bad = xbitmask[adiff>1e-4]
+    # ybitmask_bad = ybitmask[adiff>1e-4]
+    # nx_zero = np.count_nonzero(xbitmask_bad==0)
+    # nx_case2 = np.count_nonzero(xbitmask_bad == 1024)
+    # ny_zero = np.count_nonzero(ybitmask_bad == 0)
+    # ny_case2 = np.count_nonzero(ybitmask_bad == 1024)
+    # # xbitmask_bad_unique = np.unique(xbitmask_bad)
+    # # ybitmask_bad_unique = np.unique(ybitmask_bad)
+    # print(f'{adiff.shape[0]} {n_low_adiff} {n_bad} {n_low_adiff+n_bad}')
+    # print(f'{len(xbitmask_bad)}->{nx_zero}->{nx_case2}')
+    # print(f'{len(ybitmask_bad)}->{ny_zero}->{ny_case2}')
+
     results = {
         f'{var_prefix}_N': xarray.shape[0],
         f'{var_prefix}_SLOPE_I': slope,
@@ -380,13 +408,14 @@ def compute_correlation_stats(xarray,yarray,var_prefix,use_log):
         f'{var_prefix}_RMSD': rmse(yarray,xarray),
         f'{var_prefix}_BIAS': np.mean(yarray - xarray),
         f'{var_prefix}_MdBIAS': np.median(yarray-xarray),
-        f'{var_prefix}_APD': np.mean(np.abs(rel_diff)),
+        f'{var_prefix}_APD': np.mean(abs_diff),
         f'{var_prefix}_RPD': np.mean(rel_diff),
-        f'{var_prefix}_MdAPD': np.median(np.abs(rel_diff)),
+        f'{var_prefix}_MdAPD': np.median(abs_diff),
         f'{var_prefix}_MdRPD': np.median(rel_diff),
         f'{var_prefix}_CRMSE': rmse(ydiff,xdiff),
-        f'{var_prefix}_MAD': np.mean(np.abs(yarray - xarray)),
-        f'{var_prefix}_MdAD': np.median(np.abs(yarray - xarray))
+        f'{var_prefix}_MAD': np.mean(adiff),
+        f'{var_prefix}_MdAD': np.median(adiff),
+        'HISTO_RES': res_histo
     }
 
     if use_log:
@@ -477,15 +506,59 @@ def get_file_date(input_path,org,dataset_name_file,dataset_name_format_date,work
 
     return file_date
 
-def make_image_comparison():
-    dir_out = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/POLYMER_TEST_V5/comparison_valid'
-    dir_1 = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/POLYMER_TEST_V5/v4_14'
+def make_chl_comparison():
+    dir_out = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/POLYMER_TEST_V5/comparison_valid_v4_v5'
+    dir_1 = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/POLYMER_TEST_V5/v4'
     dir_2 = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/POLYMER_TEST_V5/v5'
-    cols = ['v4_14','v5']
+    file_1 = os.path.join(dir_1,'S3B_OL_2_WFR____20240619T094235_20240619T094535_20240620T122332_0179_094_193_1980_MAR_O_NT_002_POLYMER_BAL202411.nc')
+    file_2 = os.path.join(dir_2,'S3B_OL_2_WFR____20240619T094235_20240619T094535_20240620T122332_0179_094_193_1980_MAR_O_NT_002_POLYMER_OUT_BAL202411.nc')
+
+    dataset_1 = Dataset(file_1)
+    chla_1 = dataset_1.variables['CHL'][:]
+    dataset_1.close()
+
+    dataset_2 = Dataset(file_2)
+    chla_2 = dataset_2.variables['CHL'][:]
+    dataset_2.close()
+
+    valid = np.logical_and(chla_1.mask==False,chla_2.mask==False)
+
+    chla_1 = chla_1[valid].compressed()
+    chla_2 = chla_2[valid].compressed()
+    dif_log_abs = np.abs(np.log10(chla_1)-np.log10(chla_2))
+    valid = np.zeros(chla_1.shape)
+    valid[dif_log_abs > 1e-3] = 1
+    valid[dif_log_abs > 1e-2] = 2
+    valid[dif_log_abs > 1e-1] = 3
+    array_end = np.column_stack([chla_1, chla_2,valid])
+
+    nvalid = chla_1.shape[0]
+    df = pd.DataFrame(index=range(nvalid),columns=['v4','v5','valid'],data=array_end)
+    file_out = os.path.join(dir_out,'chla_comparison.csv')
+    df.to_csv(file_out,sep=';',index=False)
+
+    for idx in range(4):
+        df_here = df[df['valid']==idx]
+        file_out = os.path.join(dir_out, f'chla_comparison_{idx}.csv')
+        df_here.to_csv(file_out,sep=';',index=False)
+
+
+
+
+
+
+
+def make_image_comparison():
+    dir_out = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/POLYMER_TEST_V5/comparison_valid_v4_v5'
+    dir_1 = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/POLYMER_TEST_V5/v4'
+    dir_2 = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/POLYMER_TEST_V5/v5'
+    cols = ['v4','v5','bitmask_1','bitmask_2','bitmask','valid']
     wl_list = ['400','412','443','490','510','560','620','665','674','681','709','754','779','865']
+    # wl_list = ['412', '443', '490', '510', '560', '620', '665', '674', '681', '709', '754', '779', '865']
+    # wl_list = ['400']
 
     file_stats = os.path.join(dir_out,'Stats_Valid.csv')
-    col_stats = ['NAME','WL','N4_14','N15','NCOMMON','R2','RMSD','MdBIAS','MdAD','MdRPD','MdAPD']
+    col_stats = ['NAME','WL','N4_14','N15','NCOMMON','R2','RMSD','MdBIAS','MdAD','MdRPD','MdAPD','N_VALID','N_ADIF-4','N_ADIF-3','N_ADIF-2','P_VALID','P_ADIF-4','P_ADIF-3','P_ADIF-2']
     df_stats = None
 
     for name in os.listdir(dir_1):
@@ -496,6 +569,33 @@ def make_image_comparison():
             print(f'[INFO] File: {name}')
             dataset_1 = Dataset(file_1)
             dataset_2 = Dataset(file_2)
+
+            ##flagging analysis
+            ##v.4 or v. 4.14
+            # desc = dataset_1.variables['bitmask'].description
+            # flags = [int(x.strip().split(':')[1]) for x in desc.split(',')]
+            # flags_meanings = [x.strip().split(':')[0] for x in desc.split(',')]
+            # meanings = " ".join(flags_meanings)
+            #bitmask = dataset_1.variables['bitmask'][:]
+
+            ##v.5
+            # flags = dataset_2.variables['flags'].flag_masks
+            # meanings = dataset_2.variables['flags'].flag_meanings
+            # flags_meanings = [x.strip() for x in meanings.split(' ')]
+            # bitmask = dataset_2.variables['flags'][:]
+            #
+            # sys.path.append('/home/lois/PycharmProjects/hypernets_val/COMMON')
+            # from Class_Flags_OLCI import Class_Flags_Polymer
+            # cPolymer = Class_Flags_Polymer(flags,meanings)
+            # bitmask = bitmask.compressed()
+            # for flag in flags_meanings:
+            #     flag_array = cPolymer.Mask(bitmask,[flag])
+            #     nflag = np.count_nonzero(flag_array>0)
+            #     print(f'{flag};{nflag}')
+
+
+
+
             for wl in wl_list:
                 print(f'[INFO] --> {wl}')
                 stats_here = {key:[''] for key in col_stats}.copy()
@@ -503,21 +603,33 @@ def make_image_comparison():
                 stats_here['WL'][0] = wl
 
                 array_1 = dataset_1.variables[f'Rw{wl}'][:]
+                nprev_1 = np.ma.count(array_1)
                 bitmask_1 = dataset_1.variables['bitmask'][:]
-                array_1[(bitmask_1 & 1023)!=0] = np.ma.masked
+                valid_1 = np.logical_or(bitmask_1==0,bitmask_1==1024)
+                #array_1[np.bitwise_and(bitmask_1,1023)!=0] = np.ma.masked
+                array_1[valid_1==False] = np.ma.masked
+                bitmask_1[array_1.mask] = np.ma.masked
+                nafter_1 = np.ma.count(array_1)
 
                 array_2 = dataset_2.variables[f'rho_w_{wl}'][:]
+                nprev_2 = np.ma.count(array_2)
                 bitmask_2 =dataset_2.variables['flags'][:]
-                array_2[(bitmask_2 & 1023) != 0] = np.ma.masked
+                valid_2 = np.logical_or(bitmask_2 == 0, bitmask_2 == 1024)
+                #array_2[np.bitwise_and(bitmask_2,1023) != 0] = np.ma.masked
+                array_2[valid_2 == False] = np.ma.masked
+                bitmask_2[array_2.mask] = np.ma.masked
+                nafter_2 = np.ma.count(array_2)
 
-                stats_here['N4_14'][0] = np.ma.count(array_1)
-                stats_here['N15'][0] = np.ma.count(array_2)
+                print(f'[INFO] Array 1: {nprev_1}->{nafter_1}  Array 2: {nprev_2}->{nafter_2} ')
+                stats_here['N4_14'][0] = nafter_1
+                stats_here['N15'][0] = nafter_2
+
                 ##working with common indices
-                results_here = compute_correlation_stats(array_1,array_2,'x',False)
+                results_here = compute_correlation_stats(array_1,array_2,bitmask_1,bitmask_2,'x',False)
                 indices_common = np.where(np.logical_and(array_1.mask==False,array_2.mask==False))
                 array_1 = array_1[indices_common].compressed()
                 array_2 = array_2[indices_common].compressed()
-                array_end = np.column_stack((array_1,array_2))
+
                 stats_here['NCOMMON'][0] = array_1.shape[0]
                 stats_here['R2'][0] = results_here['x_R2']
                 stats_here['RMSD'][0] = results_here['x_RMSD']
@@ -525,10 +637,44 @@ def make_image_comparison():
                 stats_here['MdAD'][0] = results_here['x_MdAD']
                 stats_here['MdRPD'][0] = results_here['x_MdRPD']
                 stats_here['MdAPD'][0] = results_here['x_MdAPD']
+                #stats_here['N_LOW_ADIFF'][0] = results_here['x_N_LOW_ADIFF']
 
+                # histo_res = results_here['HISTO_RES']
+                # index_min = np.min(np.where(histo_res['num']<3000))
+                # th = histo_res.loc[index_min,'min']
+                th_1 = 1e-4
+                th_2 = 1e-3
+                th_3 = 1e-2
+
+                bitmask_1 = bitmask_1[indices_common].compressed()
+                bitmask_2 = bitmask_2[indices_common].compressed()
+                bitmask = np.zeros(bitmask_1.shape)
+                bitmask[np.logical_or(bitmask_1 > 0, bitmask_2 > 0)] = 1
+                a_diff = np.abs(array_1-array_2)
+                a_diff_th = np.zeros(a_diff.shape)
+                a_diff_th[a_diff > th_1] = 1
+                a_diff_th[a_diff > th_2] = 2
+                a_diff_th[a_diff > th_3] = 3
+
+                array_end = np.column_stack((array_1, array_2, bitmask_1, bitmask_2, bitmask,a_diff_th))
                 file_c = os.path.join(dir_out, name[:-3] + f'_{wl}.csv')
                 df = pd.DataFrame(index=range(array_1.shape[0]),columns=cols,data = array_end)
                 df.to_csv(file_c,sep=';',index=False)
+
+                histo_res = results_here['HISTO_RES']
+                file_histo = os.path.join(dir_out,f'histo_{wl}.csv')
+                histo_res.to_csv(file_histo,sep=';',index=False)
+
+
+
+                stats_here['N_VALID'][0] =  np.count_nonzero(a_diff_th==0)
+                stats_here['N_ADIF-4'][0] = np.count_nonzero(a_diff_th==1)
+                stats_here['N_ADIF-3'][0] = np.count_nonzero(a_diff_th==2)
+                stats_here['N_ADIF-2'][0] = np.count_nonzero(a_diff_th == 3)
+                stats_here['P_VALID'][0] = (stats_here['N_VALID'][0]/array_1.shape[0])*100
+                stats_here['P_ADIF-4'][0] = (stats_here['N_ADIF-4'][0]/array_1.shape[0])*100
+                stats_here['P_ADIF-3'][0] = (stats_here['N_ADIF-3'][0] / array_1.shape[0]) * 100
+                stats_here['P_ADIF-2'][0] = (stats_here['N_ADIF-2'][0] / array_1.shape[0]) * 100
 
                 if df_stats is None:
                     df_stats = pd.DataFrame(stats_here)
@@ -648,7 +794,8 @@ def main():
         make_stats(options_stats,start_date,end_date,args.output)
 
     if args.mode == 'compare_images':
-        make_image_comparison()
+        #make_image_comparison()
+        make_chl_comparison()
 def get_options_stats():
     options = configparser.ConfigParser()
     options.read(args.config_file)

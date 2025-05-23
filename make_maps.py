@@ -1,6 +1,6 @@
-import argparse, os
+import argparse, configparser, os
 import shutil
-
+from datetime import timedelta
 import numpy.ma
 from netCDF4 import Dataset
 from matplotlib import pyplot as plt
@@ -13,14 +13,18 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.colors as colors
 from matplotlib.colors import ListedColormap
+from config_reader import ConfigReader
 
 parser = argparse.ArgumentParser(description="Make maps launcher")
 
 parser.add_argument("-v", "--verbose", help="Verbose mode.", action="store_true")
-parser.add_argument("-i", "--input_path", help="Input path", required=True)
+parser.add_argument("-i", "--input_path", help="Input path")
+parser.add_argument("-c","--config_path",help = "Configuration file with options in section: MAKE_MAPS")
 parser.add_argument("-o", "--output_path", help="Output path")
 args = parser.parse_args()
-
+# options = configparser.ConfigParser()
+#     options.read(fconfig)
+#     if options.has_section('GLOBAL'):
 
 def compute_diff():
     from datetime import datetime as dt
@@ -391,39 +395,76 @@ def compare_old_new_v1():
 
 
 def plot_coverage():
-    file_coverage = '/mnt/c/DATA_LUIS/OCTAC_WORK/MATCH-UPS_ANALYSIS_2024/BAL/CODE_DAVIDE_2024/CoverageNew_v2.nc'
+    #file_coverage = '/mnt/c/DATA_LUIS/OCTAC_WORK/MATCH-UPS_ANALYSIS_2024/BAL/CODE_DAVIDE_2024/CoverageNew_v2.nc'
+    file_coverage = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/BAL_EVOLUTION_202411/CODE_AND_MAP_ANALYSIS_202411/COVERAGE_ENS_YEAR/COVERAGE_ENS_CDF_ALL_YEARS.nc'
+
+
+
     dataset = Dataset(file_coverage)
-    lat_array = dataset.variables['latitude'][:]
-    lon_array = dataset.variables['longitude'][:]
+    lat_array = dataset.variables['lat'][:]
+    lon_array = dataset.variables['lon'][:]
 
-    coverage = dataset.variables['coverage_cdf'][:]
-    fig, ax = start_full_figure()
-    h = ax.pcolormesh(lon_array, lat_array, coverage, vmin=0, vmax=100, cmap=mpl.colormaps['jet'])
-    cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03, format="$%.2f$")
-    cbar.ax.tick_params(labelsize=15)
-    cbar.set_label(label=f'Coverage(%)', size=15)
-    title = f'CDF Coverage'
-    ax.set_title(title)
-    file_out = os.path.join(os.path.dirname(file_coverage), f'CDFCoverage.png')
-    fig.savefig(file_out, dpi=300, bbox_inches='tight')
-    plt.close(fig)
+    total_variables = ['n_total','n_cdf_total','n_nocdf_total']
+    titles = ['Total days','Total days (CDF)','Total days (No CDF)']
+    for variable,title in zip(total_variables,titles):
+        coverage = np.ma.squeeze(dataset.variables[variable][0,:,:])
+        fig, ax = start_full_figure()
+        h = ax.pcolormesh(lon_array, lat_array, coverage, vmin=0, vmax=3200, cmap=mpl.colormaps['jet'])
+        cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03, format="$%.2f$")
+        cbar.ax.tick_params(labelsize=15)
+        cbar.set_label(label=f'# Days', size=15)
+        ax.set_title(title)
+        file_out = os.path.join(os.path.dirname(file_coverage), f'{variable.upper()}.png')
+        fig.savefig(file_out, dpi=300, bbox_inches='tight')
+        plt.close(fig)
 
-    coverage = dataset.variables['coverage_nocdf'][:]
-    fig, ax = start_full_figure()
-    h = ax.pcolormesh(lon_array, lat_array, coverage, vmin=0, vmax=100, cmap=mpl.colormaps['jet'])
-    cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03, format="$%.2f$")
-    cbar.ax.tick_params(labelsize=15)
-    cbar.set_label(label=f'Coverage(%)', size=15)
-    title = f'NO CDF Coverage'
-    ax.set_title(title)
-    file_out = os.path.join(os.path.dirname(file_coverage), f'NOCDFCoverage.png')
-    fig.savefig(file_out, dpi=300, bbox_inches='tight')
-    plt.close(fig)
 
-    # coverage_variables = ['coverage_mlp3','coverage_mlp4','coverage_mlp5']
-    # titles = ['Coverage MLP 3 bands','Coverage MLP 4 bands','Coverage MLP 5 bands']
+    # coverage = np.ma.squeeze(dataset.variables['coverage_cdf'][0,:,:])
+    # coverage = coverage * 100
+    # fig, ax = start_full_figure()
+    # h = ax.pcolormesh(lon_array, lat_array, coverage, vmin=0, vmax=100, cmap=mpl.colormaps['jet'])
+    # cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03, format="$%.2f$")
+    # cbar.ax.tick_params(labelsize=15)
+    # cbar.set_label(label=f'Coverage(%)', size=15)
+    # title = f'CDF Coverage'
+    # ax.set_title(title)
+    # file_out = os.path.join(os.path.dirname(file_coverage), f'CDFCoverage.png')
+    # fig.savefig(file_out, dpi=300, bbox_inches='tight')
+    # plt.close(fig)
+    #
+    # coverage = np.ma.squeeze(dataset.variables['coverage_no_cdf'][0,:,:])
+    # coverage = coverage * 100
+    # fig, ax = start_full_figure()
+    # h = ax.pcolormesh(lon_array, lat_array, coverage, vmin=0, vmax=100, cmap=mpl.colormaps['jet'])
+    # cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03, format="$%.2f$")
+    # cbar.ax.tick_params(labelsize=15)
+    # cbar.set_label(label=f'Coverage(%)', size=15)
+    # title = f'NO CDF Coverage'
+    # ax.set_title(title)
+    # file_out = os.path.join(os.path.dirname(file_coverage), f'NOCDFCoverage.png')
+    # fig.savefig(file_out, dpi=300, bbox_inches='tight')
+    # plt.close(fig)
+    #
+    # coverage_variables = ['coverage_total_mlp3','coverage_total_mlp4','coverage_total_mlp5']
+    # titles = ['Total Coverage MLP 3 bands','Total Coverage MLP 4 bands','Total Coverage MLP 5 bands']
     # for variable,title in zip(coverage_variables,titles):
-    #     coverage = dataset.variables[variable][:]
+    #     coverage = np.ma.squeeze(dataset.variables[variable][0,:,:])
+    #     coverage = coverage * 100
+    #     fig, ax = start_full_figure()
+    #     h = ax.pcolormesh(lon_array, lat_array, coverage, vmin=0, vmax=100, cmap=mpl.colormaps['jet'])
+    #     cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03, format="$%.2f$")
+    #     cbar.ax.tick_params(labelsize=15)
+    #     cbar.set_label(label=f'Coverage(%)', size=15)
+    #     ax.set_title(title)
+    #     file_out = os.path.join(os.path.dirname(file_coverage), f'{variable.upper()}.png')
+    #     fig.savefig(file_out, dpi=300, bbox_inches='tight')
+    #     plt.close(fig)
+    #
+    # coverage_variables = ['coverage_cdf_mlp_3', 'coverage_cdf_mlp_4', 'coverage_cdf_mlp_5']
+    # titles = ['CDF Coverage MLP 3 bands', 'CDF Coverage MLP 4 bands', 'CDF Coverage MLP 5 bands']
+    # for variable, title in zip(coverage_variables, titles):
+    #     coverage = np.ma.squeeze(dataset.variables[variable][0, :, :])
+    #     coverage = coverage * 100
     #     fig, ax = start_full_figure()
     #     h = ax.pcolormesh(lon_array, lat_array, coverage, vmin=0, vmax=100, cmap=mpl.colormaps['jet'])
     #     cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03, format="$%.2f$")
@@ -434,56 +475,56 @@ def plot_coverage():
     #     fig.savefig(file_out, dpi=300, bbox_inches='tight')
     #     plt.close(fig)
 
-    variables = ['mrpd_cdf', 'mrpd_nocdf', 'mrpd', 'mrpd_cdf_complete']
-    titles = [f'Mean RPD (%) - Only CDF', f'Mean RPD (%) - Only NO CDF', f'Mean RPD (%) - All data',
-              f'Mean RPD(%) - Only CDF Complete']
-    for variable, title in zip(variables, titles):
-        array = dataset.variables[variable][:]
-
-        # ranged color maps
-        bounds = [-1000, -50, -40, -30, -20, -10, -5, 0, 5, 10, 20, 30, 40, 50, 1000]
-        norm = colors.BoundaryNorm(boundaries=bounds, ncolors=len(bounds) + 1)
-        cmap_r = mpl.colormaps['jet'].resampled(len(bounds) + 1)
-        # continous color maps
-        cmap_c = mpl.colormaps['jet']
-        fig, ax = start_full_figure()
-        # continued
-        # h = ax.pcolormesh(lon_array, lat_array, array, vmin=-50, vmax=50, cmap=cmap_c)
-        # range
-        h = ax.pcolormesh(lon_array, lat_array, array, norm=norm, cmap=cmap_r)
-
-        cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03, format="$%.2f$")
-        cbar.ax.tick_params(labelsize=15)
-        cbar.set_label(label=f'RPD(%)', size=15)
-        ax.set_title(title)
-        file_out = os.path.join(os.path.dirname(file_coverage), f'{variable.upper()}.png')
-        fig.savefig(file_out, dpi=300, bbox_inches='tight')
-        plt.close(fig)
-
-    variables = ['mapd_cdf', 'mapd_nocdf', 'mapd', 'mapd_cdf_complete']
-    titles = [f'Mean APD (%) - Only CDF', f'Mean APD (%) - Only NO CDF', f'Mean APD (%) - All data',
-              f'Mean APD(%) - Only CDF Complete']
-    for variable, title in zip(variables, titles):
-        array = dataset.variables[variable][:]
-        # ranged color maps
-        bounds = [0, 5, 10, 20, 30, 40, 50, 1000]
-        norm = colors.BoundaryNorm(boundaries=bounds, ncolors=len(bounds) + 1)
-        cmap_r = mpl.colormaps['jet'].resampled(len(bounds) + 1)
-        # continous color maps
-        cmap_c = mpl.colormaps['jet']
-        fig, ax = start_full_figure()
-        # continued
-        # h = ax.pcolormesh(lon_array, lat_array, array, vmin=-50, vmax=50, cmap=cmap_c)
-        # range
-        h = ax.pcolormesh(lon_array, lat_array, array, norm=norm, cmap=cmap_r)
-
-        cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03, format="$%.2f$")
-        cbar.ax.tick_params(labelsize=15)
-        cbar.set_label(label=f'APD(%)', size=15)
-        ax.set_title(title)
-        file_out = os.path.join(os.path.dirname(file_coverage), f'{variable.upper()}.png')
-        fig.savefig(file_out, dpi=300, bbox_inches='tight')
-        plt.close(fig)
+    # variables = ['mrpd_cdf', 'mrpd_nocdf', 'mrpd', 'mrpd_cdf_complete']
+    # titles = [f'Mean RPD (%) - Only CDF', f'Mean RPD (%) - Only NO CDF', f'Mean RPD (%) - All data',
+    #           f'Mean RPD(%) - Only CDF Complete']
+    # for variable, title in zip(variables, titles):
+    #     array = dataset.variables[variable][:]
+    #
+    #     # ranged color maps
+    #     bounds = [-1000, -50, -40, -30, -20, -10, -5, 0, 5, 10, 20, 30, 40, 50, 1000]
+    #     norm = colors.BoundaryNorm(boundaries=bounds, ncolors=len(bounds) + 1)
+    #     cmap_r = mpl.colormaps['jet'].resampled(len(bounds) + 1)
+    #     # continous color maps
+    #     cmap_c = mpl.colormaps['jet']
+    #     fig, ax = start_full_figure()
+    #     # continued
+    #     # h = ax.pcolormesh(lon_array, lat_array, array, vmin=-50, vmax=50, cmap=cmap_c)
+    #     # range
+    #     h = ax.pcolormesh(lon_array, lat_array, array, norm=norm, cmap=cmap_r)
+    #
+    #     cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03, format="$%.2f$")
+    #     cbar.ax.tick_params(labelsize=15)
+    #     cbar.set_label(label=f'RPD(%)', size=15)
+    #     ax.set_title(title)
+    #     file_out = os.path.join(os.path.dirname(file_coverage), f'{variable.upper()}.png')
+    #     fig.savefig(file_out, dpi=300, bbox_inches='tight')
+    #     plt.close(fig)
+    #
+    # variables = ['mapd_cdf', 'mapd_nocdf', 'mapd', 'mapd_cdf_complete']
+    # titles = [f'Mean APD (%) - Only CDF', f'Mean APD (%) - Only NO CDF', f'Mean APD (%) - All data',
+    #           f'Mean APD(%) - Only CDF Complete']
+    # for variable, title in zip(variables, titles):
+    #     array = dataset.variables[variable][:]
+    #     # ranged color maps
+    #     bounds = [0, 5, 10, 20, 30, 40, 50, 1000]
+    #     norm = colors.BoundaryNorm(boundaries=bounds, ncolors=len(bounds) + 1)
+    #     cmap_r = mpl.colormaps['jet'].resampled(len(bounds) + 1)
+    #     # continous color maps
+    #     cmap_c = mpl.colormaps['jet']
+    #     fig, ax = start_full_figure()
+    #     # continued
+    #     # h = ax.pcolormesh(lon_array, lat_array, array, vmin=-50, vmax=50, cmap=cmap_c)
+    #     # range
+    #     h = ax.pcolormesh(lon_array, lat_array, array, norm=norm, cmap=cmap_r)
+    #
+    #     cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03, format="$%.2f$")
+    #     cbar.ax.tick_params(labelsize=15)
+    #     cbar.set_label(label=f'APD(%)', size=15)
+    #     ax.set_title(title)
+    #     file_out = os.path.join(os.path.dirname(file_coverage), f'{variable.upper()}.png')
+    #     fig.savefig(file_out, dpi=300, bbox_inches='tight')
+    #     plt.close(fig)
 
     dataset.close()
     return True
@@ -813,145 +854,311 @@ def compute_year_coverage_cci(year):
 
     return True
 
+##period: 'all' (all year) or 'cyano' (days 161 to 270)
+def compute_year_cyano(dir_base,year,period,file_mask):
 
-def compute_year_cyano(year):
     print(f'YEAR: {year}')
 
-    dir_base = '/mnt/c/DATA_LUIS/OCTAC_WORK/BAL_EVOLUTION_202411/CYANOBLOOM_EVOLUTION'
-    file_out = os.path.join(dir_base, f'CYANOBLOOM_COVERAGE_{year}.nc')
-    # file_nc = os.path.join(dir_base, f'CYANOBLOOM_{year}.nc')
-    # dataset = Dataset(file_nc)
-    # cbloom = dataset.variables['CYANOBLOOM']
-    #
-    # coverage_valid = np.zeros((cbloom.shape[1], cbloom.shape[2]))
-    # coverage_sub = np.zeros((cbloom.shape[1], cbloom.shape[2]))
-    # coverage_surface = np.zeros((cbloom.shape[1], cbloom.shape[2]))
-    # coverage_both = np.zeros((cbloom.shape[1], cbloom.shape[2]))
-    # coverage_any = np.zeros((cbloom.shape[1], cbloom.shape[2]))
-    # p_coverage_sub = np.zeros((cbloom.shape[1], cbloom.shape[2]))
-    # p_coverage_surface = np.zeros((cbloom.shape[1], cbloom.shape[2]))
-    # p_coverage_both = np.zeros((cbloom.shape[1], cbloom.shape[2]))
-    # p_coverage_any = np.zeros((cbloom.shape[1], cbloom.shape[2]))
-    # first_day = np.zeros((cbloom.shape[1], cbloom.shape[2]))
-    # last_day = np.zeros((cbloom.shape[1], cbloom.shape[2]))
-    # ndays = cbloom.shape[0]
-    # for iday in range(ndays):
-    #     jday = iday + 1
-    #     # for jday in range(161,271,1):
-    #     #iday = jday - 1
-    #
-    #     cbloom_jday = np.ma.squeeze(cbloom[iday, :, :])
-    #     cbloom_jday = np.ma.filled(cbloom_jday, -999)
-    #     coverage_valid[cbloom_jday >= 0] = coverage_valid[cbloom_jday >= 0] + 1
-    #     coverage_sub[cbloom_jday == 1] = coverage_sub[cbloom_jday == 1] + 1
-    #     coverage_surface[cbloom_jday == 2] = coverage_surface[cbloom_jday == 2] + 1
-    #     coverage_both[cbloom_jday == 3] = coverage_both[cbloom_jday == 3] + 1
-    #     coverage_any[cbloom_jday >= 1] = coverage_any[cbloom_jday >= 1] + 1
-    #     first_day[np.logical_and(cbloom_jday >= 1, first_day == 0)] = jday
-    #     last_day[cbloom_jday >= 1] = jday
-    # dataset.close()
-    #
-    # coverage_valid[coverage_valid==0] = -999
-    # coverage_sub[coverage_valid==-999]=-999
-    # coverage_surface[coverage_valid == -999] = -999
-    # coverage_both[coverage_valid == -999] = -999
-    # coverage_any[coverage_valid == -999] = -999
-    # first_day[coverage_valid == -999] = -999
-    # last_day[coverage_valid == -999] = -999
-    #
-    # p_coverage_sub[coverage_valid != -999] = (coverage_sub[coverage_valid != -999] / coverage_valid[
-    #     coverage_valid != -999]) * 100
-    # p_coverage_surface[coverage_valid != -999] = (coverage_surface[coverage_valid != -999] / coverage_valid[
-    #     coverage_valid != -999]) * 100
-    # p_coverage_both[coverage_valid != -999] = (coverage_both[coverage_valid != -999] / coverage_valid[
-    #     coverage_valid != -999]) * 100
-    # p_coverage_any[coverage_valid != -999] = (coverage_any[coverage_valid != -999] / coverage_valid[
-    #     coverage_valid != -999]) * 100
-    # p_coverage_sub[coverage_valid == -999] = -999
-    # p_coverage_surface[coverage_valid == -999] = -999
-    # p_coverage_both[coverage_valid == -999] = -999
-    # p_coverage_any[coverage_valid == -999] = -999
-    #
-    #
-    # new_variables = {
-    #     'COVERAGE_VALID': coverage_valid,
-    #     'COVERAGE_SUB': coverage_sub,
-    #     'COVERAGE_SURFACE': coverage_surface,
-    #     'COVERAGE_BOTH': coverage_both,
-    #     'COVERAGE_ANY': coverage_any,
-    #     'P_COVERAGE_SUB': p_coverage_sub,
-    #     'P_COVERAGE_SURFACE': p_coverage_surface,
-    #     'P_COVERAGE_BOTH': p_coverage_both,
-    #     'P_COVERAGE_ANY': p_coverage_any,
-    #     'FIRST_DAY': first_day,
-    #     'LAST_DAY': last_day
-    # }
-    #
-    # line_start ='Year;CoverageValid;CoverageSub;CoverageSurface;CoverageBoth;CoverageAny;P_CoverageSub;P_Coverage_Surface;P_Coverage_Both;P_Coverage_Any;FirstDay;LastDay'
-    # line = f'{year}'
-    # shutil.copy(file_nc, file_out)
-    # ncout = Dataset(file_out, 'a')
-    # for var_name in new_variables:
-    #     var = ncout.createVariable(var_name, 'f4', ('lat', 'lon'), fill_value=-999.0, zlib=True, complevel=6)
-    #     data = new_variables[var_name]
-    #     var[:] = data
-    #     if var_name.startswith('COVERAGE'):
-    #         line = f'{line};{np.sum(data[data!=-999])}'
-    #     else:
-    #         line = f'{line};{np.median(data[data != -999])}'
-    # ncout.close()
+    mask = None
+    if os.path.exists(file_mask):
+        dmask = Dataset(file_mask)
+        mask = dmask.variables['Land_Mask'][:]
+        dmask.close()
 
+    file_out = os.path.join(dir_base, f'CYANOBLOOM_COVERAGE_{year}.nc')
+    file_nc = os.path.join(dir_base, f'CYANOBLOOM_{year}.nc')
+    dataset = Dataset(file_nc)
+    timec = dataset.variables['time'][:]
+    cbloom = dataset.variables['CYANOBLOOM'][:]
+    dataset.close()
+
+    ndays = cbloom.shape[0]
+    if mask is not None:
+        print(f'Applying mask. Starting from: {np.ma.count(cbloom)}')
+        for iday in range(ndays):
+            cbloom[iday,mask==1] = np.ma.masked
+        print(f'to --> {np.ma.count(cbloom)}')
+
+
+    coverage_valid = np.zeros((cbloom.shape[1], cbloom.shape[2]))
+    coverage_sub = np.zeros((cbloom.shape[1], cbloom.shape[2]))
+    coverage_surface = np.zeros((cbloom.shape[1], cbloom.shape[2]))
+    coverage_both = np.zeros((cbloom.shape[1], cbloom.shape[2]))
+    coverage_any = np.zeros((cbloom.shape[1], cbloom.shape[2]))
+    p_coverage_sub = np.zeros((cbloom.shape[1], cbloom.shape[2]))
+    p_coverage_surface = np.zeros((cbloom.shape[1], cbloom.shape[2]))
+    p_coverage_both = np.zeros((cbloom.shape[1], cbloom.shape[2]))
+    p_coverage_any = np.zeros((cbloom.shape[1], cbloom.shape[2]))
+    first_day = np.zeros((cbloom.shape[1], cbloom.shape[2]))
+    last_day = np.zeros((cbloom.shape[1], cbloom.shape[2]))
+
+
+
+    if ndays>=365:
+        jdays = np.arange(ndays)+1
+    else:
+        jdays = np.array([int(dt.fromtimestamp(t).strftime('%j')) for t in timec])
+
+
+    for iday in range(ndays):
+        jday = jdays[iday]
+        if (jday<161 or jday>270) and period=='cyano':
+            continue
+        cbloom_jday = np.ma.squeeze(cbloom[iday, :, :])
+        cbloom_jday = np.ma.filled(cbloom_jday, -999)
+        coverage_valid[cbloom_jday >= 0] = coverage_valid[cbloom_jday >= 0] + 1
+        coverage_sub[cbloom_jday == 1] = coverage_sub[cbloom_jday == 1] + 1
+        coverage_surface[cbloom_jday == 2] = coverage_surface[cbloom_jday == 2] + 1
+        coverage_both[cbloom_jday == 3] = coverage_both[cbloom_jday == 3] + 1
+        coverage_any[cbloom_jday >= 1] = coverage_any[cbloom_jday >= 1] + 1
+        first_day[np.logical_and(cbloom_jday >= 1, first_day == 0)] = jday
+        last_day[cbloom_jday >= 1] = jday
+
+
+    coverage_valid[coverage_valid==0] = -999
+    coverage_sub[coverage_valid==-999]=-999
+    coverage_surface[coverage_valid == -999] = -999
+    coverage_both[coverage_valid == -999] = -999
+    coverage_any[coverage_valid == -999] = -999
+    first_day[first_day<=0] = -999
+    last_day[last_day<=0] = -999
+
+
+
+    p_coverage_sub[coverage_valid != -999] = (coverage_sub[coverage_valid != -999] / coverage_valid[
+        coverage_valid != -999]) * 100
+    p_coverage_surface[coverage_valid != -999] = (coverage_surface[coverage_valid != -999] / coverage_valid[
+        coverage_valid != -999]) * 100
+    p_coverage_both[coverage_valid != -999] = (coverage_both[coverage_valid != -999] / coverage_valid[
+        coverage_valid != -999]) * 100
+    p_coverage_any[coverage_valid != -999] = (coverage_any[coverage_valid != -999] / coverage_valid[
+        coverage_valid != -999]) * 100
+    p_coverage_sub[coverage_valid == -999] = -999
+    p_coverage_surface[coverage_valid == -999] = -999
+    p_coverage_both[coverage_valid == -999] = -999
+    p_coverage_any[coverage_valid == -999] = -999
+
+
+    new_variables = {
+        'COVERAGE_VALID': coverage_valid,
+        'COVERAGE_SUB': coverage_sub,
+        'COVERAGE_SURFACE': coverage_surface,
+        'COVERAGE_BOTH': coverage_both,
+        'COVERAGE_ANY': coverage_any,
+        'P_COVERAGE_SUB': p_coverage_sub,
+        'P_COVERAGE_SURFACE': p_coverage_surface,
+        'P_COVERAGE_BOTH': p_coverage_both,
+        'P_COVERAGE_ANY': p_coverage_any,
+        'FIRST_DAY': first_day,
+        'LAST_DAY': last_day
+    }
+
+
+    shutil.copy(file_nc, file_out)
+    ncout = Dataset(file_out, 'a')
+    for var_name in new_variables:
+        var = ncout.createVariable(var_name, 'f4', ('lat', 'lon'), fill_value=-999.0, zlib=True, complevel=6)
+        data = new_variables[var_name]
+        var[:] = data
+    ncout.close()
+
+    # dtal = Dataset(file_out)
+    # fday = dtal.variables['FIRST_DAY'][:]
+    # print(np.ma.min(fday))
+    # dtal.close()
+
+
+
+
+def get_lines_cyano_csv_from_year_files(dir_base,year):
+
+    print(f'[INFO] Working for year: {year}')
+    file_out = os.path.join(dir_base, f'CYANOBLOOM_COVERAGE_{year}.nc')
     line_start = 'Year;CoverageValid;CoverageSub;CoverageSurface;CoverageBoth;CoverageAny;P_CoverageSub;P_Coverage_Surface;P_Coverage_Both;P_Coverage_Any;FirstDay;LastDay'
     line = f'{year}'
 
     ncout = Dataset(file_out)
+    n_valid = ncout.variables['COVERAGE_VALID'][:]
+    n_valid_all = np.ma.sum(n_valid)
     for var_name in ncout.variables:
         if var_name == 'lat' or var_name == 'lon' or var_name == 'time' or var_name == 'CYANOBLOOM':
             continue
-        data = ncout.variables[var_name][:]
-        # data = np.ma.filled(data, -999)
         if var_name.startswith('COVERAGE'):
+            data = ncout.variables[var_name][:]
             line = f'{line};{np.ma.sum(data)}'
-        else:
-            line = f'{line};{np.ma.median(data)}'
+        elif var_name.startswith('P_COVERAGE'):
+            var_name_c = var_name[2:]
+            data = ncout.variables[var_name_c][:]
+            value = (np.ma.sum(data)/n_valid_all)*100
+            line = f'{line};{value}'
+        elif var_name=='FIRST_DAY':
+            data = ncout.variables[var_name][:]
+            line = f'{line};{np.min(data)}'
+        elif var_name=='LAST_DAY':
+            data = ncout.variables[var_name][:]
+            line = f'{line};{np.max(data)}'
     ncout.close()
 
     return line_start, line
 
-
 def finisce():
     return True
 
+def get_options_from_config_file(config_file):
+    reader = ConfigReader(config_file,None)
 
+    if not reader.check_section('MAKE_MAPS'):
+        print(f'[ERROR] Section MAKE_MAPS in required in the configuration file {os.path.basename(config_file)}')
+        return
+    compulsory_options = {
+        'input_path':{
+            'type':'directory_in'
+        },
+        'variable':{
+            'type': 'str'
+        },
+        'name_file_format':{
+            'type': 'str'
+        },
+        'start_date':{
+            'type': 'date'
+        },
+        'end_date':{
+            'type': 'date'
+        }
+    }
+
+    other_options = {
+        'input_path_organization':{
+            'type':'str',
+            'default': '%Y/%j'
+        },
+        'date_name_file_format':{
+            'type':'str',
+            'default': '%Y%j'
+        },
+        'frequency':{
+            'type':'str',
+            'default':'d',
+            'potential_values': ['d','m']
+        }
+    }
+
+    opt_dict = reader.retrieve_options('MAKE_MAPS',compulsory_options,other_options)
+    return opt_dict
+
+def run_maps(options):
+    input_path = options['input_path']
+    work_date = options['start_date']
+    end_date = options['end_date']
+    fr = options['frequency']
+    if fr=='m':
+        work_date = work_date.replace(day=15)
+        end_date = end_date.replace(day=15)
+
+    while work_date<=end_date:
+
+        if fr=='d':
+            work_date = work_date + timedelta(hours=24)
+        elif fr=='m':
+            next_y = work_date.year if work_date.month<12 else (work_date.year+1)
+            next_m = (work_date.month+1) if work_date.month<12 else 1
+            work_date = dt(next_y,next_m,15)
+
+
+def test_masks():
+    file_mask = '/home/gosuser/Processing/gos-oc-processingchains_v202411/s3olcibalProcessing/BAL_Land_Mask_fr.nc'
+    dir_base = '/store3/OC/OLCI_BAL/dailyolci_202411'
+    # file_mask = '/mnt/c/DATA/BAL_Land_Mask_fr.nc'
+    # file_data = '/mnt/c/DATA/O2020102-chl-bal-fr.nc'
+    # #file_data = '/mnt/c/DATA/O2020102-chl-bal-fr_nomask.nc'
+    dmask = Dataset(file_mask)
+    mask_array = dmask.variables['Land_Mask'][:]
+    dmask.close()
+
+    work_date = dt(2016,4,26)
+    end_date = dt(2025,5,22)
+    year_ref = 0
+    fw = None
+    while work_date<=end_date:
+        yyyy = work_date.strftime('%Y')
+        jjj = work_date.strftime('%j')
+        file_data = os.path.join(dir_base,yyyy,jjj,f'O{yyyy}{jjj}-chl-bal-fr.nc')
+        if os.path.exists(file_data):
+            if work_date.year!=year_ref:
+                if fw is not None:
+                    fw.close()
+                year_ref = work_date.year
+                file_out = os.path.join(dir_base,f'Check_Mask_{year_ref}')
+                fw = open(file_out,'w')
+                fw.write('Date;NameFile;NInvalid')
+
+            dataset = Dataset(file_data)
+            data = np.ma.squeeze(dataset.variables['CHL'][:])
+            dataset.close()
+            data_inmask = data[mask_array==1]
+            ninvalid = np.ma.count(data_inmask)
+            fw.write('\n')
+            fw.write(f'{work_date.strftime("%Y-%m-%d")};O{yyyy}{jjj}-chl-bal-fr.nc;{ninvalid}')
+
+        work_date = work_date + timedelta(hours=24)
+
+    if fw is not None:
+        fw.close()
+
+
+    return True
 def main():
+    if args.config_path:
+        if not os.path.isfile(args.config_path):
+            print(f'[ERROR] Config file {args.config_path} does not exist or is not a valid file')
+            return
+        options = get_options_from_config_file(args.config_path)
+        run_maps(options)
+        return
+    if test_masks():
+
+        return
+
     # if plot_coverage():
     #     return
     # if compare_old_new_v2():
     #     return
     # if compute_diff():
     #     return
-    # fcsv_out = '/mnt/c/DATA_LUIS/OCTAC_WORK/BAL_EVOLUTION_202411/CYANOBLOOM_EVOLUTION/CyanoEvolution.csv'
-    # fw = open(fcsv_out,'w')
-    # started = False
-    # for year in range(1997,2024):
-    #     line_start,line = compute_year_cyano(year)
-    #     if not started:
-    #         fw.write(line_start)
-    #         fw.write('\n')
-    #         fw.write(line)
-    #         started = True
-    #     else:
-    #         fw.write('\n')
-    #         fw.write(line)
-    # fw.close()
 
-    ##maps
-    # variable = 'FIRST_DAY'
-    # label = 'Day'
-    # vmin = 1
+    ##CREATE FILES CYANOBLOOM_COVERAGE
+    dir_base = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/BAL_EVOLUTION_202411/CYANOBLOOM_EVOLUTION'
+    file_mask = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/BAL_EVOLUTION_202411/MASKS/BAL_Land_Mask_hr.nc'
+    for year in range(1997,2025):
+        compute_year_cyano(dir_base,year,'cyano',file_mask)
+
+
+
+    ##CREATE CSV FILE FOR CYANO YEAR FILES
+    dir_base = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/BAL_EVOLUTION_202411/CYANOBLOOM_EVOLUTION'
+    fcsv_out = os.path.join(dir_base, 'CyanoEvolution_CyanoPeriod.csv')
+    fw = open(fcsv_out, 'w')
+    started = False
+    for year in range(1997,2025):
+        line_start,line = get_lines_cyano_csv_from_year_files(dir_base,year)
+        if not started:
+            fw.write(line_start)
+            fw.write('\n')
+            fw.write(line)
+            started = True
+        else:
+            fw.write('\n')
+            fw.write(line)
+    fw.close()
+
+    ##CREATE MAPS CYANOBLOOM_COVERAGE
+    # dir_base = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/BAL_EVOLUTION_202411/CYANOBLOOM_EVOLUTION'
+    # variable = 'COVERAGE_VALID'
+    # label = '#Days'
+    # vmin = 0
     # vmax = 366
-    # for year in range(1997, 2024):
-    #     dir_base = '/mnt/c/DATA_LUIS/OCTAC_WORK/BAL_EVOLUTION_202411/CYANOBLOOM_EVOLUTION'
+    # for year in range(2024, 2025):
     #     file_nc = os.path.join(dir_base, f'CYANOBLOOM_COVERAGE_{year}.nc')
     #     title = f'{variable}-{year}'
     #     file_out = os.path.join(os.path.dirname(file_nc), f'{variable}_{year}.tif')
@@ -964,7 +1171,28 @@ def main():
     #     compute_year_coverage_cci(year)
 
     ##TOTAL CDF ENSEMBLE COVERAGE BASED ON YEAR COVERAGE FILES. IT INCLUCES TOTAL AND MONTHLY RESULTS - LOCAL RUN
-    compute_total_coverage_cci()
+    #compute_total_coverage_cci()
+
+
+    # file_check = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/BAL_EVOLUTION_202411/CYANOBLOOM_EVOLUTION/CYANOBLOOM_COVERAGE_2023.nc'
+    # dataset = Dataset(file_check)
+    # cbloom = dataset.variables['CYANOBLOOM'][:]
+    # coverage_valid = np.zeros((cbloom.shape[1], cbloom.shape[2]))
+    # ndays = cbloom.shape[0]
+    # for iday in range(ndays):
+    #     jday = iday + 1
+    # # for jday in range(161,271,1):
+    # #     iday = jday - 1
+    #     cbloom_jday = np.ma.squeeze(cbloom[iday, :, :])
+    #     cbloom_jday = np.ma.filled(cbloom_jday, -999)
+    #     coverage_valid[cbloom_jday >= 0] = coverage_valid[cbloom_jday >= 0] + 1
+    #
+    # coverage_valid_prev = dataset.variables['COVERAGE_VALID'][:]
+    # coverage_valid = np.ma.masked_equal(coverage_valid,0)
+    # print(coverage_valid.shape,coverage_valid_prev.shape)
+    # print(np.ma.count(coverage_valid),np.ma.count(coverage_valid_prev))
+    #
+    # dataset.close()
 
 
     if finisce():

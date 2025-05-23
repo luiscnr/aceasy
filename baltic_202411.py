@@ -214,8 +214,9 @@ class BALTIC_202411_PROCESSOR():
             print(f'[INFO] Date: {olci_date.strftime("%Y-%m-%d")}')
         self.retrieve_info_wlbands_olci_l3(prod_path, olci_date_str)
 
+
         if self.applyBandShifting:
-            print(f'[INFO] Band shifting is activated:')
+            print(f'[INFO] Band shifting is activated')
             print(f'[INFO]   Input bands: {self.central_wl_chla}')
             print(f'[INFO]   Output bands: {self.wl_chla}')
         else:
@@ -354,6 +355,8 @@ class BALTIC_202411_PROCESSOR():
             self.retrieve_info_wlbands_polymer(ncinput)
         elif self.product_type == 'cci':
             self.retrieve_info_wlbands_cci(ncinput)
+
+
         if self.applyBandShifting:
             print(f'[INFO] Band shifting is activated:')
             print(f'[INFO]   Input bands: {self.central_wl_chla}')
@@ -362,11 +365,14 @@ class BALTIC_202411_PROCESSOR():
             print(f'[INFO] Band shifting is not activated')
 
         # flag object
+        flagging  = None
         if self.product_type == 'polymer':
             flag_band = ncinput.variables['bitmask']
             flagging = polymerflag.Class_Flags_Polymer(flag_band)
 
         # image limits
+        startX,startY,endX,endY = -1,-1,-1,-1
+
         if self.product_type == 'polymer':
             if prod_path.split('/')[-1].lower().find('trim') > 0:
                 startX = 0
@@ -386,6 +392,8 @@ class BALTIC_202411_PROCESSOR():
             endX = ncinput.dimensions['longitude'].size - 1
             endY = ncinput.dimensions['latitude'].size - 1
 
+
+
         ny = (endY - startY) + 1
         nx = (endX - startX) + 1
         if self.verbose:
@@ -401,11 +409,8 @@ class BALTIC_202411_PROCESSOR():
         # computing chla and other variables for each tile
         for y in range(startY, endY, self.tileY):
             ycheck = y - startY
-            # if self.verbose and (ycheck == 0 or ((ycheck % self.tileY) == 0)):
-            #     print(f'[INFO] Processing line {ycheck}/{ny}')
             for x in range(startX, endX, self.tileX):
                 xcheck = x - startX
-                # if self.verbose and (xcheck == 0 or ((xcheck % self.tileX) == 0)):
                 print(f'[INFO] Processing tile {ycheck}/{ny} - {xcheck}/{nx}')
                 yini = y
                 yend = y + self.tileY
@@ -414,18 +419,23 @@ class BALTIC_202411_PROCESSOR():
                 xend = x + self.tileX
                 if xend > endX: xend = endX + 1
                 nvalid = 0
+                valid_mask = None
                 if self.product_type == 'cci':
                     nvalid, valid_mask = self.get_valid_cci_mask(ncinput, yini, yend, xini, xend)
                 if self.product_type == 'polymer':
                     nvalid, valid_mask = self.get_valid_polymer_mask(flagging, ncinput, yini, yend, xini, xend)
 
                 if nvalid > 0:
+                    input_rrs = None
                     if self.product_type == 'cci':
-                        input_rrs, iop, cyano_info = self.get_valid_rrs_cci(ncinput, valid_mask, nvalid, yini, yend,
-                                                                            xini, xend)
+                        input_rrs, iop, cyano_info = self.get_valid_rrs_cci(ncinput, valid_mask, nvalid, yini, yend,xini, xend)
+
                     if self.product_type == 'polymer':
-                        input_rrs, iop, cyano_info = self.get_valid_rrs_polymer(ncinput, valid_mask, nvalid, yini, yend,
-                                                                                xini, xend)
+                        input_rrs, iop, cyano_info = self.get_valid_rrs_polymer(ncinput, valid_mask, nvalid, yini, yend,xini, xend)
+
+                    if input_rrs is None:
+                        continue
+
                     res_algorithm = self.bal_proc.compute_ensemble(input_rrs)
 
                     for key in cyano_info.keys():
@@ -474,6 +484,12 @@ class BALTIC_202411_PROCESSOR():
             print(f'[INFO] Water processing completed')
             print(f'[INFO] Generating output file: {fileout}')
 
+        # print('chla')
+        # array_chl = all_arrays['CHL']
+        # print(array_chl.shape)
+        # dataset_out = Dataset(fileout,'w')
+        # dataset_out.createDimension('x',)
+        # dataset_out.close()
         self.create_file(fileout, ncinput, all_arrays, startY, endY + 1, startX, endX + 1, date_file)
 
     def allow_csv_test(self):
@@ -751,8 +767,13 @@ class BALTIC_202411_PROCESSOR():
 
     def get_valid_polymer_mask(self, flagging, ncpolymer, yini, yend, xini, xend):
         satellite_flag_band = np.array(ncpolymer.variables['bitmask'][yini:yend, xini:xend])
-        flag_mask = flagging.MaskGeneral(satellite_flag_band)
-        valid_mask = flag_mask == 0
+        flag_mask = flagging.MaskGeneralV5(satellite_flag_band)
+        valid_mask = np.array(flag_mask == 0).astype(np.byte)
+        for iband in range(5):
+            wlband = self.wlbands_chla_polymer[iband]
+            band = np.ma.array(ncpolymer.variables[wlband][yini:yend, xini:xend])
+            valid_mask[band.mask] = 0
+
         nvalid = valid_mask.sum()
         return nvalid, valid_mask
 
@@ -797,9 +818,7 @@ class BALTIC_202411_PROCESSOR():
         for iband in range(5):
             wlband = self.wlbands_chla_polymer[iband]
             band = np.ma.array(ncpolymer.variables[wlband][yini:yend, xini:xend])
-            valid_mask[band.mask] = False
-            # rrsdata[:, iband] = band[valid_mask]
-            rrsdata[iband, :] = band[valid_mask]
+            rrsdata[iband, :] = band[valid_mask==1]
         rrsdata = rrsdata / np.pi
 
         iop = None
@@ -955,6 +974,7 @@ class BALTIC_202411_PROCESSOR():
                 array = np.ma.array(ncinput.variables[rrsvar][yini:yend, xini:xend])
                 array[array.mask] = -999
                 array[~array.mask] = array[~array.mask] / np.pi
+
                 wl = self.central_wavelength[rrsvar]
                 ncoutput.create_rrs_variable(array, namevar, wl, self.varattr, self.product_type)
 
@@ -982,19 +1002,19 @@ class BALTIC_202411_PROCESSOR():
         ncoutput.create_var_general(array_chl, 'CHL', self.varattr)
 
         # other variables
-        done_variables = ['CHL']
-        for ovar in all_arrays.keys():
-            if ovar in done_variables:
-                continue
-            if self.verbose:
-                print(f'[INFO]    Adding extra variable {ovar}....')
-            array_here = all_arrays[ovar]
-            if self.product_type == 'cci':
-                array_here = np.flipud(array_here)
-            if ovar.startswith('FLAG'):
-                ncoutput.create_var_flag_general(array_here, ovar, self.varattr)
-            else:
-                ncoutput.create_var_general(array_here, ovar, self.varattr)
+        # done_variables = ['CHL']
+        # for ovar in all_arrays.keys():
+        #     if ovar in done_variables:
+        #         continue
+        #     if self.verbose:
+        #         print(f'[INFO]    Adding extra variable {ovar}....')
+        #     array_here = all_arrays[ovar]
+        #     if self.product_type == 'cci':
+        #         array_here = np.flipud(array_here)
+        #     if ovar.startswith('FLAG'):
+        #         ncoutput.create_var_flag_general(array_here, ovar, self.varattr)
+        #     else:
+        #         ncoutput.create_var_general(array_here, ovar, self.varattr)
         ncoutput.close_file()
 
         if self.verbose:

@@ -22,6 +22,13 @@ class Class_Flags_Polymer(object):
         # print myCode
         return np.bitwise_and(flags, code)
 
+    def MaskGeneralV5(self,flags):
+        flags = np.int64(flags)
+        res = np.ones(flags.shape)
+        res[flags==0]=0
+        res[flags==1024]=0
+        return res
+
     def Code(self, maskList):
         myCode = np.int64(0)
         for flag in maskList:

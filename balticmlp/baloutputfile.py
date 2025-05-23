@@ -47,10 +47,11 @@ class BalOutputFile:
         self.OFILE.creation_time = dt.now().strftime("%Y-%m-%dT%H:%M:%SZ")
         self.OFILE.start_time = ncpolymer.start_time
         self.OFILE.stop_time = ncpolymer.stop_time
-        self.OFILE.polymer_source_file = ncpolymer.l2_filename.split('/')[-1]
-        self.OFILE.l1_source_file = ncpolymer.l1_filename.split('/')[-1]
-        self.OFILE.timeliness = self.OFILE.polymer_source_file.split('_')[17]
-        self.OFILE.platform = self.OFILE.polymer_source_file[2]
+        # self.OFILE.polymer_source_file = ncpolymer.l2_filename.split('/')[-1]
+        # self.OFILE.l1_source_file = ncpolymer.l1_filename.split('/')[-1]
+        #self.OFILE.timeliness = self.OFILE.polymer_source_file.split('_')[17]
+        #self.OFILE.platform = self.OFILE.polymer_source_file[2]
+
         # satellite = at['satellite']
         # platform = at['platform']
         # sensor = at['sensor']
@@ -131,7 +132,7 @@ class BalOutputFile:
 
     def create_data_variable(self, var_name, array):
         var = self.OFILE.createVariable(var_name, 'f4', ('lat', 'lon'), fill_value=-999, zlib=True, complevel=6)
-        var[:] = array[:]
+        var[:] = array
         return var
 
     def create_flag_variable(self, var_name, array):
