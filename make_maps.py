@@ -1069,9 +1069,12 @@ def run_maps(options):
 def test_masks():
     file_mask = '/home/gosuser/Processing/gos-oc-processingchains_v202411/s3olcibalProcessing/BAL_Land_Mask_fr.nc'
     dir_base = '/store3/OC/OLCI_BAL/dailyolci_202411'
+    date_ref = dt(1981,1,1)
     # file_mask = '/mnt/c/DATA/BAL_Land_Mask_fr.nc'
-    # file_data = '/mnt/c/DATA/O2020102-chl-bal-fr.nc'
+    #file_data = '/mnt/c/DATA/O2020102-chl-bal-fr.nc'
     # #file_data = '/mnt/c/DATA/O2020102-chl-bal-fr_nomask.nc'
+
+
     dmask = Dataset(file_mask)
     mask_array = dmask.variables['Land_Mask'][:]
     dmask.close()
@@ -1083,23 +1086,27 @@ def test_masks():
     while work_date<=end_date:
         yyyy = work_date.strftime('%Y')
         jjj = work_date.strftime('%j')
-        file_data = os.path.join(dir_base,yyyy,jjj,f'O{yyyy}{jjj}-chl-bal-fr.nc')
+        #file_data = os.path.join(dir_base,yyyy,jjj,f'O{yyyy}{jjj}-chl-bal-fr.nc')
+        file_data = os.path.join(dir_base, yyyy, jjj, f'O{yyyy}{jjj}-pft-bal-fr.nc')
         if os.path.exists(file_data):
             if work_date.year!=year_ref:
                 if fw is not None:
                     fw.close()
                 year_ref = work_date.year
-                file_out = os.path.join(dir_base,f'Check_Mask_{year_ref}')
+                file_out = os.path.join(dir_base,f'Check_Mask_{year_ref}.csv')
                 fw = open(file_out,'w')
-                fw.write('Date;NameFile;NInvalid')
+                fw.write('Date;NameFile;NInvalid;ValidTime')
 
             dataset = Dataset(file_data)
-            data = np.ma.squeeze(dataset.variables['CHL'][:])
+            #data = np.ma.squeeze(dataset.variables['CHL'][:])
+            data = np.ma.squeeze(dataset.variables['GREEN'][:])
+            date_here = date_ref + timedelta(seconds=int(dataset.variables['time'][0]))
+            valid_time = 1 if work_date == date_here else 0
             dataset.close()
             data_inmask = data[mask_array==1]
             ninvalid = np.ma.count(data_inmask)
             fw.write('\n')
-            fw.write(f'{work_date.strftime("%Y-%m-%d")};O{yyyy}{jjj}-chl-bal-fr.nc;{ninvalid}')
+            fw.write(f'{work_date.strftime("%Y-%m-%d")};O{yyyy}{jjj}-chl-bal-fr.nc;{ninvalid};{valid_time}')
 
         work_date = work_date + timedelta(hours=24)
 
