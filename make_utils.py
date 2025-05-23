@@ -16,7 +16,7 @@ parser = argparse.ArgumentParser(
 
 parser.add_argument('-m', "--mode", help='Mode option',
                     choices=["test", "check_neg_olci_values", "correct_neg_olci_values",
-                             "correct_neg_olci_values_slurm","image_stats","compare_images"],
+                             "correct_neg_olci_values_slurm","image_stats","compare_images","cyano_stats"],
                     required=True)
 parser.add_argument('-i', "--input_path", help="Input path.")
 parser.add_argument('-o', "--output", help="Output file.")
@@ -688,9 +688,58 @@ def make_image_comparison():
         df_stats.to_csv(file_stats, sep=';', index=False)
     print(f'[INFO] Completed')
 
+def make_cyano_stats():
+
+
+    dir_base = '/store3/OC/OLCI_BAL/dailyolci_202411'
+    work_date = dt(2016, 4, 26)
+    end_date = dt(2024, 12, 31)
+
+    file_out = os.path.join(dir_base, f'CyanoOlci.csv')
+    fw = open(file_out, 'w')
+    fw.write('Year;NValid;NSubSurface;NSurface;NBoth;NAny')
+    year_ref = 0
+    count = None
+    while work_date <= end_date:
+        yyyy = work_date.strftime('%Y')
+        jjj = work_date.strftime('%j')
+        jday = int(jjj)
+        if jday<161 or jday>270:
+            work_date = work_date + timedelta(hours=24)
+            continue
+        file_data = os.path.join(dir_base,yyyy,jjj,f'O{yyyy}{jjj}-chl-bal-fr.nc')
+
+        if os.path.exists(file_data):
+            if work_date.year!=year_ref:
+                if year_ref>0:
+                    line_year = f'{year_ref};{count[0]};{count[1]};{count[2]};{count[3]};{count[4]}'
+                    fw.write('\n')
+                    fw.write(line_year)
+                year_ref = work_date.year
+                count = [0]*5
+
+            dataset = Dataset(file_data)
+            data = np.ma.squeeze(dataset.variables['CYANOBLOOM'][:])
+            dataset.close()
+            data_valid = data.compressed()
+            count[0] = count[0] + np.count_nonzero(data_valid>=0)
+            count[1] = count[1] + np.count_nonzero(data_valid == 1)
+            count[2] = count[2] + np.count_nonzero(data_valid == 2)
+            count[3] = count[3] + np.count_nonzero(data_valid == 3)
+            count[4] = count[4] + np.count_nonzero(data_valid >= 1)
+
+        work_date = work_date + timedelta(hours=24)
+
+    line_year = f'{year_ref};{count[0]};{count[1]};{count[2]};{count[3]};{count[4]}'
+    fw.write('\n')
+    fw.write(line_year)
+    fw.close()
+
 def main():
     print('[INFO] Started utils')
 
+    if args.mode == 'cyano_stats':
+        make_cyano_stats()
     if args.mode == 'test':
 
         folder_olci = '/dst04-data1/OC/OLCI/daily_v202311_bc'
