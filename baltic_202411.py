@@ -1002,19 +1002,19 @@ class BALTIC_202411_PROCESSOR():
         ncoutput.create_var_general(array_chl, 'CHL', self.varattr)
 
         # other variables
-        # done_variables = ['CHL']
-        # for ovar in all_arrays.keys():
-        #     if ovar in done_variables:
-        #         continue
-        #     if self.verbose:
-        #         print(f'[INFO]    Adding extra variable {ovar}....')
-        #     array_here = all_arrays[ovar]
-        #     if self.product_type == 'cci':
-        #         array_here = np.flipud(array_here)
-        #     if ovar.startswith('FLAG'):
-        #         ncoutput.create_var_flag_general(array_here, ovar, self.varattr)
-        #     else:
-        #         ncoutput.create_var_general(array_here, ovar, self.varattr)
+        done_variables = ['CHL']
+        for ovar in all_arrays.keys():
+            if ovar in done_variables:
+                continue
+            if self.verbose:
+                print(f'[INFO]    Adding extra variable {ovar}....')
+            array_here = all_arrays[ovar]
+            if self.product_type == 'cci':
+                array_here = np.flipud(array_here)
+            if ovar.startswith('FLAG'):
+                ncoutput.create_var_flag_general(array_here, ovar, self.varattr)
+            else:
+                ncoutput.create_var_general(array_here, ovar, self.varattr)
         ncoutput.close_file()
 
         if self.verbose:
