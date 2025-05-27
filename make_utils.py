@@ -851,7 +851,7 @@ def check_sensormask_stats():
     # dir_base = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/NOW/OCTAC_QWG'
     # file_out = os.path.join(dir_base,'sensor_mask_multi_chl_med.csv')
 
-    work_date = dt(2025,5,1)
+    work_date = dt(2023,5,1)
     end_date = dt(2025,5,27)
     fw = open(file_out,'w')
     mask_list = None
