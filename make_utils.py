@@ -869,7 +869,7 @@ def check_sensormask_stats():
                 comment = dataset.variables['SENSORMASK'].comment
                 comment = comment[0:comment.index('.')]
                 mask_list = {x.split('=')[0].strip():int(x.split('=')[1].strip()) for x in comment.split(';')}
-                first_line = f'Date;{';'.join(list(mask_list.keys()))};All'
+                first_line = f'Date;{";".join(list(mask_list.keys()))};All'
                 fw.write(first_line)
                 flag_g = Flags_General(list(mask_list.keys()),list(mask_list.values()),smask.dtype.name)
 
