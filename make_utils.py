@@ -16,7 +16,7 @@ parser = argparse.ArgumentParser(
 
 parser.add_argument('-m', "--mode", help='Mode option',
                     choices=["test", "check_neg_olci_values", "correct_neg_olci_values",
-                             "correct_neg_olci_values_slurm","image_stats","compare_images","cyano_stats"],
+                             "correct_neg_olci_values_slurm","image_stats","compare_images","cyano_stats","plot_cyano","sensormask_stats"],
                     required=True)
 parser.add_argument('-i', "--input_path", help="Input path.")
 parser.add_argument('-o', "--output", help="Output file.")
@@ -735,11 +735,171 @@ def make_cyano_stats():
     fw.write(line_year)
     fw.close()
 
+def plot_cyano():
+    from matplotlib import pyplot as plt
+    import matplotlib.pyplot as plt
+    import numpy as np
+    import matplotlib as mpl
+    from netCDF4 import Dataset
+    import matplotlib.gridspec as gridspec
+    from matplotlib.offsetbox import OffsetImage, AnnotationBbox
+    from scipy.stats import linregress
+
+    file_cyano = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/BAL_EVOLUTION_202411/CYANOBLOOM_EVOLUTION/CyanoEvolution_CyanoPeriod.csv'
+    file_out = os.path.join(os.path.dirname(file_cyano), 'CyanoEvolutionPlot.png')
+    df_cyano = pd.read_csv(file_cyano, sep=';')
+    sub = np.array(df_cyano['CoverageSub'][1:])
+    sur = np.array(df_cyano['CoverageSurface'][1:])
+    both = np.array(df_cyano['CoverageBoth'][1:])
+    year_start = 1998
+    year_end = 2024
+    # -- Figure size & division
+    fig = plt.figure(figsize=(11.7, 8.3))
+    gs = gridspec.GridSpec(2, 1, height_ratios=[100, 35])
+    #plt.grid(True, ls='dotted', alpha=0.6)
+
+    # -- Define style of the plot
+    mpl.style.use('ggplot')
+
+    # -- 1st axis (the 2nd one is for the logos)
+    ax = plt.subplot(gs[0])
+
+    # -- Legends & title
+    plt.xlabel(' Year ', size='xx-large', fontweight='bold')
+    plt.ylabel(r'Coverage area (day·km$^2$·10$^6$)', size='xx-large', fontweight='bold')
+
+    tt = plt.title('Summer bloom Baltic Sea', fontsize=18)
+    tt.set_position([0.5, 1.05])
+
+    time = np.arange(year_start, year_end + 1, 1)
+
+    ax.set_xticks(time)
+    time_labels = [str(x) if (x%2)==0 else '' for x in time]
+    ax.set_xticklabels(time_labels,size='small')
+    #ax.set_xticklabels(time, rotation=30, ha='left', size='small')  # size --> x-small,small,medium,large,...
+    ax.set_xlim([time[0] - 1, time[-1] + 1])
+    ax.tick_params(labelsize=12)
+
+
+    hsur = plt.bar(time, sur, color=(1.0, 0.65, 0), linewidth=1.0, edgecolor='k')
+    hboth = plt.bar(time, both, bottom=sur, color=(0.58, 0.44, 0.86), linewidth=1.0, edgecolor='k')
+    hsub = plt.bar(time, sub, bottom=sur + both, color=(0.0, 0.0, 1.0), linewidth=1.0, edgecolor='k')
+
+    ydata = [0.0e6, 0.5e6, 1.0e6, 1.5e6, 2.0e6, 2.5e6, 3.0e6]
+    yticks = ['0', '0.5', '1.0', '1.5', '2.0', '2.5', '3.0']
+    plt.yticks(ydata, yticks)
+    plt.grid(True, ls='dotted', alpha=0.6)
+
+    #plt.tick_params(axis='x', which='both', bottom=False)
+
+    # -- Credits and datatype
+    str_legend = ['Subsurface bloom (Rrs555)', 'Concurrent bloom', 'Surface bloom(Rrs670)']
+    plt.legend([hsub,hboth,hsur],str_legend,loc=9,
+               title='Datatype : Multi-product \nCredit : E.U. Copernicus Marine Service Information')  # , fontsize=14
+
+    # -- Add the logos as subplot
+    logo = plt.imread(os.path.join(os.path.dirname(file_cyano),'LogosOMIBand-100-mv.png'))
+    axlogo = plt.subplot(gs[1])
+    img = axlogo.imshow(logo)
+    axlogo.axis('off')
+
+    # -- Graphical settings
+    plt.subplots_adjust(wspace=0, hspace=-0.7)
+    plt.tight_layout()
+
+    plt.savefig(file_out, dpi=300)
+
+def plot_cyano_deprecated():
+    file_cyano = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/BAL_EVOLUTION_202411/CYANOBLOOM_EVOLUTION/CyanoEvolution_CyanoPeriod.csv'
+    file_out = os.path.join(os.path.dirname(file_cyano),'CyanoEvolutionPlot.png')
+    df_cyano  = pd.read_csv(file_cyano,sep=';')
+    sub = np.array(df_cyano['CoverageSub'][1:])
+    sur = np.array(df_cyano['CoverageSurface'][1:])
+    both = np.array(df_cyano['CoverageBoth'][1:])
+    from matplotlib import pyplot as plt
+    from matplotlib.ticker import AutoMinorLocator
+    xdata = np.arange(1998,2025)
+    xticks = [str(x) if (x%2)==0 else '' for x in xdata]
+    plt.figure(figsize=(18.74,9.37),dpi=300)
+    hsur = plt.bar(xdata,sur,color=(1.0,0.65,0), linewidth=1.0, edgecolor='k')
+    hboth = plt.bar(xdata,both,bottom=sur,color=(0.58,0.44,0.86), linewidth=1.0, edgecolor='k')
+    hsub =plt.bar(xdata,sub,bottom=sur+both,color=(0.0,0.0,1.0), linewidth=1.0, edgecolor='k')
+    plt.xticks(xdata,xticks,fontsize=22,minor=False)
+    ydata = [0.0e6,0.5e6,1.0e6,1.5e6,2.0e6,2.5e6,3.0e6]
+    yticks = ['0','0.5','1.0','1.5','2.0','2.5','3.0']
+    plt.yticks(ydata,yticks,fontsize=22)
+    plt.gca().yaxis.set_minor_locator(AutoMinorLocator())
+
+    plt.tick_params(axis='x',which='both',bottom=False)
+    plt.tick_params(axis='y',which='major',direction='in',length=30)
+    plt.tick_params(axis='y', which='minor', direction='in', length=15,left=True,right=True)
+    plt.xlabel('Year',fontsize=22)
+    plt.ylabel(r'Coverage area (day·km$^2$·10$^6$)',fontsize=22)
+    plt.title('Summer bloom Baltic Sea',fontsize=22)
+    str_legend = ['Subsurface bloom (Rrs555)','Concurrent bloom','Surface bloom(Rrs670)']
+    plt.legend([hsub,hboth,hsur],str_legend,fontsize=22,bbox_to_anchor=(0.35,0.97),edgecolor='black')
+    plt.tight_layout()
+    plt.savefig(file_out,dpi=300)
+
+def check_sensormask_stats():
+    from Class_Flags import Flags_General
+
+    dir_base = '/store3/OC/MULTI/daily_v202311_x'
+    file_out = os.path.join('/store2/OC/QualityIndex/v202506/sensor_mask_multi_chl_med.csv')
+
+    ##LOCAL TEST
+    # dir_base = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/NOW/OCTAC_QWG'
+    # file_out = os.path.join(dir_base,'sensor_mask_multi_chl_med.csv')
+
+    work_date = dt(2025,5,1)
+    end_date = dt(2025,5,27)
+    fw = open(file_out,'w')
+    mask_list = None
+    flag_g = None
+    while work_date<=end_date:
+        yyyy = work_date.strftime('%Y')
+        jjj = work_date.strftime('%j')
+        file_date = os.path.join(dir_base,f'{yyyy}',f'{jjj}',f'X{yyyy}{jjj}-chl-med-hr.nc')
+
+        if os.path.isfile(file_date):
+            dataset =  Dataset(file_date)
+            smask = dataset.variables['SENSORMASK'][:]
+
+            if mask_list is None:
+                comment = dataset.variables['SENSORMASK'].comment
+                comment = comment[0:comment.index('.')]
+                mask_list = {x.split('=')[0].strip():int(x.split('=')[1].strip()) for x in comment.split(';')}
+                first_line = f'Date;{';'.join(list(mask_list.keys()))};All'
+                fw.write(first_line)
+                flag_g = Flags_General(list(mask_list.keys()),list(mask_list.values()),smask.dtype.name)
+
+            line = f'{work_date.strftime('%Y-%m-%d')}'
+
+            smask = smask.compressed()
+
+            for flag in flag_g.flagMeanings:
+                mask_here = flag_g.Mask(smask,[flag])
+                line = f'{line};{np.count_nonzero(mask_here)}'
+            line = f'{line};{np.count_nonzero(smask)}'
+            fw.write('\n')
+            fw.write(line)
+
+            dataset.close()
+        work_date = work_date + timedelta(hours=25)
+
+    fw.close()
 def main():
     print('[INFO] Started utils')
 
+    if args.mode == 'plot_cyano':
+        plot_cyano()
+
     if args.mode == 'cyano_stats':
         make_cyano_stats()
+
+    if args.mode == 'sensormask_stats':
+        check_sensormask_stats()
+
     if args.mode == 'test':
 
         folder_olci = '/dst04-data1/OC/OLCI/daily_v202311_bc'
