@@ -873,7 +873,7 @@ def check_sensormask_stats():
                 fw.write(first_line)
                 flag_g = Flags_General(list(mask_list.keys()),list(mask_list.values()),smask.dtype.name)
 
-            line = f'{work_date.strftime('%Y-%m-%d')}'
+            line = f'{work_date.strftime("%Y-%m-%d")}'
 
             smask = smask.compressed()
 
