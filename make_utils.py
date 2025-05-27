@@ -845,7 +845,7 @@ def check_sensormask_stats():
     from Class_Flags import Flags_General
 
     dir_base = '/store3/OC/MULTI/daily_v202311_x'
-    file_out = os.path.join('/store2/OC/QualityIndex/v202506/sensor_mask_multi_chl_med.csv')
+    file_out = '/store/COP2-OC-TAC/PQD/sensor_mask_multi_chl_med.csv'
 
     ##LOCAL TEST
     # dir_base = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/NOW/OCTAC_QWG'
