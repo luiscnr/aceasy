@@ -989,16 +989,25 @@ def check_sensormask_stats():
 
 def check_coverage():
     dir_base = '/store3/OC/MULTI/daily_v202311_x'
-    file_out = '/store/COP2-OC-TAC/PQD/coverage_multi_chl_med.csv.csv'
+    file_out = '/store/COP2-OC-TAC/PQD/coverage_multi_chl_med.csv'
     file_mask = '/store/COP2-OC-TAC/PQD/MED_Land_hr.nc'
+
+    coverage_dirs = [
+        '/store3/OC/MODISA/daily_v202311',
+        '/store3/OC/VIIRSJ/daily_v202311',
+        '/store3/OC/VIIRS/daily_v202311',
+        '/dst04-data1/OC/OLCI/daily_v202311_bc',
+        '/dst04-data1/OC/OLCI/daily_v202311_bc'
+    ]
 
     ##LOCAL TEST
     # dir_base = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/NOW/OCTAC_QWG'
     # file_out = os.path.join(dir_base, 'coverage_multi_chl_med.csv')
     # file_mask = os.path.join(dir_base,'MED_Land_hr.nc')
+    # coverage_dirs = [dir_base] * 5
 
 
-    coverage_dirs = [dir_base]*5
+
     datanameformat = ['A$DATE$-coverage-med.nc',
                       'J$DATE$-coverage-med.nc',
                       'V$DATE$-coverage-med.nc',
