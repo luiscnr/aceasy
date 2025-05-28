@@ -736,6 +736,96 @@ def make_cyano_stats():
     fw.close()
 
 def plot_cyano():
+    import os
+    import matplotlib.pyplot as plt
+    import numpy as np
+    import pandas as pd
+    import matplotlib as mpl
+    import matplotlib.gridspec as gridspec
+
+    ## -- path for input and output
+    dir_base = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/BAL_EVOLUTION_202411/CYANOBLOOM_EVOLUTION'
+    ## -- input
+    file_cyano = os.path.join(dir_base, 'CyanoEvolution_CyanoPeriod.csv')
+    ## -- output
+    file_out = os.path.join(dir_base, 'CyanoEvolutionPlot.png')
+
+    # -- Reading input data
+    df_cyano = pd.read_csv(file_cyano, sep=';')
+    sub = np.array(df_cyano['CoverageSub'][1:])
+    sur = np.array(df_cyano['CoverageSurface'][1:])
+    both = np.array(df_cyano['CoverageBoth'][1:])
+
+    year_start = 1998
+    year_end = 2024
+
+    # -- Figure size & division
+    fig = plt.figure(figsize=(11.7, 8.3))
+    gs = gridspec.GridSpec(2, 1, height_ratios=[100, 35])
+
+    # -- Define style of the plot
+    mpl.style.use('ggplot')
+
+    # -- 1st axis (the 2nd one is for the logos)
+    ax = plt.subplot(gs[0])
+
+    # -- Legends & title
+    plt.xlabel(' Year ', size='xx-large', fontweight='bold')
+    plt.ylabel(r'Coverage area (day·km$^2$·10$^6$)', size='xx-large', fontweight='bold')
+
+    tt = plt.title('Baltic Sea summer bloom coverage (1998-2024)', fontsize=18)
+    tt.set_position([0.5, 1.05])
+
+    ## -- Time axis
+    time = np.arange(year_start, year_end + 1, 1)
+
+    ax.set_xticks(time)
+    time_labels = [str(x) if (x % 2) == 0 else '' for x in time]
+    ax.set_xticklabels(time_labels, size='small')
+
+    ax.set_xlim([time[0] - 1, time[-1] + 1])
+    ax.tick_params(labelsize=12)
+
+    # -- Plotting data
+    hsur = plt.bar(time, sur, color=(1.0, 0.65, 0), linewidth=1.0, edgecolor='k')
+    hboth = plt.bar(time, both, bottom=sur, color=(0.58, 0.44, 0.86), linewidth=1.0, edgecolor='k')
+    hsub = plt.bar(time, sub, bottom=sur + both, color=(0.0, 0.0, 1.0), linewidth=1.0, edgecolor='k')
+
+    # -- Y-axis
+    ydata = [0.0e6, 0.5e6, 1.0e6, 1.5e6, 2.0e6, 2.5e6, 3.0e6]
+    yticks = ['0', '0.5', '1.0', '1.5', '2.0', '2.5', '3.0']
+    plt.yticks(ydata, yticks)
+    plt.grid(True, ls='dotted', alpha=0.6)
+
+    # -- Legend
+    str_legend = ['Subsurface bloom (Rrs555)', 'Concurrent bloom', 'Surface bloom(Rrs670)']
+    plt.legend([hsub, hboth, hsur], str_legend, loc=9, fontsize=12)
+
+    # -- Credits and datatype
+    ax.text(1997.5, 2.9e6,
+            s='Datatype : Multi-Sensor Satellite Observation \nCredit : E.U. Copernicus Marine Service Information',
+            bbox={'facecolor': 'white', 'alpha': 0.5}, fontsize=9)
+
+    # -- Add the logos as subplot
+    logo = plt.imread(os.path.join(dir_base, 'LogosOMIBand-100-mv.png'))
+    axlogo = plt.subplot(gs[1])
+    axlogo.imshow(logo)
+    axlogo.axis('off')
+
+    # -- Figure caption
+    axlogo.text(-20, 150,
+                'Summer subsurface and surface bloom coverage time series for the Baltic Sea.\nConcurrent bloom are the areas where both surface and subsurface thresholds were exceeded.',
+                style='italic', fontsize=13)
+
+    # -- Graphical settings
+    plt.subplots_adjust(wspace=0, hspace=-0.7)
+    plt.tight_layout()
+
+    ## -- Saving output file
+    plt.savefig(file_out, dpi=300)
+
+
+def plot_cyano_kk():
     from matplotlib import pyplot as plt
     import matplotlib.pyplot as plt
     import numpy as np
@@ -753,6 +843,7 @@ def plot_cyano():
     both = np.array(df_cyano['CoverageBoth'][1:])
     year_start = 1998
     year_end = 2024
+
     # -- Figure size & division
     fig = plt.figure(figsize=(11.7, 8.3))
     gs = gridspec.GridSpec(2, 1, height_ratios=[100, 35])
@@ -768,7 +859,7 @@ def plot_cyano():
     plt.xlabel(' Year ', size='xx-large', fontweight='bold')
     plt.ylabel(r'Coverage area (day·km$^2$·10$^6$)', size='xx-large', fontweight='bold')
 
-    tt = plt.title('Summer bloom Baltic Sea', fontsize=18)
+    tt = plt.title('Baltic Sea summer bloom coverage (1998-2024)', fontsize=18)
     tt.set_position([0.5, 1.05])
 
     time = np.arange(year_start, year_end + 1, 1)
@@ -794,14 +885,21 @@ def plot_cyano():
 
     # -- Credits and datatype
     str_legend = ['Subsurface bloom (Rrs555)', 'Concurrent bloom', 'Surface bloom(Rrs670)']
-    plt.legend([hsub,hboth,hsur],str_legend,loc=9,
-               title='Datatype : Multi-product \nCredit : E.U. Copernicus Marine Service Information')  # , fontsize=14
+    plt.legend([hsub,hboth,hsur],str_legend,loc=9,fontsize=12)
+
+    ##datacredits,location using data coordinates
+    ax.text(1997.5,2.9e6,s='Datatype : Multi-Sensor Satellite Observation \nCredit : E.U. Copernicus Marine Service Information',bbox = {'facecolor':'white', 'alpha':0.5},fontsize=9)
 
     # -- Add the logos as subplot
     logo = plt.imread(os.path.join(os.path.dirname(file_cyano),'LogosOMIBand-100-mv.png'))
     axlogo = plt.subplot(gs[1])
     img = axlogo.imshow(logo)
     axlogo.axis('off')
+
+    # --
+
+    axlogo.text(-20, 150, 'Summer subsurface and surface bloom coverage time series for the Baltic Sea.\nConcurrent bloom are the areas where both surface and subsurface thresholds were exceeded.', style='italic',fontsize=13)
+
 
     # -- Graphical settings
     plt.subplots_adjust(wspace=0, hspace=-0.7)
@@ -848,8 +946,8 @@ def check_sensormask_stats():
     file_out = '/store/COP2-OC-TAC/PQD/sensor_mask_multi_chl_med.csv'
 
     ##LOCAL TEST
-    # dir_base = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/NOW/OCTAC_QWG'
-    # file_out = os.path.join(dir_base,'sensor_mask_multi_chl_med.csv')
+    dir_base = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/NOW/OCTAC_QWG'
+    file_out = os.path.join(dir_base,'sensor_mask_multi_chl_med.csv')
 
     work_date = dt(2023,5,1)
     end_date = dt(2025,5,27)
@@ -888,6 +986,72 @@ def check_sensormask_stats():
         work_date = work_date + timedelta(hours=25)
 
     fw.close()
+
+def check_coverage():
+    dir_base = '/store3/OC/MULTI/daily_v202311_x'
+    file_out = '/store/COP2-OC-TAC/PQD/coverage_multi_chl_med.csv.csv'
+    file_mask = '/store/COP2-OC-TAC/PQD/MED_Land_hr.nc'
+
+    ##LOCAL TEST
+    # dir_base = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/NOW/OCTAC_QWG'
+    # file_out = os.path.join(dir_base, 'coverage_multi_chl_med.csv')
+    # file_mask = os.path.join(dir_base,'MED_Land_hr.nc')
+
+
+    coverage_dirs = [dir_base]*5
+    datanameformat = ['A$DATE$-coverage-med.nc',
+                      'J$DATE$-coverage-med.nc',
+                      'V$DATE$-coverage-med.nc',
+                      'Oa$DATE$-coverage-med.nc',
+                      'Ob$DATE$-coverage-med.nc']
+    sensors = ['AQUA','VIIRS-J','VIIRS-N','OLCI-A','OLCI-B','TOTAL']
+    first_line = ['DATE','NDOMAIN']
+    for sensor in sensors:
+        first_line.append(f'{sensor}_coverage')
+        first_line.append(f'{sensor}_pcoverage')
+
+    dmask = Dataset(file_mask)
+    mask_array = dmask.variables['Land_Mask'][:]
+    ndomain = np.count_nonzero(mask_array == 0)
+    dmask.close()
+
+
+    work_date = dt(2023, 5, 1)
+    end_date = dt(2025, 5, 26)
+    fw = open(file_out, 'w')
+    fw.write(";".join(first_line))
+
+    while work_date <= end_date:
+        yyyy = work_date.strftime('%Y')
+        jjj = work_date.strftime('%j')
+        yyyyjjj = f'{yyyy}{jjj}'
+        line = f'{work_date.strftime("%Y-%m-%d")};{ndomain}'
+        coverage_end = np.zeros(mask_array.shape)
+        for ifile,coverage_dir in enumerate(coverage_dirs):
+            file_date = os.path.join(coverage_dir,yyyy,jjj, datanameformat[ifile].replace('$DATE$',yyyyjjj))
+            if os.path.isfile(file_date):
+                dataset = Dataset(file_date)
+                coverage = np.ma.squeeze(dataset.variables['coverage'][:])
+                coverage = np.ma.filled(coverage,2)
+                coverage=np.ma.masked_where(mask_array==1,coverage)
+                ncoverage = np.count_nonzero(coverage==1)
+                pcoverage = (ncoverage/ndomain)*100
+                line = f'{line};{ncoverage};{pcoverage}'
+                dataset.close()
+                coverage_end[coverage==1]=coverage_end[coverage==1]+1
+            else:
+                line = f'{line};0.0;0.0'
+
+        ncoverage = np.count_nonzero(coverage_end>=1)
+        pcoverage = (ncoverage / ndomain) * 100
+        line = f'{line};{ncoverage};{pcoverage}'
+        fw.write('\n')
+        fw.write(line)
+        print(F'[INFO] Date: {work_date.strftime("%Y-%m-%d")} Coverage total: {ncoverage} %: {pcoverage}')
+        work_date = work_date + timedelta(hours=24)
+
+    fw.close()
+
 def main():
     print('[INFO] Started utils')
 
@@ -898,7 +1062,8 @@ def main():
         make_cyano_stats()
 
     if args.mode == 'sensormask_stats':
-        check_sensormask_stats()
+        #check_sensormask_stats()
+        check_coverage()
 
     if args.mode == 'test':
 
