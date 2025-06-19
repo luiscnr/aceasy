@@ -1061,6 +1061,85 @@ def check_coverage():
 
     fw.close()
 
+def make_json():
+    import json
+    dir_base = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/NOW/OCTAC_QWG'
+    file_coverage = os.path.join(dir_base,'coverage_multi_chl_med.csv')
+    file_valid_obs = os.path.join(dir_base,'sensor_mask_multi_chl_med.csv')
+    json_file = os.path.join(dir_base,'product_quality_nb-observations_Plankton_chl-sat_1km_OCEANCOLOUR_MED_BGC_L3_NRT_009_141_20230501-20250526.json')
+    df_coverage = pd.read_csv(file_coverage,sep=';')
+    df_valid = pd.read_csv(file_valid_obs,sep=';')
+    ndata = len(df_coverage.index)
+    domain = [None]*ndata
+    theoretical_coverage = [None]*ndata
+    all_valid_obs = [None]*ndata
+    seawifs_obs = [None]*ndata
+    aqua_obs = [None]*ndata
+    meris_obs = [None]*ndata
+    viirsn_obs = [None]*ndata
+    viirsj_obs = [None]*ndata
+    s3a_obs = [None] * ndata
+    s3b_obs = [None] * ndata
+
+
+    for idx in range(ndata):
+        datestr = df_coverage.loc[idx,'DATE']
+        ndomain = df_coverage.loc[idx,'NDOMAIN']
+        pcoverage = df_coverage.loc[idx,'AQUA_pcoverage']
+        ncoverage = df_coverage.loc[idx,'AQUA_coverage'] if pcoverage>70 else ndomain
+        print(idx,datestr,ndomain,pcoverage,ncoverage)
+        domain[idx] = [datestr,int(ndomain)]
+        theoretical_coverage[idx] = [datestr,int(ncoverage)]
+        all_valid_obs[idx] =  [datestr, int(df_valid.loc[idx, 'All'])]
+        seawifs_obs[idx] = [datestr, int(df_valid.loc[idx, 'SeaWiFS'])]
+        aqua_obs[idx] = [datestr,int(df_valid.loc[idx,'MODIS AQUA'])]
+        meris_obs[idx] = [datestr, int(df_valid.loc[idx, 'MERIS'])]
+        viirsn_obs[idx] = [datestr, int(df_valid.loc[idx, 'VIIRS NPP'])]
+        viirsj_obs[idx] = [datestr, int(df_valid.loc[idx, 'VIIRS JPSS1'])]
+        s3a_obs[idx] = [datestr, int(df_valid.loc[idx, 'OLCI Sentinel-3A'])]
+        s3b_obs[idx] = [datestr, int(df_valid.loc[idx, 'OLCI Sentinel-3B'])]
+
+        rs = 'med'
+        js = {
+            rs: {
+                'domain': {
+                    'data': domain
+                },
+                'theoretical_coverage': {
+                    'data': theoretical_coverage
+                },
+                'all_sat_valid': {
+                    'data': all_valid_obs,
+                },
+                'SeaWiFS_MLAC_Orbview-2':{
+                    'data': seawifs_obs
+                },
+                'MERIS_RR_ENVISAT': {
+                    'data': meris_obs
+                },
+                'MODIS_Aqua': {
+                    'data': aqua_obs
+                },
+                'VIIRS_Suomi-NPP': {
+                    'data': viirsn_obs
+                },
+                'OLCI_RR_Sentinel-3a': {
+                    'data': s3a_obs
+                },
+                'VIIRS_JPSS-1': {
+                    'data': viirsj_obs
+                },
+                'OLCI_RR_Sentinel-3b': {
+                    'data': s3b_obs
+                }
+            }
+        }
+
+        with open(json_file, "w", encoding='utf8') as outfile:
+            json.dump(js, outfile, indent=3, ensure_ascii=False)
+
+
+
 def main():
     print('[INFO] Started utils')
 
@@ -1071,8 +1150,9 @@ def main():
         make_cyano_stats()
 
     if args.mode == 'sensormask_stats':
-        #check_sensormask_stats()
-        check_coverage()
+        # check_sensormask_stats()
+        # check_coverage()
+        make_json()
 
     if args.mode == 'test':
 

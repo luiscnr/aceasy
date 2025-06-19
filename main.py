@@ -43,6 +43,8 @@ parser.add_argument('-type', "--type_product", help="Type product for Baltic_202
 parser.add_argument('-type_polymer', "--type_product_polymer", help="Type product for POLYMER", default="s3_olci",
                     choices=["s3_olci", "s2_msi", "prisma"])
 
+parser.add_argument('-only_rrs',"--use_only_rrs",help="Produce only RRS for BAL202411 with polymer type_product ",action="store_true")
+
 args = parser.parse_args()
 
 warnings.simplefilter('ignore',UserWarning)
@@ -783,8 +785,9 @@ if __name__ == '__main__':
     elif args.atm_correction == 'BAL202411':
         corrector = BALTIC_202411_PROCESSOR(fconfig, args.verbose)
         corrector.set_product_type(args.type_product)
+        corrector.only_rss = args.use_only_rrs
         if args.verbose:
-            print(f'[INFO] Setting product type for BAL202411 processor to: {args.type_product}')
+            print(f'[INFO] Setting product type for BAL202411 processor to: {args.type_product}. Use only RRS: {args.use_only_rrs}')
     else:
         corrector = None
 

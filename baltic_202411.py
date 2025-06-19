@@ -24,6 +24,7 @@ class BALTIC_202411_PROCESSOR():
         self.bal_proc_old = BALTIC_MLP(fconfig, verbose)
 
         # for retrieving RRS from nc products
+        self.only_rss = False
         self.central_wavelength = {}
         self.central_wl_chla = []
         self.wlbands_chla_polymer = ['Rw443', 'Rw490', 'Rw510', 'Rw560', 'Rw665']
@@ -399,7 +400,13 @@ class BALTIC_202411_PROCESSOR():
         if self.verbose:
             print(f'[INFO] Image dimensions {ny}x{nx}')
 
-        # defining output arrays
+        if self.only_rss and self.product_type== 'polymer':
+            if self.verbose:
+                print(f'[INFO] No water processing implemented, only rrs are generated...')
+                print(f'[INFO] Generating output file: {fileout}')
+            self.create_file(fileout, ncinput, None, startY, endY + 1, startX, endX + 1, date_file)
+
+        # if only_rrs is false, compute chl-a and other variables
         all_arrays = {}
         for var in self.processing_var:
             array = np.ma.masked_all((ny, nx))
@@ -912,11 +919,15 @@ class BALTIC_202411_PROCESSOR():
             self.update_attrs_l3_olci(date_file)
             ncoutput.set_global_attributes_from_dict(self.varattr)
 
-        array_chl = all_arrays['CHL']
-        ny = array_chl.shape[0]
-        nx = array_chl.shape[1]
-        if self.product_type == 'cci':
-            array_chl = np.flipud(array_chl)
+        if all_arrays is None:
+            ny = yend - yini
+            nx = xend - xini
+        else:
+            array_chl = all_arrays['CHL']
+            ny = array_chl.shape[0]
+            nx = array_chl.shape[1]
+            if self.product_type == 'cci':
+                array_chl = np.flipud(array_chl)
 
         ncoutput.create_dimensions(ny, nx)
 
@@ -964,6 +975,11 @@ class BALTIC_202411_PROCESSOR():
                 ncoutput.create_rrs_variable(array, name_band, wl, self.varattr, self.product_type)
 
         if self.product_type == 'polymer':
+
+            flag_band = ncinput.variables['bitmask']
+            flagging = polymerflag.Class_Flags_Polymer(flag_band)
+            mask_here = self.get_valid_polymer_mask(flagging,ncinput,yini,yend,xini,xend)
+
             for rrsvar in self.rrsbands_polymer.keys():
                 namevar = self.rrsbands_polymer[rrsvar]
                 if self.verbose:
@@ -972,7 +988,8 @@ class BALTIC_202411_PROCESSOR():
                     print(f'[WARNING] Band {rrsvar} is not available in the Polymer file')
                     continue
                 array = np.ma.array(ncinput.variables[rrsvar][yini:yend, xini:xend])
-                array[array.mask] = -999
+                #array[array.mask] = -999
+                array[mask_here==0] = -999
                 array[~array.mask] = array[~array.mask] / np.pi
 
                 wl = self.central_wavelength[rrsvar]
@@ -996,25 +1013,26 @@ class BALTIC_202411_PROCESSOR():
                     ncoutput.create_rrs_variable(array, rrsvar, wl, self.varattr, self.product_type)
                     nchere.close()
 
-        # chl
-        if self.verbose:
-            print(f'[INFO]    Adding chla...')
-        ncoutput.create_var_general(array_chl, 'CHL', self.varattr)
-
-        # other variables
-        done_variables = ['CHL']
-        for ovar in all_arrays.keys():
-            if ovar in done_variables:
-                continue
+        if all_arrays is not None:
+            # chl
             if self.verbose:
-                print(f'[INFO]    Adding extra variable {ovar}....')
-            array_here = all_arrays[ovar]
-            if self.product_type == 'cci':
-                array_here = np.flipud(array_here)
-            if ovar.startswith('FLAG'):
-                ncoutput.create_var_flag_general(array_here, ovar, self.varattr)
-            else:
-                ncoutput.create_var_general(array_here, ovar, self.varattr)
+                print(f'[INFO]    Adding chla...')
+            ncoutput.create_var_general(array_chl, 'CHL', self.varattr)
+
+            # other variables
+            done_variables = ['CHL']
+            for ovar in all_arrays.keys():
+                if ovar in done_variables:
+                    continue
+                if self.verbose:
+                    print(f'[INFO]    Adding extra variable {ovar}....')
+                array_here = all_arrays[ovar]
+                if self.product_type == 'cci':
+                    array_here = np.flipud(array_here)
+                if ovar.startswith('FLAG'):
+                    ncoutput.create_var_flag_general(array_here, ovar, self.varattr)
+                else:
+                    ncoutput.create_var_general(array_here, ovar, self.varattr)
         ncoutput.close_file()
 
         if self.verbose:

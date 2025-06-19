@@ -1115,6 +1115,86 @@ def test_masks():
 
 
     return True
+
+def plot_ebro(date_here,type_file):
+    dir_base = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/NOW/Ebro/SOURCES'
+    if type_file=='multi':
+        name_file = '$DATE$_cmems_obs-oc_med_bgc-plankton_myint_l3-multi-1km_P1D.nc'
+    if type_file=='olci':
+        name_file = '$DATE$_cmems_obs-oc_med_bgc-plankton_myint_l3-olci-300m_P1D.nc'
+    if type_file=='hr':
+        name_file = '$DATE$_P1D_CMEMS_HROC_L3-geophy_MED_31T_100m-v01.nc'
+
+
+    file_here = os.path.join(dir_base,date_here.strftime('%Y/%j'),name_file.replace('$DATE$',date_here.strftime('%Y%m%d')))
+    if not os.path.exists(file_here):
+        print(f'{file_here} was not found')
+        return True
+
+    file_out = os.path.join(os.path.dirname(dir_base),'IMAGES',f'Chla_{type_file}_{date_here.strftime("%Y%m%d")}.png')
+    fig, ax = plt.subplots(subplot_kw=dict(projection=ccrs.PlateCarree()))
+    fig.set_figwidth(15)
+    fig.set_figheight(15)
+
+
+
+    # coastlines
+    ax.add_feature(cartopy.feature.LAND, zorder=0, edgecolor='black', linewidth=0.5)
+    # ax.coastlines(resolution='10m')
+
+    # grid lines
+    gl = ax.gridlines(draw_labels=True, dms=True, x_inline=False, y_inline=False, linewidth=0.5, linestyle='dotted')
+    gl.xlocator = mticker.FixedLocator([0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2])
+    gl.ylocator = mticker.FixedLocator([40, 40.2, 40,4, 40.6, 40.8, 41])
+    gl.right_labels = False
+    gl.left_labels = True
+    gl.bottom_labels = True
+    gl.top_labels = False
+    gl.xlabel_style = {'size': 15}
+    gl.ylabel_style = {'size': 15}
+
+    ##data
+    limits = [40, 41, 0, 1.2]
+    dataset = Dataset(file_here)
+    array_lat = dataset.variables['lat'][:]
+    array_lon = dataset.variables['lon'][:]
+    r1, r2, c1, c2  = get_geo_limits(array_lat,array_lon,limits)
+
+    data = np.ma.squeeze(dataset.variables['CHL'][:])
+    dataset.close()
+    if type_file=='hr':
+        lat_here = array_lat[r2:r1]
+        lon_here = array_lon[c1:c2]
+        date_here = data_here = data[r2:r1,c1:c2]
+    else:
+        lat_here = array_lat[r1:r2]
+        lon_here = array_lon[c1:c2]
+        data_here = data[r1:r2,c1:c2]
+    print('lat',lat_here.shape)
+    print('lon',lon_here.shape)
+    print('data',data_here.shape)
+
+    h = ax.pcolormesh(lon_here, lat_here, data_here, norm=LogNorm(vmin=0.01, vmax=10))
+    cbar = fig.colorbar(h, cax=None, ax=ax, use_gridspec=True, fraction=0.03, format="$%.2f$")
+    cbar.ax.tick_params(labelsize=15)
+    units = r'mg m$^-$$^3$'
+    cbar.set_label(label=f'CHL ({units})', size=15)
+    title = f'Chlorophyll a concentration ({units})'
+    plt.title(title)
+    plt.tight_layout()
+    fig.savefig(file_out, dpi=300, bbox_inches='tight')
+    plt.close(fig)
+
+    return True
+
+def get_geo_limits(array_lat,array_lon,geo_limits):
+    r1 = np.argmin(np.abs(array_lat-geo_limits[0]))
+    r2 = np.argmin(np.abs(array_lat - geo_limits[1]))
+    c1 = np.argmin(np.abs(array_lon - geo_limits[2]))
+    c2 = np.argmin(np.abs(array_lon - geo_limits[3]))
+
+    return r1, r2, c1, c2
+
 def main():
     if args.config_path:
         if not os.path.isfile(args.config_path):
@@ -1123,10 +1203,13 @@ def main():
         options = get_options_from_config_file(args.config_path)
         run_maps(options)
         return
-    if test_masks():
+    #if test_masks():
+        #return
 
+    input_date = dt.strptime(args.input_path,'%Y-%m-%d')
+    type = args.output_path
+    if plot_ebro(input_date,type):
         return
-
     # if plot_coverage():
     #     return
     # if compare_old_new_v2():
