@@ -405,6 +405,7 @@ class BALTIC_202411_PROCESSOR():
                 print(f'[INFO] No water processing implemented, only rrs are generated...')
                 print(f'[INFO] Generating output file: {fileout}')
             self.create_file(fileout, ncinput, None, startY, endY + 1, startX, endX + 1, date_file)
+            return
 
         # if only_rrs is false, compute chl-a and other variables
         all_arrays = {}

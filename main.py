@@ -1020,6 +1020,7 @@ if __name__ == '__main__':
                 if args.atm_correction == 'BAL202411':
                     corrector = BALTIC_202411_PROCESSOR(fconfig, args.verbose)
                     corrector.set_product_type(args.type_product)
+                    corrector.only_rss = args.use_only_rrs
                     params[0] = corrector
 
             if applyPool == 0:
