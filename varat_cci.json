@@ -173,6 +173,23 @@
 "valid_min":0,
 "valid_max":3
 },
+"GLOBAL_SPLIT":{
+"plankton":{
+"parameter_code":"PLANKTON",
+"parameter":"Chlorophyll-a concentration and Phytoplankton Functional Types",
+"title":"cmems_obs-oc_bal_bgc-plankton_my_l3-multi-1km_P1D"
+},
+"reflectance":{
+"parameter_code":"RRS",
+"parameter":"Remote Sensing Reflectance",
+"title":"cmems_obs-oc_bal_bgc-reflectance_my_l3-multi-1km_P1D"
+},
+"transp":{
+"parameter_code":"KD490",
+"parameter":"Diffuse attenuation coefficient at 490nm",
+"title":"cmems_obs-oc_bal_bgc-transp_my_l3-multi-1km_P1D"
+}
+},
 "GLOBAL":{
 "Conventions":"CF-1.4",
 "references":"",

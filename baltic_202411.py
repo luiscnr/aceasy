@@ -146,6 +146,15 @@ class BALTIC_202411_PROCESSOR():
     def check_runac(self):
         return self.bal_proc.VALID
 
+    def update_attrs_cci(self, date_cci, split):
+        self.varattr['GLOBAL']['start_date'] = date_cci.strftime('%Y-%m-%d')
+        self.varattr['GLOBAL']['stop_date'] = date_cci.strftime('%Y-%m-%d')
+        if split is not None:
+            self.varattr['GLOBAL']['parameter_code'] = self.varattr['GLOBAL_SPLIT'][split]['parameter_code']
+            self.varattr['GLOBAL']['parameter'] = self.varattr['GLOBAL_SPLIT'][split]['parameter']
+            self.varattr['GLOBAL']['title'] = self.varattr['GLOBAL_SPLIT'][split]['title']
+
+
     def update_attrs_l3_olci(self, date_olci):
         timeliness = self.product_type.split('_')[2].upper()
         self.varattr['GLOBAL']['start_date'] = date_olci.strftime('%Y-%m-%d')
@@ -318,21 +327,66 @@ class BALTIC_202411_PROCESSOR():
             print(f'[INFO] Starting CCI splitting and masking...')
         from datetime import datetime as dt
         ncref = Dataset(fileout)
-        variables = ['lat', 'lon', 'CHL', 'CYANOBLOOM']
         try:
             date_file = dt.strptime(os.path.basename(fileout)[1:8],'%Y%j').replace(tzinfo=pytz.utc)
         except:
             print(f'[ERROR] Date file could not be set.')
             return
+
+        variables = ['lat', 'lon', 'CHL', 'CYANOBLOOM']
         output_file_chla = os.path.join(output_path, f'C{date_file.strftime("%Y%j")}-chl-bal-hr.nc')
         if self.verbose:
             print(f'[INFO] Creating CHL file: {output_file_chla}')
-        self.create_copy_final_file(ncref, variables, date_file, output_file_chla)
+        self.create_copy_final_file(ncref, variables, date_file, output_file_chla,'plankton')
+
         variables = ['lat', 'lon', 'MICRO', 'NANO', 'PICO', 'CRYPTO', 'DIATO', 'DINO', 'GREEN', 'PROKAR']
         output_file_pft = os.path.join(output_path, f'C{date_file.strftime("%Y%j")}-pft-bal-hr.nc')
         if self.verbose:
             print(f'[INFO] Creating PFT file: {output_file_pft}')
-        self.create_copy_final_file(ncref, variables, date_file, output_file_pft)
+        self.create_copy_final_file(ncref, variables, date_file, output_file_pft,'plankton')
+
+        variables = ['lat', 'lon', 'RRS412']
+        output_file_rrs412 = os.path.join(output_path, f'C{date_file.strftime("%Y%j")}-rrs412-bal-hr.nc')
+        if self.verbose:
+            print(f'[INFO] Creating RRS412 file: {output_file_rrs412}')
+        self.create_copy_final_file(ncref, variables, date_file, output_file_rrs412, 'reflectance')
+
+        variables = ['lat', 'lon', 'RRS443']
+        output_file_rrs443 = os.path.join(output_path, f'C{date_file.strftime("%Y%j")}-rrs443-bal-hr.nc')
+        if self.verbose:
+            print(f'[INFO] Creating RRS443 file: {output_file_rrs443}')
+        self.create_copy_final_file(ncref, variables, date_file, output_file_rrs443, 'reflectance')
+
+        variables = ['lat', 'lon', 'RRS490']
+        output_file_rrs490 = os.path.join(output_path, f'C{date_file.strftime("%Y%j")}-rrs490-bal-hr.nc')
+        if self.verbose:
+            print(f'[INFO] Creating RRS490 file: {output_file_rrs490}')
+        self.create_copy_final_file(ncref, variables, date_file, output_file_rrs490, 'reflectance')
+
+        variables = ['lat', 'lon', 'RRS510']
+        output_file_rrs510 = os.path.join(output_path, f'C{date_file.strftime("%Y%j")}-rrs510-bal-hr.nc')
+        if self.verbose:
+            print(f'[INFO] Creating RRS510 file: {output_file_rrs510}')
+        self.create_copy_final_file(ncref, variables, date_file, output_file_rrs510, 'reflectance')
+
+        variables = ['lat', 'lon', 'RRS560']
+        output_file_rrs560 = os.path.join(output_path, f'C{date_file.strftime("%Y%j")}-rrs560-bal-hr.nc')
+        if self.verbose:
+            print(f'[INFO] Creating RRS560 file: {output_file_rrs560}')
+        self.create_copy_final_file(ncref, variables, date_file, output_file_rrs560, 'reflectance')
+
+        variables = ['lat', 'lon', 'RRS665']
+        output_file_rrs665 = os.path.join(output_path, f'C{date_file.strftime("%Y%j")}-rrs665-bal-hr.nc')
+        if self.verbose:
+            print(f'[INFO] Creating RRS665 file: {output_file_rrs665}')
+        self.create_copy_final_file(ncref, variables, date_file, output_file_rrs665, 'reflectance')
+
+        variables = ['lat', 'lon', 'KD490']
+        output_file_kd490 = os.path.join(output_path, f'C{date_file.strftime("%Y%j")}-kd490-bal-hr.nc')
+        if self.verbose:
+            print(f'[INFO] Creating KD490 file: {output_file_kd490}')
+        self.create_copy_final_file(ncref, variables, date_file, output_file_kd490, 'transp')
+
         ncref.close()
 
     def run_process(self, prod_path, output_dir):
@@ -943,6 +997,7 @@ class BALTIC_202411_PROCESSOR():
         if self.product_type == 'polymer':
             ncoutput.set_global_attributes(ncinput)
         if self.product_type == 'cci':
+            self.update_attrs_cci(date_file,None)
             ncoutput.set_global_attributes_from_dict(self.varattr)
         if self.product_type.startswith('l3_olci_'):
             self.update_attrs_l3_olci(date_file)
@@ -1073,19 +1128,24 @@ class BALTIC_202411_PROCESSOR():
             output_file_chla = os.path.join(os.path.dirname(fileout), f'C{date_file.strftime("%Y%j")}-chl-bal-hr.nc')
             if self.verbose:
                 print(f'[INFO] Creating CHL file: {output_file_chla}')
-            self.create_copy_final_file(ncref, variables, date_file, output_file_chla)
+            self.create_copy_final_file(ncref, variables, date_file, output_file_chla,'plankton')
             variables = ['lat', 'lon', 'MICRO', 'NANO', 'PICO', 'CRYPTO', 'DIATO', 'DINO', 'GREEN', 'PROKAR']
             output_file_pft = os.path.join(os.path.dirname(fileout), f'C{date_file.strftime("%Y%j")}-pft-bal-hr.nc')
             if self.verbose:
                 print(f'[INFO] Creating PFT file: {output_file_pft}')
-            self.create_copy_final_file(ncref, variables, date_file, output_file_pft)
+            self.create_copy_final_file(ncref, variables, date_file, output_file_pft,'plankton')
             ncref.close()
 
-    def create_copy_final_file(self, ncref, variables, date_file, output_file):
+    def create_copy_final_file(self, ncref, variables, date_file, output_file, split):
         ncout = Dataset(output_file, 'w', format='NETCDF4')
 
         # copy global attributes all at once via dictionary
-        ncout.setncatts(ncref.__dict__)
+        if split is not None:
+            self.update_attrs_cci(date_file, split)
+            ncout.set_global_attributes_from_dict(self.varattr)
+        else:
+            ncout.setncatts(ncref.__dict__)
+
 
         # copy dimensions
         for name, dimension in ncref.dimensions.items():
