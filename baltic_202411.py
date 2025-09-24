@@ -1134,10 +1134,10 @@ class BALTIC_202411_PROCESSOR():
             if mask_array is not None and mask_array.shape == array.shape:
                 array[mask_array==1] = np.ma.masked
             if name == 'lat' or name == 'lon':
-                ncout[name][:] = ncref[name][:]
+                ncout[name][:] = array
             elif name == 'CYANOBLOOM':
-                ncout[name][0, :, :] = np.int32(ncref[name][:, :])
+                ncout[name][0, :, :] = np.int32(array)
             else:
-                ncout[name][0, :, :] = ncref[name][:, :]
+                ncout[name][0, :, :] = array
 
         ncout.close()
