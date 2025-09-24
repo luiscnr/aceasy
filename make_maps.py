@@ -2,6 +2,7 @@ import argparse, configparser, os
 import shutil
 from datetime import timedelta
 import numpy.ma
+import pandas as pd
 from netCDF4 import Dataset
 from matplotlib import pyplot as plt
 from matplotlib.colors import LogNorm
@@ -653,11 +654,24 @@ def compute_total_coverage_cci():
 
     print(f'[INFO] Completed')
 
+
 def compute_year_coverage_cci(year):
     print(f'COMPUTING COVERAGE FOR YEAR....')
     from datetime import timedelta
     dir_base = '/store3/OC/CCI_v2017/daily_v202411'
     file_out = os.path.join(dir_base, f'COVERAGE_ENSCDF_{year}.nc')
+    dir_3b = os.path.join(dir_base,'Weights_mlp_3b')
+    if not os.path.isdir(dir_3b):
+        os.mkdir(dir_3b)
+    dir_3b4b = os.path.join(dir_base, 'Weights_mlp_3b4b')
+    if not os.path.isdir(dir_3b4b):
+        os.mkdir(dir_3b4b)
+    dir_3b4b5b = os.path.join(dir_base, 'Weights_mlp_3b4b5b')
+    if not os.path.isdir(dir_3b4b5b):
+        os.mkdir(dir_3b4b5b)
+
+
+
     file_in_format = 'MDATE1.0000.bal.all_products.CCI.DATE20000.v0.DATE10000.data_BAL202411.nc'
     format_date1 = '%Y%j'
     format_date2 = '%d%b%y'
@@ -674,6 +688,23 @@ def compute_year_coverage_cci(year):
     weight_mlp3b_cdf = np.zeros((ntime, nlat, nlon))
     weight_mlp4b_cdf = np.zeros((ntime, nlat, nlon))
     weight_mlp5b_cdf = np.zeros((ntime, nlat, nlon))
+
+    n_mlp_3b = np.zeros((ntime, nlat, nlon))
+    n_mlp_4b = np.zeros((ntime, nlat, nlon))
+    n_mlp_5b = np.zeros((ntime, nlat, nlon))
+    n_mlp_3b4b = np.zeros((ntime,nlat,nlon))
+    n_mlp_3b5b = np.zeros((ntime, nlat, nlon))
+    n_mlp_4b5b = np.zeros((ntime, nlat, nlon))
+    n_mlp_3b4b5b = np.zeros((ntime,nlat,nlon))
+
+    coverage_mlp_3b = np.zeros((ntime, nlat, nlon))
+    coverage_mlp_4b = np.zeros((ntime, nlat, nlon))
+    coverage_mlp_5b = np.zeros((ntime, nlat, nlon))
+    coverage_mlp_3b4b = np.zeros((ntime, nlat, nlon))
+    coverage_mlp_3b5b = np.zeros((ntime, nlat, nlon))
+    coverage_mlp_4b5b = np.zeros((ntime, nlat, nlon))
+    coverage_mlp_3b4b5b = np.zeros((ntime, nlat, nlon))
+
 
     coverage_cdf = np.ma.masked_all((ntime, nlat, nlon))
     coverage_no_cdf = np.ma.masked_all((ntime, nlat, nlon))
@@ -713,7 +744,6 @@ def compute_year_coverage_cci(year):
         cdf_flag = input_dataset.variables['CDF_FLAG_MULTIPLE'][:]
 
 
-
         row,col = np.where(cdf_flag>=1)
         n_total[0, row, col] = n_total[0, row, col] + 1
         n_total[index_month, row, col] = n_total[index_month, row, col] + 1
@@ -727,45 +757,77 @@ def compute_year_coverage_cci(year):
         n_nocdf_total[index_month, row, col] = n_nocdf_total[index_month, row, col] + 1
 
         row, col = np.where(cdf_flag == 2)
+        n_mlp_3b[0,row,col] = n_mlp_3b[0,row,col]+1
+        n_mlp_3b[index_month, row, col] = n_mlp_3b[index_month, row, col] + 1
         weight_mlp3b_cdf[0, row,col] = weight_mlp3b_cdf[0,row,col] + weight_mlp3[row,col]
         weight_mlp3b_cdf[index_month, row, col] = weight_mlp3b_cdf[index_month, row, col] + weight_mlp3[row, col]
+        nw = len(row)
+        if nw>=1:
+            file_3b = os.path.join(dir_3b, 'weights_3b_yyyy_jjj.csv')
+            df_3b = pd.DataFrame(index=range(nw),columns=['mlp_3b'])
+            df_3b['mlp_3b'] =  np.squeeze(weight_mlp3[row,col])
+            df_3b.to_csv(file_3b,sep=';')
 
         row, col = np.where(cdf_flag == 4)
+        n_mlp_4b[0, row, col] = n_mlp_4b[0, row, col] + 1
+        n_mlp_4b[index_month, row, col] = n_mlp_4b[index_month, row, col] + 1
         weight_mlp4b_cdf[0, row, col] = weight_mlp4b_cdf[0, row, col] + weight_mlp4[row, col]
         weight_mlp4b_cdf[index_month, row, col] = weight_mlp4b_cdf[index_month, row, col] + weight_mlp4[row, col]
 
         row, col = np.where(cdf_flag == 8)
+        n_mlp_5b[0, row, col] = n_mlp_5b[0, row, col] + 1
+        n_mlp_5b[index_month, row, col] = n_mlp_5b[index_month, row, col] + 1
         weight_mlp5b_cdf[0, row, col] = weight_mlp5b_cdf[0, row, col] + weight_mlp5[row, col]
         weight_mlp5b_cdf[index_month, row, col] = weight_mlp5b_cdf[index_month, row, col] + weight_mlp5[row, col]
 
         row, col = np.where(cdf_flag == 6)
+        n_mlp_3b4b[0, row, col] = n_mlp_3b4b[0, row, col] + 1
+        n_mlp_3b4b[index_month, row, col] = n_mlp_3b4b[index_month, row, col] + 1
         weight_mlp3b_cdf[0, row, col] = weight_mlp3b_cdf[0, row, col] + weight_mlp3[row, col]
         weight_mlp3b_cdf[index_month, row, col] = weight_mlp3b_cdf[index_month, row, col] + weight_mlp3[row, col]
         weight_mlp4b_cdf[0, row, col] = weight_mlp4b_cdf[0, row, col] + weight_mlp4[row, col]
         weight_mlp4b_cdf[index_month, row, col] = weight_mlp4b_cdf[index_month, row, col] + weight_mlp4[row, col]
+        nw = len(row)
+        if nw >= 1:
+            file_3b4b = os.path.join(dir_3b4b, 'weights_3b4b_yyyy_jjj.csv')
+            df_3b4b = pd.DataFrame(index=range(nw), columns=['mlp_3b','mlp_4b'])
+            df_3b4b['mlp_3b'] = np.squeeze(weight_mlp3[row, col])
+            df_3b4b['mlp_4b'] = np.squeeze(weight_mlp4[row, col])
+            df_3b4b.to_csv(file_3b4b, sep=';')
 
         row, col = np.where(cdf_flag == 10)
+        n_mlp_3b5b[0, row, col] = n_mlp_3b5b[0, row, col] + 1
+        n_mlp_3b5b[index_month, row, col] = n_mlp_3b5b[index_month, row, col] + 1
         weight_mlp3b_cdf[0, row, col] = weight_mlp3b_cdf[0, row, col] + weight_mlp3[row, col]
         weight_mlp3b_cdf[index_month, row, col] = weight_mlp3b_cdf[index_month, row, col] + weight_mlp3[row, col]
         weight_mlp5b_cdf[0, row, col] = weight_mlp5b_cdf[0, row, col] + weight_mlp5[row, col]
         weight_mlp5b_cdf[index_month, row, col] = weight_mlp5b_cdf[index_month, row, col] + weight_mlp5[row, col]
 
         row, col = np.where(cdf_flag == 12)
+        n_mlp_4b5b[0, row, col] = n_mlp_4b5b[0, row, col] + 1
+        n_mlp_4b5b[index_month, row, col] = n_mlp_4b5b[index_month, row, col] + 1
         weight_mlp4b_cdf[0, row, col] = weight_mlp4b_cdf[0, row, col] + weight_mlp4[row, col]
         weight_mlp4b_cdf[index_month, row, col] = weight_mlp4b_cdf[index_month, row, col] + weight_mlp4[row, col]
         weight_mlp5b_cdf[0, row, col] = weight_mlp5b_cdf[0, row, col] + weight_mlp5[row, col]
         weight_mlp5b_cdf[index_month, row, col] = weight_mlp5b_cdf[index_month, row, col] + weight_mlp5[row, col]
 
         row, col = np.where(cdf_flag == 14)
+        n_mlp_3b4b5b[0, row, col] = n_mlp_3b4b5b[0, row, col] + 1
+        n_mlp_3b4b5b[index_month, row, col] = n_mlp_3b4b5b[index_month, row, col] + 1
         weight_mlp3b_cdf[0, row, col] = weight_mlp3b_cdf[0, row, col] + weight_mlp3[row, col]
         weight_mlp3b_cdf[index_month, row, col] = weight_mlp3b_cdf[index_month, row, col] + weight_mlp3[row, col]
         weight_mlp4b_cdf[0, row, col] = weight_mlp4b_cdf[0, row, col] + weight_mlp4[row, col]
         weight_mlp4b_cdf[index_month, row, col] = weight_mlp4b_cdf[index_month, row, col] + weight_mlp4[row, col]
         weight_mlp5b_cdf[0, row, col] = weight_mlp5b_cdf[0, row, col] + weight_mlp5[row, col]
         weight_mlp5b_cdf[index_month, row, col] = weight_mlp5b_cdf[index_month, row, col] + weight_mlp5[row, col]
-
-
-
+        nw = len(row)
+        if nw >= 1:
+            file_3b4b5b = os.path.join(dir_3b4b5b, 'weights_3b4b5b_yyyy_jjj.csv')
+            df_3b4b5b = pd.DataFrame(index=range(nw), columns=['mlp_3b','mlp_4b','mlp_5b'])
+            df_3b4b5b['mlp_3b'] = np.squeeze(weight_mlp3[row, col])
+            df_3b4b5b['mlp_4b'] = np.squeeze(weight_mlp4[row, col])
+            df_3b4b5b['mlp_5b'] = np.squeeze(weight_mlp5[row, col])
+            df_3b4b5b.to_csv(file_3b4b5b, sep=';')
 
         input_dataset.close()
 
@@ -784,6 +846,15 @@ def compute_year_coverage_cci(year):
     coverage_no_cdf[np.where(n_total>0)] = n_nocdf_total[np.where(n_total>0)]/n_total[np.where(n_total>0)]
     print(f'--> coverage_cdf: {coverage_cdf.shape}')
     print(f'--> coverage_no_cdf: {coverage_no_cdf.shape}')
+
+    ##coverage of each cdf flag with respect to the total cdf
+    coverage_mlp_3b[np.where(n_cdf_total > 0)] = n_mlp_3b[np.where(n_cdf_total > 0)] / n_cdf_total[np.where(n_cdf_total > 0)]
+    coverage_mlp_4b[np.where(n_cdf_total > 0)] = n_mlp_4b[np.where(n_cdf_total > 0)] / n_cdf_total[np.where(n_cdf_total > 0)]
+    coverage_mlp_5b[np.where(n_cdf_total > 0)] = n_mlp_5b[np.where(n_cdf_total > 0)] / n_cdf_total[np.where(n_cdf_total > 0)]
+    coverage_mlp_3b4b[np.where(n_cdf_total > 0)] = n_mlp_3b4b[np.where(n_cdf_total > 0)] / n_cdf_total[np.where(n_cdf_total > 0)]
+    coverage_mlp_3b5b[np.where(n_cdf_total > 0)] = n_mlp_3b5b[np.where(n_cdf_total > 0)] / n_cdf_total[np.where(n_cdf_total > 0)]
+    coverage_mlp_4b5b[np.where(n_cdf_total > 0)] = n_mlp_4b5b[np.where(n_cdf_total > 0)] / n_cdf_total[np.where(n_cdf_total > 0)]
+    coverage_mlp_3b4b5b[np.where(n_cdf_total > 0)] = n_mlp_3b4b5b[np.where(n_cdf_total > 0)] / n_cdf_total[np.where(n_cdf_total > 0)]
 
 
     coverage_cdf_mlp3[np.where(n_cdf_total > 0)] = weight_mlp3b_cdf[np.where(n_cdf_total > 0)]/ n_cdf_total[np.where(n_cdf_total > 0)]
@@ -843,7 +914,21 @@ def compute_year_coverage_cci(year):
         'coverage_cdf_mlp5' :coverage_cdf_mlp5,
         'coverage_total_mlp3' :coverage_total_mlp3,
         'coverage_total_mlp4' :coverage_total_mlp4,
-        'coverage_total_mlp5' :coverage_total_mlp5
+        'coverage_total_mlp5' :coverage_total_mlp5,
+        'n_mlp_3b': n_mlp_3b,
+        'n_mlp_4b': n_mlp_4b,
+        'n_mlp_5b': n_mlp_5b,
+        'n_mlp_3b4b': n_mlp_3b4b,
+        'n_mlp_3b5b': n_mlp_3b5b,
+        'n_mlp_4b5b': n_mlp_4b5b,
+        'n_mlp_3b4b5b': n_mlp_3b4b5b,
+        'coverage_mlp_3b': coverage_mlp_3b,
+        'coverage_mlp_4b': coverage_mlp_4b,
+        'coverage_mlp_5b': coverage_mlp_5b,
+        'coverage_mlp_3b4b': coverage_mlp_3b4b,
+        'coverage_mlp_3b5b': coverage_mlp_3b5b,
+        'coverage_mlp_4b5b': coverage_mlp_4b5b,
+        'coverage_mlp_3b4b5b': coverage_mlp_3b4b5b
     }
     for name_var in list_variables:
         array = list_variables[name_var]

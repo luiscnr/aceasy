@@ -432,6 +432,7 @@ def make_test():
     fw.close()
 
 def main():
+
     if args.mode == 'TEST':
         #make_test()
         file_oab = '/mnt/c/DATA_LUIS/OCTACWORK/CCOC-Laura/O2024158-rrs1020-med-fr.nc'

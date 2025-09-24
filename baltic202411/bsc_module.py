@@ -12,6 +12,7 @@
 
 # Import modules
 import numpy as np
+import scipy.io
 from scipy import stats
 
 # _______________________________________________________________________________________
@@ -95,6 +96,8 @@ def mlp_chl(mlp_model, samp, test_flag=False):
     # Data pre-processing
     samp_log = np.log10(samp)
     x = (samp_log - mlp_model['model'].muIn) / mlp_model['model'].stdIn
+    for idx in range(3):
+        print(samp_log[idx],mlp_model['model'].muIn[idx],mlp_model['model'].stdIn[idx],x[idx])
 
     # MLP forward
     z = np.tanh(x.dot(mlp_model['model'].par.w1) + mlp_model['model'].par.b1)
@@ -110,6 +113,7 @@ def mlp_chl(mlp_model, samp, test_flag=False):
     # Probability distribution based on z-scored data
     df = len(mlp_model['model'].muIn)
     mdist_zeta = mdist_calc(zeta, np.zeros(df), np.identity(df))
+
 
     # Survival probability based on the Chi2 distribution
     cdf = np.squeeze(1 - stats.chi2.cdf(mdist_zeta**2, df=df))

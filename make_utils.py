@@ -15,7 +15,7 @@ parser = argparse.ArgumentParser(
     description="Obtaining information for running MDB_builder.")
 
 parser.add_argument('-m', "--mode", help='Mode option',
-                    choices=["test", "check_neg_olci_values", "correct_neg_olci_values",
+                    choices=["test", "test_chla_bal", "check_neg_olci_values", "correct_neg_olci_values",
                              "correct_neg_olci_values_slurm","image_stats","compare_images","cyano_stats","plot_cyano","sensormask_stats"],
                     required=True)
 parser.add_argument('-i', "--input_path", help="Input path.")
@@ -1138,11 +1138,22 @@ def make_json():
         with open(json_file, "w", encoding='utf8') as outfile:
             json.dump(js, outfile, indent=3, ensure_ascii=False)
 
+def test_chla_bal():
+    print('Test chl-a bal algorithm')
+    from baltic202411.bal_202411 import BALTIC_202411
+    bm = BALTIC_202411()
+
+    res = bm.mlp_three_bands(np.array([0.001987597,0.00229291,0.002599203]))
+    print(res)
+
+
 
 
 def main():
     print('[INFO] Started utils')
 
+    if args.mode == 'test_chla_bal':
+        test_chla_bal()
     if args.mode == 'plot_cyano':
         plot_cyano()
 

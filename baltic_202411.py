@@ -24,7 +24,7 @@ class BALTIC_202411_PROCESSOR():
         self.bal_proc_old = BALTIC_MLP(fconfig, verbose)
 
         # for retrieving RRS from nc products
-        self.only_rss = False
+        self.only_rrs = False
         self.central_wavelength = {}
         self.central_wl_chla = []
         self.wlbands_chla_polymer = ['Rw443', 'Rw490', 'Rw510', 'Rw560', 'Rw665']
@@ -313,11 +313,37 @@ class BALTIC_202411_PROCESSOR():
         splitter.mask_array = self.get_mask_array()
         splitter.make_multiple_split(os.path.dirname(fileout), self.splits)
 
+    def run_cci_split(self,fileout):
+        if self.verbose:
+            print(f'[INFO] Starting CCI splitting and masking...')
+        from datetime import datetime as dt
+        ncref = Dataset(fileout)
+        variables = ['lat', 'lon', 'CHL', 'CYANOBLOOM']
+        try:
+            date_file = dt.strptime(os.path.basename(fileout)[1:8],'%Y%j').replace(tzinfo=pytz.utc)
+        except:
+            print(f'[ERROR] Date file could not be set.')
+            return
+        output_file_chla = os.path.join(os.path.dirname(fileout), f'C{date_file.strftime("%Y%j")}-chl-bal-hr.nc')
+        if self.verbose:
+            print(f'[INFO] Creating CHL file: {output_file_chla}')
+        self.create_copy_final_file(ncref, variables, date_file, output_file_chla)
+        variables = ['lat', 'lon', 'MICRO', 'NANO', 'PICO', 'CRYPTO', 'DIATO', 'DINO', 'GREEN', 'PROKAR']
+        output_file_pft = os.path.join(os.path.dirname(fileout), f'C{date_file.strftime("%Y%j")}-pft-bal-hr.nc')
+        if self.verbose:
+            print(f'[INFO] Creating PFT file: {output_file_pft}')
+        self.create_copy_final_file(ncref, variables, date_file, output_file_pft)
+        ncref.close()
+
     def run_process(self, prod_path, output_dir):
         if self.product_type.startswith('l3_olci_') and os.path.isdir(prod_path):
             self.run_process_multiple_files(prod_path, output_dir)
             return
         fileout = self.get_file_out(prod_path, output_dir)
+        if self.product_type=='cci_split' and os.path.exists(fileout):
+            self.run_cci_split(fileout)
+            return
+
         if os.path.exists(fileout):
             print(f'[WARNING] Output file {fileout} already exits. Skipping...')
             return
@@ -342,7 +368,8 @@ class BALTIC_202411_PROCESSOR():
                         pass
 
         if self.product_type == 'cci':
-            date_file = dt.utcfromtimestamp(ncinput.variables['time'][0]).replace(tzinfo=pytz.UTC)
+            #date_file = dt.utcfromtimestamp(ncinput.variables['time'][0]).replace(tzinfo=pytz.UTC)
+            date_file = dt.fromtimestamp(ncinput.variables['time'][0]).astimezone(pytz.UTC)
 
         if date_file is None:
             print(f'[ERROR] Date file could not be set.')
@@ -400,7 +427,7 @@ class BALTIC_202411_PROCESSOR():
         if self.verbose:
             print(f'[INFO] Image dimensions {ny}x{nx}')
 
-        if self.only_rss and self.product_type== 'polymer':
+        if self.only_rrs and self.product_type== 'polymer':
             if self.verbose:
                 print(f'[INFO] No water processing implemented, only rrs are generated...')
                 print(f'[INFO] Generating output file: {fileout}')
