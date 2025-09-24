@@ -1144,9 +1144,9 @@ class BALTIC_202411_PROCESSOR():
         if split is not None:
             self.update_attrs_cci(date_file, split)
             if self.varattr is not None and 'GLOBAL' in self.varattr.keys():
-                for at in varattr['GLOBAL']:
+                for at in self.varattr['GLOBAL']:
                     ncout.setncattr(at, varattr['GLOBAL'][at])
-                
+
 
 
 
