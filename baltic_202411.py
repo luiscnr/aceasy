@@ -341,6 +341,7 @@ class BALTIC_202411_PROCESSOR():
             return
         fileout = self.get_file_out(prod_path, output_dir)
         if self.product_type=='cci_split' and os.path.exists(fileout):
+            print('')
             self.run_cci_split(fileout)
             return
 
