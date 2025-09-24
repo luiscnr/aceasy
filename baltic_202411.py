@@ -1140,11 +1140,15 @@ class BALTIC_202411_PROCESSOR():
         ncout = Dataset(output_file, 'w', format='NETCDF4')
 
         # copy global attributes all at once via dictionary
+        ncout.setncatts(ncref.__dict__)
         if split is not None:
             self.update_attrs_cci(date_file, split)
-            ncout.set_global_attributes_from_dict(self.varattr)
-        else:
-            ncout.setncatts(ncref.__dict__)
+            if self.varattr is not None and 'GLOBAL' in self.varattr.keys():
+                for at in varattr['GLOBAL']:
+                    ncout.setncattr(at, varattr['GLOBAL'][at])
+                
+
+
 
 
         # copy dimensions
