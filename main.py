@@ -937,6 +937,8 @@ if __name__ == '__main__':
                         prod_path = get_input_path_cci_default(input_path, date_here)
                         if corrector.product_type=='cci_split':
                             prod_path = prod_path[:-3] + '_BAL202411.nc'
+                            print(prod_path)
+
                         if os.path.exists(prod_path):
                             params = [corrector, prod_path, output_path_jday, False, None, False]
                             param_list.append(params)
