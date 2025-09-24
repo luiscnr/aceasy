@@ -949,7 +949,7 @@ if __name__ == '__main__':
 
                     ##l2 data, multiple file for date
                     for f in os.listdir(input_path_date):
-                        if args.atm_correction == 'BAL202411' and corrector.product_type == 'cci':
+                        if args.atm_correction == 'BAL202411' and corrector.product_type.startswith('cci'):
                             continue
                         if args.atm_correction == 'BAL202411' and corrector.product_type.startswith('l3_olci_'):
                             continue
