@@ -313,7 +313,7 @@ class BALTIC_202411_PROCESSOR():
         splitter.mask_array = self.get_mask_array()
         splitter.make_multiple_split(os.path.dirname(fileout), self.splits)
 
-    def run_cci_split(self,fileout):
+    def run_cci_split(self,fileout,output_path):
         if self.verbose:
             print(f'[INFO] Starting CCI splitting and masking...')
         from datetime import datetime as dt
@@ -324,12 +324,12 @@ class BALTIC_202411_PROCESSOR():
         except:
             print(f'[ERROR] Date file could not be set.')
             return
-        output_file_chla = os.path.join(os.path.dirname(fileout), f'C{date_file.strftime("%Y%j")}-chl-bal-hr.nc')
+        output_file_chla = os.path.join(output_path, f'C{date_file.strftime("%Y%j")}-chl-bal-hr.nc')
         if self.verbose:
             print(f'[INFO] Creating CHL file: {output_file_chla}')
         self.create_copy_final_file(ncref, variables, date_file, output_file_chla)
         variables = ['lat', 'lon', 'MICRO', 'NANO', 'PICO', 'CRYPTO', 'DIATO', 'DINO', 'GREEN', 'PROKAR']
-        output_file_pft = os.path.join(os.path.dirname(fileout), f'C{date_file.strftime("%Y%j")}-pft-bal-hr.nc')
+        output_file_pft = os.path.join(output_path, f'C{date_file.strftime("%Y%j")}-pft-bal-hr.nc')
         if self.verbose:
             print(f'[INFO] Creating PFT file: {output_file_pft}')
         self.create_copy_final_file(ncref, variables, date_file, output_file_pft)
@@ -339,12 +339,12 @@ class BALTIC_202411_PROCESSOR():
         if self.product_type.startswith('l3_olci_') and os.path.isdir(prod_path):
             self.run_process_multiple_files(prod_path, output_dir)
             return
-        fileout = self.get_file_out(prod_path, output_dir)
-        if self.product_type=='cci_split' and os.path.exists(fileout):
-            print('')
-            self.run_cci_split(fileout)
+
+        if self.product_type=='cci_split':
+            self.run_cci_split(prod_path,output_dir)
             return
 
+        fileout = self.get_file_out(prod_path, output_dir)
         if os.path.exists(fileout):
             print(f'[WARNING] Output file {fileout} already exits. Skipping...')
             return
