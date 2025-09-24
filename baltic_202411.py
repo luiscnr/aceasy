@@ -1147,10 +1147,6 @@ class BALTIC_202411_PROCESSOR():
                 for at in self.varattr['GLOBAL']:
                     ncout.setncattr(at, self.varattr['GLOBAL'][at])
 
-
-
-
-
         # copy dimensions
         for name, dimension in ncref.dimensions.items():
             ncout.createDimension(name, (len(dimension) if not dimension.isunlimited() else None))

@@ -660,17 +660,6 @@ def compute_year_coverage_cci(year):
     from datetime import timedelta
     dir_base = '/store3/OC/CCI_v2017/daily_v202411'
     file_out = os.path.join(dir_base, f'COVERAGE_ENSCDF_{year}.nc')
-    dir_3b = os.path.join(dir_base,'Weights_mlp_3b')
-    if not os.path.isdir(dir_3b):
-        os.mkdir(dir_3b)
-    dir_3b4b = os.path.join(dir_base, 'Weights_mlp_3b4b')
-    if not os.path.isdir(dir_3b4b):
-        os.mkdir(dir_3b4b)
-    dir_3b4b5b = os.path.join(dir_base, 'Weights_mlp_3b4b5b')
-    if not os.path.isdir(dir_3b4b5b):
-        os.mkdir(dir_3b4b5b)
-
-
 
     file_in_format = 'MDATE1.0000.bal.all_products.CCI.DATE20000.v0.DATE10000.data_BAL202411.nc'
     format_date1 = '%Y%j'
@@ -761,12 +750,7 @@ def compute_year_coverage_cci(year):
         n_mlp_3b[index_month, row, col] = n_mlp_3b[index_month, row, col] + 1
         weight_mlp3b_cdf[0, row,col] = weight_mlp3b_cdf[0,row,col] + weight_mlp3[row,col]
         weight_mlp3b_cdf[index_month, row, col] = weight_mlp3b_cdf[index_month, row, col] + weight_mlp3[row, col]
-        nw = len(row)
-        if nw>=1:
-            file_3b = os.path.join(dir_3b, 'weights_3b_yyyy_jjj.csv')
-            df_3b = pd.DataFrame(index=range(nw),columns=['mlp_3b'])
-            df_3b['mlp_3b'] =  np.squeeze(weight_mlp3[row,col])
-            df_3b.to_csv(file_3b,sep=';')
+
 
         row, col = np.where(cdf_flag == 4)
         n_mlp_4b[0, row, col] = n_mlp_4b[0, row, col] + 1
@@ -787,13 +771,7 @@ def compute_year_coverage_cci(year):
         weight_mlp3b_cdf[index_month, row, col] = weight_mlp3b_cdf[index_month, row, col] + weight_mlp3[row, col]
         weight_mlp4b_cdf[0, row, col] = weight_mlp4b_cdf[0, row, col] + weight_mlp4[row, col]
         weight_mlp4b_cdf[index_month, row, col] = weight_mlp4b_cdf[index_month, row, col] + weight_mlp4[row, col]
-        nw = len(row)
-        if nw >= 1:
-            file_3b4b = os.path.join(dir_3b4b, 'weights_3b4b_yyyy_jjj.csv')
-            df_3b4b = pd.DataFrame(index=range(nw), columns=['mlp_3b','mlp_4b'])
-            df_3b4b['mlp_3b'] = np.squeeze(weight_mlp3[row, col])
-            df_3b4b['mlp_4b'] = np.squeeze(weight_mlp4[row, col])
-            df_3b4b.to_csv(file_3b4b, sep=';')
+
 
         row, col = np.where(cdf_flag == 10)
         n_mlp_3b5b[0, row, col] = n_mlp_3b5b[0, row, col] + 1
@@ -820,14 +798,7 @@ def compute_year_coverage_cci(year):
         weight_mlp4b_cdf[index_month, row, col] = weight_mlp4b_cdf[index_month, row, col] + weight_mlp4[row, col]
         weight_mlp5b_cdf[0, row, col] = weight_mlp5b_cdf[0, row, col] + weight_mlp5[row, col]
         weight_mlp5b_cdf[index_month, row, col] = weight_mlp5b_cdf[index_month, row, col] + weight_mlp5[row, col]
-        nw = len(row)
-        if nw >= 1:
-            file_3b4b5b = os.path.join(dir_3b4b5b, 'weights_3b4b5b_yyyy_jjj.csv')
-            df_3b4b5b = pd.DataFrame(index=range(nw), columns=['mlp_3b','mlp_4b','mlp_5b'])
-            df_3b4b5b['mlp_3b'] = np.squeeze(weight_mlp3[row, col])
-            df_3b4b5b['mlp_4b'] = np.squeeze(weight_mlp4[row, col])
-            df_3b4b5b['mlp_5b'] = np.squeeze(weight_mlp5[row, col])
-            df_3b4b5b.to_csv(file_3b4b5b, sep=';')
+
 
         input_dataset.close()
 
@@ -1291,10 +1262,10 @@ def main():
     #if test_masks():
         #return
 
-    input_date = dt.strptime(args.input_path,'%Y-%m-%d')
-    type = args.output_path
-    if plot_ebro(input_date,type):
-        return
+    # input_date = dt.strptime(args.input_path,'%Y-%m-%d')
+    # type = args.output_path
+    # if plot_ebro(input_date,type):
+    #     return
     # if plot_coverage():
     #     return
     # if compare_old_new_v2():
@@ -1303,29 +1274,29 @@ def main():
     #     return
 
     ##CREATE FILES CYANOBLOOM_COVERAGE
-    dir_base = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/BAL_EVOLUTION_202411/CYANOBLOOM_EVOLUTION'
-    file_mask = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/BAL_EVOLUTION_202411/MASKS/BAL_Land_Mask_hr.nc'
-    for year in range(1997,2025):
-        compute_year_cyano(dir_base,year,'cyano',file_mask)
+    # dir_base = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/BAL_EVOLUTION_202411/CYANOBLOOM_EVOLUTION'
+    # file_mask = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/BAL_EVOLUTION_202411/MASKS/BAL_Land_Mask_hr.nc'
+    # for year in range(1997,2025):
+    #     compute_year_cyano(dir_base,year,'cyano',file_mask)
 
 
 
     ##CREATE CSV FILE FOR CYANO YEAR FILES
-    dir_base = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/BAL_EVOLUTION_202411/CYANOBLOOM_EVOLUTION'
-    fcsv_out = os.path.join(dir_base, 'CyanoEvolution_CyanoPeriod.csv')
-    fw = open(fcsv_out, 'w')
-    started = False
-    for year in range(1997,2025):
-        line_start,line = get_lines_cyano_csv_from_year_files(dir_base,year)
-        if not started:
-            fw.write(line_start)
-            fw.write('\n')
-            fw.write(line)
-            started = True
-        else:
-            fw.write('\n')
-            fw.write(line)
-    fw.close()
+    # dir_base = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/BAL_EVOLUTION_202411/CYANOBLOOM_EVOLUTION'
+    # fcsv_out = os.path.join(dir_base, 'CyanoEvolution_CyanoPeriod.csv')
+    # fw = open(fcsv_out, 'w')
+    # started = False
+    # for year in range(1997,2025):
+    #     line_start,line = get_lines_cyano_csv_from_year_files(dir_base,year)
+    #     if not started:
+    #         fw.write(line_start)
+    #         fw.write('\n')
+    #         fw.write(line)
+    #         started = True
+    #     else:
+    #         fw.write('\n')
+    #         fw.write(line)
+    # fw.close()
 
     ##CREATE MAPS CYANOBLOOM_COVERAGE
     # dir_base = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/BAL_EVOLUTION_202411/CYANOBLOOM_EVOLUTION'
@@ -1340,10 +1311,10 @@ def main():
     #     plot_map_general(file_nc,file_out,variable,title,label,vmin,vmax)
 
     ##CDF ENSEMBLE COVERAGE FOR EACH YEAR (WITH TOTAL AND MONTHLY RESULTS) BASED ON CCI DAILY DATA1 - RUN ON HPC-SERVERS
-    # for year in range(1997,2024):
-    #     if year==2008:
-    #         continue
-    #     compute_year_coverage_cci(year)
+    for year in range(1997,2025):
+        if year==2008:
+            continue
+        compute_year_coverage_cci(year)
 
     ##TOTAL CDF ENSEMBLE COVERAGE BASED ON YEAR COVERAGE FILES. IT INCLUCES TOTAL AND MONTHLY RESULTS - LOCAL RUN
     #compute_total_coverage_cci()
