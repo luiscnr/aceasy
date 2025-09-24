@@ -934,7 +934,7 @@ if __name__ == '__main__':
 
                     ##l3 data, only one file for date
                     if args.atm_correction == 'BAL202411' and corrector.product_type.startswith('cci'):
-                        prod_path = get_input_path_cci_default(input_path, date_here)
+                        prod_path = get_input_path_cci_default(input_path_date, date_here)
                         if corrector.product_type=='cci_split':
                             prod_path = prod_path[:-3] + '_BAL202411.nc'
                             print(prod_path)
