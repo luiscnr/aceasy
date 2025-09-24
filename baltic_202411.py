@@ -1129,6 +1129,10 @@ class BALTIC_202411_PROCESSOR():
                 ncout[name].setncattr(at, variable.getncattr(at))
 
             # copy variable data
+            array = ncref[name][:]
+            mask_array = self.get_mask_array()
+            if mask_array is not None and mask_array.shape == array.shape:
+                array[mask_array==1] = np.ma.masked
             if name == 'lat' or name == 'lon':
                 ncout[name][:] = ncref[name][:]
             elif name == 'CYANOBLOOM':
