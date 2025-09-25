@@ -1,8 +1,4 @@
-import datetime
-import os.path
-
-import pytz
-
+import os,pytz,json
 from baltic202411.bal_202411 import BALTIC_202411
 from baltic_mlp import BALTIC_MLP
 from csv_lois import CSV_FILE
@@ -10,9 +6,8 @@ from netCDF4 import Dataset
 import numpy as np
 import BSC_QAA.bsc_qaa_EUMETSAT as bsc_qaa
 from balticmlp import polymerflag
-import json
-
 from split_202411 import Splitter
+from datetime import datetime as dt
 
 
 class BALTIC_202411_PROCESSOR():
@@ -195,7 +190,7 @@ class BALTIC_202411_PROCESSOR():
         # self.tileY = 250
         # self.tileX = 250
 
-        from datetime import datetime as dt
+
 
         ##retrieving date
         olci_date_str = None
@@ -325,7 +320,7 @@ class BALTIC_202411_PROCESSOR():
     def run_cci_split(self,fileout,output_path):
         if self.verbose:
             print(f'[INFO] Starting CCI splitting and masking...')
-        from datetime import datetime as dt
+
         ncref = Dataset(fileout)
         try:
             date_file = dt.strptime(os.path.basename(fileout)[1:8],'%Y%j').replace(tzinfo=pytz.utc)
@@ -420,7 +415,7 @@ class BALTIC_202411_PROCESSOR():
             print(f'[INFO] Starting water processing')
 
         ncinput = Dataset(prod_path)
-        from datetime import datetime as dt
+
         date_file = None
         if self.product_type == 'polymer':
             self.tileX = 500
@@ -1172,7 +1167,7 @@ class BALTIC_202411_PROCESSOR():
         time_var.axis = "T"
         time_var.calendar = "Gregorian"
         time_var.units = "seconds since 1981-01-01 00:00:00"
-        epoch_copernicus = datetime.datetime(1981, 1, 1, 0, 0, 0).replace(tzinfo=pytz.utc)
+        epoch_copernicus = dt(1981, 1, 1, 0, 0, 0).replace(tzinfo=pytz.utc)
         time_var[0] = int((date_file - epoch_copernicus).total_seconds())
 
         # other variables
