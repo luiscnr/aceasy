@@ -686,8 +686,9 @@ def compute_total_relative_diff():
             print(f'[WARNING] Input file {file_in} does not exist. Skipping...')
             date_here = date_here + timedelta(hours=24)
             continue
-        file_old = os.path.join(dir_old,yyyy,jjj,f'C2{yyyy}{jjj}-chl-bal-hr.nc')
+        file_old = os.path.join(dir_old,yyyy,jjj,f'C{yyyy}{jjj}-chl-bal-hr.nc')
         if not os.path.exists(file_old):
+            rint(f'[WARNING] Input old file {file_old} does not exist. Skipping...')
             date_here = date_here + timedelta(hours=24)
             continue
         ntotal_images = ntotal_images + 1
