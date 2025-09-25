@@ -290,6 +290,8 @@ def check_path_validity(prod_path, prod_name):
     if args.atm_correction == 'BAL202411':
         if args.type_product.startswith('cci') and prod_name.endswith('.nc'):
             valid = True
+        elif args.type_product == 'olci_split' and prod_name.endswith('.nc'):
+            valid = True
         elif args.type_product == 'polymer' and  prod_name.endswith('_POLYMER.nc'):
             valid = True
         elif args.type_product.startswith('l3_olci_') and check_l3_olci_path(prod_path,None) is not None:
