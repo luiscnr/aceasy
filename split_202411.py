@@ -45,9 +45,7 @@ class Splitter():
             'lon': True if nc_input.variables[self.variable_input_lon][0] > nc_input.variables[self.variable_input_lon][nx - 1] else False
         }
 
-        print(ny,nx)
-        print(flip_latlon)
-        print(self.mask_array.shape)
+       
 
 
 
@@ -99,7 +97,7 @@ class Splitter():
 
             vin = vin[:]
             vin = np.squeeze(vin)
-            print('creating variable: ',vname,vin.dimensions,dims_out,vin.shape)
+
             if flip_latlon['lat']:
                 vin = np.flipud(vin)
             if flip_latlon['lon']:
