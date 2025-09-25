@@ -1311,11 +1311,9 @@ def main():
     #     plot_map_general(file_nc,file_out,variable,title,label,vmin,vmax)
 
     ##CDF ENSEMBLE COVERAGE FOR EACH YEAR (WITH TOTAL AND MONTHLY RESULTS) BASED ON CCI DAILY DATA1 - RUN ON HPC-SERVERS
-    for year in range(1997,2025):
-        if year==2008:
-            continue
-        compute_year_coverage_cci(year)
-
+    # for year in range(1997,2025):
+    #     compute_year_coverage_cci(year)
+    compute_year_coverage_cci(2008)
     ##TOTAL CDF ENSEMBLE COVERAGE BASED ON YEAR COVERAGE FILES. IT INCLUCES TOTAL AND MONTHLY RESULTS - LOCAL RUN
     #compute_total_coverage_cci()
 
