@@ -45,7 +45,7 @@ class Splitter():
             'lon': True if nc_input.variables[self.variable_input_lon][0] > nc_input.variables[self.variable_input_lon][nx - 1] else False
         }
 
-       
+
 
 
 

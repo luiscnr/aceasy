@@ -74,8 +74,10 @@ class BALTIC_202411_PROCESSOR():
             'kd490': ['KD490', 'SENSORMASK'],
             'adg443': ['ADG443', 'SENSORMASK'],
             'aph443': ['APH443', 'SENSORMASK'],
-            'bbp443': ['BBP443', 'SENSORMASK']
+            'bbp443': ['BBP443', 'SENSORMASK'],
         }
+
+
         ##defining rrs file for applying mask
         self.rrs_l3_olci = ['rrs400', 'rrs412_5', 'rrs442_5', 'rrs490', 'rrs510', 'rrs560', 'rrs620', 'rrs665',
                             'rrs673_75', 'rrs681_25',
@@ -393,6 +395,8 @@ class BALTIC_202411_PROCESSOR():
         splitter = Splitter(prod_path, olci_date)
         splitter.mask_array = self.get_mask_array()
         splitter.make_multiple_split(output_dir, self.splits)
+        var_list_rrs = [x.upper() for x in self.rrs_l3_olci]
+        splitter.make_split(output_dir,'rrs',var_list_rrs)
 
     def run_process(self, prod_path, output_dir):
         if self.product_type.startswith('l3_olci_') and os.path.isdir(prod_path):
