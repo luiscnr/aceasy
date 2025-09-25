@@ -114,7 +114,8 @@ class Splitter():
                     if '_FillValue' in vin.ncattrs():
                         fillvalue = vin.getncattr('_FillValue')
                     array = np.squeeze(np.array(vin[:]))
-                    array[self.mask_array == 1] = fillvalue
+                    if self.mask_array is not None:
+                        array[self.mask_array == 1] = fillvalue
                     vin[0,:,:] = array[:,:]
             qiadd.close_input_dataset()
         else:

@@ -39,7 +39,7 @@ parser.add_argument('-ac', "--atm_correction", help="Atmospheric correction",
                     choices=["C2RCC", "POLYMER", "FUB_CSIRO", "ACOLITE", "IDEPIX", "BALMLP", "BALALL", "QI",
                              "BAL202411"], required=True)
 parser.add_argument('-type', "--type_product", help="Type product for Baltic_2024", default="cci",
-                    choices=["cci","cci_split","polymer", "l3_olci_nr","l3_olci_nt"])
+                    choices=["cci","cci_split","polymer", "l3_olci_nr","l3_olci_nt","olci_split"])
 parser.add_argument('-type_polymer', "--type_product_polymer", help="Type product for POLYMER", default="s3_olci",
                     choices=["s3_olci", "s2_msi", "prisma"])
 
@@ -158,6 +158,13 @@ def get_input_path_cci_default(input_path, date_here):
     date2 = date_here.strftime('%d%b%y')
     name = format_name.replace('$DATE1$', date1)
     name = name.replace('$DATE2$', date2)
+    input_file = os.path.join(input_path, name)
+    return input_file
+
+def get_input_path_olci_default(input_path,date_here):
+    format_name = 'O$DATE$-bal-fr_BAL202411.nc'
+    date_str = date_here.strftime('%Y%j')
+    name = format_name.replace('$DATE$', date_str)
     input_file = os.path.join(input_path, name)
     return input_file
 
@@ -937,16 +944,21 @@ if __name__ == '__main__':
                         prod_path = get_input_path_cci_default(input_path_date, date_here)
                         if corrector.product_type=='cci_split':
                             prod_path = prod_path[:-3] + '_BAL202411.nc'
-                            print(prod_path)
-
                         if os.path.exists(prod_path):
                             params = [corrector, prod_path, output_path_jday, False, None, False]
                             param_list.append(params)
+
                     #l3 oli data, prod_path is input_path_date
                     if args.atm_correction == 'BAL202411' and corrector.product_type.startswith('l3_olci_'):
                         prod_path = input_path_date
                         if os.path.isdir(prod_path):
                             params = [corrector,prod_path,output_path_jday,False,None,False]
+                            param_list.append(params)
+                    #olci file for splitting
+                    if args.atm_correction == 'BAL202411' and corrector.product_type=='olci_split':
+                        prod_path = get_input_path_olci_default(input_path_date,date_here)
+                        if os.path.exists(prod_path):
+                            params = [corrector, prod_path, output_path_jday, False, None, False]
                             param_list.append(params)
 
                     ##l2 data, multiple file for date

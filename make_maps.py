@@ -1312,10 +1312,10 @@ def main():
 
     ##CDF ENSEMBLE COVERAGE FOR EACH YEAR (WITH TOTAL AND MONTHLY RESULTS) BASED ON CCI DAILY DATA1 - RUN ON HPC-SERVERS
     # for year in range(1997,2025):
-    #     compute_year_coverage_cci(year)
-    compute_year_coverage_cci(2008)
+    #   compute_year_coverage_cci(year)
+
     ##TOTAL CDF ENSEMBLE COVERAGE BASED ON YEAR COVERAGE FILES. IT INCLUCES TOTAL AND MONTHLY RESULTS - LOCAL RUN
-    #compute_total_coverage_cci()
+    compute_total_coverage_cci()
 
 
     # file_check = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/BAL_EVOLUTION_202411/CYANOBLOOM_EVOLUTION/CYANOBLOOM_COVERAGE_2023.nc'

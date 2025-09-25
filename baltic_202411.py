@@ -389,6 +389,16 @@ class BALTIC_202411_PROCESSOR():
 
         ncref.close()
 
+    def run_olci_split(self,prod_path,output_dir):
+        try:
+            olci_date = dt.strptime(os.path.basename(prod_path)[1:8], '%Y%j')
+        except:
+            print(f'[ERROR] Error getting OLCI date from file {prod_path}')
+            return
+        splitter = Splitter(prod_path, olci_date)
+        splitter.mask_array = self.get_mask_array()
+        splitter.make_multiple_split(output_dir, self.splits)
+
     def run_process(self, prod_path, output_dir):
         if self.product_type.startswith('l3_olci_') and os.path.isdir(prod_path):
             self.run_process_multiple_files(prod_path, output_dir)
@@ -396,6 +406,10 @@ class BALTIC_202411_PROCESSOR():
 
         if self.product_type=='cci_split':
             self.run_cci_split(prod_path,output_dir)
+            return
+
+        if self.product_type=='olci_split':
+            self.run_olci_split(prod_path,output_dir)
             return
 
         fileout = self.get_file_out(prod_path, output_dir)
