@@ -967,6 +967,8 @@ if __name__ == '__main__':
                             continue
                         if args.atm_correction == 'BAL202411' and corrector.product_type.startswith('l3_olci_'):
                             continue
+                        if args.atm_correction == 'BAL202411' and corrector.product_type=='olci_split':
+                            continue
                         prod_name = f
                         prod_path = os.path.join(input_path_date, prod_name)
                         print('---------------')
