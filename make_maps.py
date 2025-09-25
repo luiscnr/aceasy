@@ -700,7 +700,7 @@ def compute_total_relative_diff():
         chl_202411 = input_dataset.variables['CHL'][:]
         input_dataset.close()
         input_dataset_old = Dataset(file_old)
-        chl_202211 = input_dataset_olc.variables['CHL'][:]
+        chl_202211 = input_dataset_old.variables['CHL'][:]
         input_dataset_old.close()
         if np.ma.count(chl_202411)>0:
             ndata_images = ndata_images +1
