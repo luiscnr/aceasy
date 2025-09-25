@@ -654,6 +654,87 @@ def compute_total_coverage_cci():
 
     print(f'[INFO] Completed')
 
+def compute_total_relative_diff():
+    print('COMPUTING RELATIVE DIFFERENCE BETWEEN CHA-A 202211 and 202411')
+    from datetime import timedelta
+    dir_base = '/store3/OC/CCI_v2017/daily_v202411'
+    dir_old = '/store3/OC/CCI_v2017/daily_v202207'
+
+    file_in_format = 'MDATE1.0000.bal.all_products.CCI.DATE20000.v0.DATE10000.data_BAL202411.nc'
+    format_date1 = '%Y%j'
+    format_date2 = '%d%b%y'
+    nlat = 1147
+    nlon = 1185
+    date_here = dt(1997, 1, 1)
+    date_end = dt(2024, 12, 31)
+    ntotal_images = 0
+    ndata_images = 0
+
+    ##arrays
+    sum_rpd = np.zeros((nlat,nlon))
+    n_rpd = np.zeros((nlat,nlon))
+    lat, lon  = [None]*2
+    while date_here <= date_end:
+        yyyy = date_here.strftime('%Y')
+        jjj = date_here.strftime('%j')
+        date1_str = date_here.strftime(format_date1)
+        date2_str = date_here.strftime(format_date2)
+        name_file = file_in_format.replace('DATE1', date1_str)
+        name_file = name_file.replace('DATE2', date2_str)
+        file_in = os.path.join(dir_base, yyyy, jjj, name_file)
+        if not os.path.exists(file_in):
+            print(f'[WARNING] Input file {file_in} does not exist. Skipping...')
+            date_here = date_here + timedelta(hours=24)
+            continue
+        file_old = os.path.join(dir_old,yyyy,jjj,f'C2{yyyy}{jjj}-chl-bal-hr.nc')
+        if not os.path.exists(file_old):
+            date_here = date_here + timedelta(hours=24)
+            continue
+        ntotal_images = ntotal_images + 1
+        print(f'[INFO] Date: {date_here}')
+        input_dataset = Dataset(file_in)
+        if lat is None and lon is None:
+            lat = input_dataset.variables['lat'][:]
+            lon = input_dataset.variables['lon'][:]
+        chl_202411 = input_dataset.variables['CHL'][:]
+        input_dataset.close()
+        input_dataset_old = Dataset(file_old)
+        chl_202211 = input_dataset_olc.variables['CHL'][:]
+        input_dataset_old.close()
+        if np.ma.count(chl_202411)>0:
+            ndata_images = ndata_images +1
+        indices_good = np.where(np.logical_and(chl_202411.mask==False,chl_202211.mask==False))
+        n_rpd[indices_good] = n_rpd[indices_good]+1
+        sum_rpd[indices_goog] = sum_rpd[indices_good]+((chl_202411[indices_good]-chl_202211[indices_good]/chl_202211[indices_good])*100)
+        date_here = date_here + timedelta(hours=24)
+
+    rpd = np.ma.masked_all(n_rpd.shape)
+    rpd[n_rpd>0] = sum_rpd[n_rpd>0]/n_rpd[n_rpd>0]
+
+
+    print(f'[INFO] N Total images: {ntotal_images}')
+    print(f'[INFO] N Data images: {ndata_images}')
+
+    file_out = os.path.join(dir_base, f'RPD_v202211-v202411.nc')
+    print('[INFO] Creating output file: ')
+    nc_out = Dataset(file_out, 'w')
+    nc_out.createDimension('lat', nlat)
+    nc_out.createDimension('lon', nlon)
+    var_lat = nc_out.createVariable('lat', 'f4', ('lat',), zlib=True, complevel=6, fill_value=-999.0)
+    var_lon = nc_out.createVariable('lon', 'f4', ('lon',), zlib=True, complevel=6, fill_value=-999.0)
+    var_lat[:] = lat[:]
+    var_lon[:] = lon[:]
+    var_n_rpd = nc_out.createVariable('n_rpd', 'f4', ('lat','lon'), zlib=True, complevel=6, fill_value=-999.0)
+    var_sum_rpd = nc_out.createVariable('sum_rpd', 'f4', ('lat', 'lon'), zlib=True, complevel=6, fill_value=-999.0)
+    var_rpd = nc_out.createVariable('rpd', 'f4', ('lat', 'lon'), zlib=True, complevel=6, fill_value=-999.0)
+    var_n_rpd[:] = np.ma.masked_equal(n_rpd,0)
+    var_sum_rpd[:] = np.ma.masked_equal(sum_rpd,0)
+    var_rpd[:] = rpd[:]
+    nc_out.ntotal_images = ntotal_images
+    nc_out.ndata_images = ndata_images
+    nc_out.close()
+    print(f'[INFO] Completed')
+
 
 def compute_year_coverage_cci(year):
     print(f'COMPUTING COVERAGE FOR YEAR....')
@@ -1314,8 +1395,11 @@ def main():
     # for year in range(1997,2025):
     #   compute_year_coverage_cci(year)
 
+    ##COMPUTE TOTAL RELATIVE DIFFERENCE - RUN ON HPC-SERVER
+    compute_total_relative_diff()
+
     ##TOTAL CDF ENSEMBLE COVERAGE BASED ON YEAR COVERAGE FILES. IT INCLUCES TOTAL AND MONTHLY RESULTS - LOCAL RUN
-    compute_total_coverage_cci()
+    #compute_total_coverage_cci()
 
 
     # file_check = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/BAL_EVOLUTION_202411/CYANOBLOOM_EVOLUTION/CYANOBLOOM_COVERAGE_2023.nc'
