@@ -706,7 +706,7 @@ def compute_total_relative_diff():
             ndata_images = ndata_images +1
         indices_good = np.where(np.logical_and(chl_202411.mask==False,chl_202211.mask==False))
         n_rpd[indices_good] = n_rpd[indices_good]+1
-        sum_rpd[indices_goog] = sum_rpd[indices_good]+((chl_202411[indices_good]-chl_202211[indices_good]/chl_202211[indices_good])*100)
+        sum_rpd[indices_good] = sum_rpd[indices_good]+((chl_202411[indices_good]-chl_202211[indices_good]/chl_202211[indices_good])*100)
         date_here = date_here + timedelta(hours=24)
 
     rpd = np.ma.masked_all(n_rpd.shape)
