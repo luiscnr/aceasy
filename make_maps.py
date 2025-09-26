@@ -666,7 +666,7 @@ def compute_total_relative_diff():
     nlat = 1147
     nlon = 1185
     date_here = dt(1997, 1, 1)
-    date_end = dt(2024, 12, 31)
+    date_end = dt(2023, 12, 31)
     ntotal_images = 0
     ndata_images = 0
 
@@ -688,7 +688,7 @@ def compute_total_relative_diff():
             continue
         file_old = os.path.join(dir_old,yyyy,jjj,f'C{yyyy}{jjj}-chl-bal-hr.nc')
         if not os.path.exists(file_old):
-            rint(f'[WARNING] Input old file {file_old} does not exist. Skipping...')
+            print(f'[WARNING] Input old file {file_old} does not exist. Skipping...')
             date_here = date_here + timedelta(hours=24)
             continue
         ntotal_images = ntotal_images + 1
