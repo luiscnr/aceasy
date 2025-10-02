@@ -683,7 +683,7 @@ def compute_total_relative_diff():
         name_file = file_in_format.replace('DATE1', date1_str)
         name_file = name_file.replace('DATE2', date2_str)
         file_new = os.path.join(dir_new, yyyy, jjj, name_file)
-        if not os.path.exists(file_in):
+        if not os.path.exists(file_new):
             print(f'[WARNING] Input file {file_new} does not exist. Skipping...')
             date_here = date_here + timedelta(hours=24)
             continue
