@@ -698,7 +698,7 @@ def compute_total_relative_diff():
         ##new
         input_dataset_new = Dataset(file_new)
         if lat is None and lon is None:
-            lat = input_datase_new.variables['lat'][:]
+            lat = input_dataset_new.variables['lat'][:]
             lon = input_dataset_new.variables['lon'][:]
         chl_202411 = input_dataset_new.variables['CHL'][:]
         input_dataset_new.close()
