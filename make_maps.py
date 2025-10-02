@@ -700,20 +700,20 @@ def compute_total_relative_diff():
         if lat is None and lon is None:
             lat = input_dataset_new.variables['lat'][:]
             lon = input_dataset_new.variables['lon'][:]
-        chl_202411 = input_dataset_new.variables['CHL'][:]
+        chl_202411 = np.ma.squeeze(input_dataset_new.variables['CHL'][:])
         input_dataset_new.close()
         ##old
         input_dataset_old = Dataset(file_old)
         chl_202211 = np.ma.squeeze(input_dataset_old.variables['CHL'][:])
-        chl_202211 = np.flipud(chl_202211)
         input_dataset_old.close()
 
         ##results
         if np.ma.count(chl_202411)>0:
             ndata_images = ndata_images +1
         indices_good = np.where(np.logical_and(chl_202411.mask==False,chl_202211.mask==False))
-        n_rpd[indices_good] = n_rpd[indices_good]+1
-        sum_rpd[indices_good] = sum_rpd[indices_good]+((chl_202411[indices_good]-chl_202211[indices_good]/chl_202211[indices_good])*100)
+        if len(indices_good[0])>0:
+            n_rpd[indices_good] = n_rpd[indices_good]+1
+            sum_rpd[indices_good] = sum_rpd[indices_good]+(((chl_202411[indices_good]-chl_202211[indices_good])/chl_202211[indices_good])*100)
 
         ##next date
         date_here = date_here + timedelta(hours=24)
