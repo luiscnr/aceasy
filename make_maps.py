@@ -657,8 +657,9 @@ def compute_total_coverage_cci():
 def compute_total_relative_diff():
     print('COMPUTING RELATIVE DIFFERENCE BETWEEN CHA-A 202211 and 202411')
     from datetime import timedelta
-    dir_base = '/store3/OC/CCI_v2017/daily_v202411'
+    dir_new = '/store3/OC/CCI_v2017/daily_v202411'
     dir_old = '/store3/OC/CCI_v2017/daily_v202207'
+
 
     file_in_format = 'MDATE1.0000.bal.all_products.CCI.DATE20000.v0.DATE10000.data_BAL202411.nc'
     format_date1 = '%Y%j'
@@ -673,7 +674,7 @@ def compute_total_relative_diff():
     ##arrays
     sum_rpd = np.zeros((nlat,nlon))
     n_rpd = np.zeros((nlat,nlon))
-    lat, lon  = [None]*2
+    lat, lon  = None, None
     while date_here <= date_end:
         yyyy = date_here.strftime('%Y')
         jjj = date_here.strftime('%j')
@@ -681,9 +682,9 @@ def compute_total_relative_diff():
         date2_str = date_here.strftime(format_date2)
         name_file = file_in_format.replace('DATE1', date1_str)
         name_file = name_file.replace('DATE2', date2_str)
-        file_in = os.path.join(dir_base, yyyy, jjj, name_file)
+        file_new = os.path.join(dir_new, yyyy, jjj, name_file)
         if not os.path.exists(file_in):
-            print(f'[WARNING] Input file {file_in} does not exist. Skipping...')
+            print(f'[WARNING] Input file {file_new} does not exist. Skipping...')
             date_here = date_here + timedelta(hours=24)
             continue
         file_old = os.path.join(dir_old,yyyy,jjj,f'C{yyyy}{jjj}-chl-bal-hr.nc')
@@ -693,20 +694,28 @@ def compute_total_relative_diff():
             continue
         ntotal_images = ntotal_images + 1
         print(f'[INFO] Date: {date_here}')
-        input_dataset = Dataset(file_in)
+
+        ##new
+        input_dataset_new = Dataset(file_new)
         if lat is None and lon is None:
-            lat = input_dataset.variables['lat'][:]
-            lon = input_dataset.variables['lon'][:]
-        chl_202411 = input_dataset.variables['CHL'][:]
-        input_dataset.close()
+            lat = input_datase_new.variables['lat'][:]
+            lon = input_dataset_new.variables['lon'][:]
+        chl_202411 = input_dataset_new.variables['CHL'][:]
+        input_dataset_new.close()
+        ##old
         input_dataset_old = Dataset(file_old)
         chl_202211 = np.ma.squeeze(input_dataset_old.variables['CHL'][:])
+        chl_202211 = np.flipud(chl_202211)
         input_dataset_old.close()
+
+        ##results
         if np.ma.count(chl_202411)>0:
             ndata_images = ndata_images +1
         indices_good = np.where(np.logical_and(chl_202411.mask==False,chl_202211.mask==False))
         n_rpd[indices_good] = n_rpd[indices_good]+1
         sum_rpd[indices_good] = sum_rpd[indices_good]+((chl_202411[indices_good]-chl_202211[indices_good]/chl_202211[indices_good])*100)
+
+        ##next date
         date_here = date_here + timedelta(hours=24)
 
     rpd = np.ma.masked_all(n_rpd.shape)
