@@ -725,7 +725,7 @@ def compute_total_relative_diff():
     print(f'[INFO] N Total images: {ntotal_images}')
     print(f'[INFO] N Data images: {ndata_images}')
 
-    file_out = os.path.join(dir_base, f'RPD_v202211-v202411.nc')
+    file_out = os.path.join(dir_new, f'RPD_v202211-v202411.nc')
     print('[INFO] Creating output file: ')
     nc_out = Dataset(file_out, 'w')
     nc_out.createDimension('lat', nlat)
