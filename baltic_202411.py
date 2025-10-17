@@ -1150,19 +1150,20 @@ class BALTIC_202411_PROCESSOR():
         if self.verbose:
             print(f'[INFO]    File {fileout} was created')
 
-        if self.product_type == 'cci':
-            ncref = Dataset(fileout)
-            variables = ['lat', 'lon', 'CHL', 'CYANOBLOOM']
-            output_file_chla = os.path.join(os.path.dirname(fileout), f'C{date_file.strftime("%Y%j")}-chl-bal-hr.nc')
-            if self.verbose:
-                print(f'[INFO] Creating CHL file: {output_file_chla}')
-            self.create_copy_final_file(ncref, variables, date_file, output_file_chla,'plankton')
-            variables = ['lat', 'lon', 'MICRO', 'NANO', 'PICO', 'CRYPTO', 'DIATO', 'DINO', 'GREEN', 'PROKAR']
-            output_file_pft = os.path.join(os.path.dirname(fileout), f'C{date_file.strftime("%Y%j")}-pft-bal-hr.nc')
-            if self.verbose:
-                print(f'[INFO] Creating PFT file: {output_file_pft}')
-            self.create_copy_final_file(ncref, variables, date_file, output_file_pft,'plankton')
-            ncref.close()
+        ##COMMENT THIS SECTION, THIS IS DONE USING THE SPLITTING CODE
+        # if self.product_type == 'cci':
+        #     ncref = Dataset(fileout)
+        #     variables = ['lat', 'lon', 'CHL', 'CYANOBLOOM']
+        #     output_file_chla = os.path.join(os.path.dirname(fileout), f'C{date_file.strftime("%Y%j")}-chl-bal-hr.nc')
+        #     if self.verbose:
+        #         print(f'[INFO] Creating CHL file: {output_file_chla}')
+        #     self.create_copy_final_file(ncref, variables, date_file, output_file_chla,'plankton')
+        #     variables = ['lat', 'lon', 'MICRO', 'NANO', 'PICO', 'CRYPTO', 'DIATO', 'DINO', 'GREEN', 'PROKAR']
+        #     output_file_pft = os.path.join(os.path.dirname(fileout), f'C{date_file.strftime("%Y%j")}-pft-bal-hr.nc')
+        #     if self.verbose:
+        #         print(f'[INFO] Creating PFT file: {output_file_pft}')
+        #     self.create_copy_final_file(ncref, variables, date_file, output_file_pft,'plankton')
+        #     ncref.close()
 
     def create_copy_final_file(self, ncref, variables, date_file, output_file, split):
         ncout = Dataset(output_file, 'w', format='NETCDF4')
