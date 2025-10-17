@@ -1064,6 +1064,7 @@ class BALTIC_202411_PROCESSOR():
         make_flip = False
         if self.product_type == 'cci':
             make_flip = True if array_lat[-1]<array_lat[0] else False
+            print(f'[INFO] Flip set to: {make_flip}')
             if make_flip:
                 array_lat = np.flip(array_lat)
                 array_chl = np.flipud(array_chl)
