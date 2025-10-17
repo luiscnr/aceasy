@@ -417,6 +417,7 @@ class BALTIC_202411_PROCESSOR():
             return
         if self.verbose:
             print(f'[INFO] Starting water processing')
+            print(f'[INFO] Input path: {prod_path}')
 
         ncinput = Dataset(prod_path)
 
