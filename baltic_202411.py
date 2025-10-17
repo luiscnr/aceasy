@@ -1039,8 +1039,8 @@ class BALTIC_202411_PROCESSOR():
             array_chl = all_arrays['CHL']
             ny = array_chl.shape[0]
             nx = array_chl.shape[1]
-            if self.product_type == 'cci':
-                array_chl = np.flipud(array_chl)
+            # if self.product_type == 'cci':
+            #     array_chl = np.flipud(array_chl)
 
         ncoutput.create_dimensions(ny, nx)
 
@@ -1061,8 +1061,12 @@ class BALTIC_202411_PROCESSOR():
         elif len(ncinput.variables[var_lon_name].dimensions) == 1:
             array_lon = np.array(ncinput.variables[var_lon_name][xini:xend])
 
+        make_flip = False
         if self.product_type == 'cci':
-            array_lat = np.flip(array_lat)
+            make_flip = True if array_lat[-1]<array_lat[0] else False
+            if make_flip:
+                array_lat = np.flip(array_lat)
+                array_chl = np.flipud(array_chl)
 
         ncoutput.create_lat_long_variables(array_lat, array_lon)
         if self.product_type.startswith('l3_olci_'):
@@ -1083,7 +1087,8 @@ class BALTIC_202411_PROCESSOR():
                     print(f'[INFO]     {rrsvar}->{name_band}')
                 array = ncinput.variables[rrsvar][yini:yend, xini:xend]
                 array = np.ma.squeeze(array)
-                array = np.flipud(array)
+                if make_flip:
+                    array = np.flipud(array)
                 ncoutput.create_rrs_variable(array, name_band, wl, self.varattr, self.product_type)
 
         if self.product_type == 'polymer':
@@ -1139,7 +1144,7 @@ class BALTIC_202411_PROCESSOR():
                 if self.verbose:
                     print(f'[INFO]    Adding extra variable {ovar}....')
                 array_here = all_arrays[ovar]
-                if self.product_type == 'cci':
+                if self.product_type == 'cci' and make_flip:
                     array_here = np.flipud(array_here)
                 if ovar.startswith('FLAG'):
                     ncoutput.create_var_flag_general(array_here, ovar, self.varattr)
