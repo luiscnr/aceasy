@@ -486,8 +486,9 @@ class BALTIC_202411_PROCESSOR():
         elif self.product_type == 'cci':
             startX = 0
             startY = 0
-            endX = ncinput.dimensions['longitude'].size - 1
-            endY = ncinput.dimensions['latitude'].size - 1
+            var_lat_name, var_lon_name = self.get_var_lat_lon_names(ncinput)
+            endX = ncinput.dimensions[var_lon_name].size - 1
+            endY = ncinput.dimensions[var_lat_name].size - 1
 
 
 
@@ -994,6 +995,20 @@ class BALTIC_202411_PROCESSOR():
             dmask.close()
         return mask_array
 
+    def get_var_lat_lon_names(self,ncinput):
+        var_lat_name = None
+        var_lon_name = None
+        if 'lat' in ncinput.variables:
+            var_lat_name = 'lat'
+        elif 'latitude' in ncinput.variables:
+            var_lat_name = 'latitude'
+        if 'lon' in ncinput.variables:
+            var_lon_name = 'lon'
+        elif 'longitude' in ncinput.variables:
+            var_lon_name = 'longitude'
+
+        return var_lat_name,var_lon_name
+
     def create_file(self, fileout, ncinput, all_arrays, yini, yend, xini, xend, date_file):
 
         if self.verbose:
@@ -1032,8 +1047,7 @@ class BALTIC_202411_PROCESSOR():
         # latitude, longitude
         if self.verbose:
             print(f'[INFO]    Adding latitude/longitude...')
-        var_lat_name = 'latitude'
-        var_lon_name = 'longitude'
+        var_lat_name, var_lon_name = self.get_var_lat_lon_names(ncinput)
         if self.product_type.startswith('l3_olci_'):
             var_lat_name = 'lat'
             var_lon_name = 'lon'
