@@ -152,12 +152,21 @@ def get_output_path_jday(output_path, date_here):
     return output_path_jday
 
 
-def get_input_path_cci_default(input_path, date_here):
-    format_name = 'M$DATE1$.0000.bal.all_products.CCI.$DATE2$0000.v0.$DATE1$0000.data.nc'
-    date1 = date_here.strftime('%Y%j')
-    date2 = date_here.strftime('%d%b%y')
+def get_input_path_cci_default(input_path, date_here,options):
+
+    format_name = 'M$DATE1$.0000.bal.all_products.CCI.$DATE2$0000.v0.$DATE1$0000.cnr.nc'
+    format_name_date = ['%Y%j','%d%b%y']
+
+    if options.has_option('BALMLP','format_name'):
+        format_name = options['BALMLP']['format_name'].strip()
+    if options.has_option('BALMLP','format_name_date'):
+        format_name_date = [x.strip() for x in options['BALMLP']['format_name_date'].split(',')]
+
+    date1 = date_here.strftime(format_name_date[0])
     name = format_name.replace('$DATE1$', date1)
-    name = name.replace('$DATE2$', date2)
+    if name.find('$DATE2$')>0:
+        date2 = date_here.strftime(format_name_date[1])
+        name = name.replace('$DATE2$', date2)
     input_file = os.path.join(input_path, name)
     return input_file
 
@@ -943,7 +952,7 @@ if __name__ == '__main__':
 
                     ##l3 data, only one file for date
                     if args.atm_correction == 'BAL202411' and corrector.product_type.startswith('cci'):
-                        prod_path = get_input_path_cci_default(input_path_date, date_here)
+                        prod_path = get_input_path_cci_default(input_path_date, date_here,options)
                         if corrector.product_type=='cci_split':
                             prod_path = prod_path[:-3] + '_BAL202411.nc'
                         if os.path.exists(prod_path):
