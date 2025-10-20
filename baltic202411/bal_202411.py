@@ -61,7 +61,7 @@ class BALTIC_202411:
         cdf = np.array([bsc_3['cdf'], bsc_4['cdf'], bsc_5['cdf']]).transpose()
 
         if len(cdf.shape) == 1 and cdf.shape[0] == 3:
-            print('[WARNING] Reshaping cdf to avoid errors')
+            print('[WARNING] Only one valid point found in the file. Reshaping cdf array to avoid errors.')
             cdf = cdf.reshape((1, 3))
 
         # Masking values lower or equal than given thershold

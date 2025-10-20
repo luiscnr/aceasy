@@ -1,7 +1,8 @@
 from netCDF4 import Dataset
 from datetime import datetime as dt
 import numpy.ma as ma
-
+import warnings
+warnings.simplefilter(action='ignore',category=RuntimeWarning)
 
 class BalOutputFile:
 

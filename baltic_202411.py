@@ -535,6 +535,7 @@ class BALTIC_202411_PROCESSOR():
                     if self.product_type == 'cci':
                         input_rrs, iop, cyano_info = self.get_valid_rrs_cci(ncinput, valid_mask, nvalid, yini, yend,xini, xend)
 
+
                     if self.product_type == 'polymer':
                         input_rrs, iop, cyano_info = self.get_valid_rrs_polymer(ncinput, valid_mask, nvalid, yini, yend,xini, xend)
 
@@ -542,7 +543,6 @@ class BALTIC_202411_PROCESSOR():
                         continue
 
                     res_algorithm = self.bal_proc.compute_ensemble(input_rrs)
-
                     for key in cyano_info.keys():
                         if key.upper() in all_arrays.keys():
                             array_here = np.ma.masked_all(valid_mask.shape)
@@ -860,7 +860,6 @@ class BALTIC_202411_PROCESSOR():
         array_mask = None
         for band in mask_bands:
             array_mask_here = ncinfo.variables[band][0, yini:yend, xini:xend]
-            # print('-->',yini,yend,xini,xend,array_mask_here.shape,np.ma.count_masked(array_mask_here))
             if array_mask is None:
                 array_mask = np.where(array_mask_here.mask, 0, 1)
                 # print('==>,',array_mask_here.shape,array_mask.shape)

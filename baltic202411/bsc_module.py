@@ -96,8 +96,7 @@ def mlp_chl(mlp_model, samp, test_flag=False):
     # Data pre-processing
     samp_log = np.log10(samp)
     x = (samp_log - mlp_model['model'].muIn) / mlp_model['model'].stdIn
-    for idx in range(3):
-        print(samp_log[idx],mlp_model['model'].muIn[idx],mlp_model['model'].stdIn[idx],x[idx])
+
 
     # MLP forward
     z = np.tanh(x.dot(mlp_model['model'].par.w1) + mlp_model['model'].par.b1)
