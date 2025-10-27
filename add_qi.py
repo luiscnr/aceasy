@@ -94,8 +94,10 @@ class QI_ADD():
             var_list = list(self.nc_input.variables.keys())
 
         qi_bands_done = []
+        print('-->',clim_bands)
         for vname in var_list:
             if not vname.upper() in clim_bands:
+                print('=',vname, ' no tiene qui')
                 continue
             valid_min = self.nc_input.variables[vname].valid_min if hasattr(self.nc_input.variables[vname], 'valid_min') else None
             valid_max = self.nc_input.variables[vname].valid_max if hasattr(self.nc_input.variables[vname], 'valid_max') else None
