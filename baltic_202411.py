@@ -396,6 +396,7 @@ class BALTIC_202411_PROCESSOR():
         splitter.mask_array = self.get_mask_array()
         splitter.make_multiple_split(output_dir, self.splits)
         var_list_rrs = [x.upper() for x in self.rrs_l3_olci]
+        var_list_rrs.append('SENSORMASK')
         splitter.make_split(output_dir,'rrs',var_list_rrs)
 
     def run_process(self, prod_path, output_dir):
