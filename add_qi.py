@@ -48,6 +48,12 @@ class QI_ADD():
             'valid_max': 5.0,
         }
 
+        self.clima_name_equivalent = {
+            'RRS412_5':'RRS412',
+            'RRS442_5':'RRS443',
+            'RRS560': 'RRS555',
+            'RRS673_75': 'RRS670'
+        }
 
 
     def close_input_dataset(self):
@@ -62,8 +68,8 @@ class QI_ADD():
             print(f'[WARNING] Climatology file is not available. QI band was not added')
             return None
         climafile = Dataset(file_clima)
-        lons_in = self.nc_input.variables['lon'][:]
-        lats_in = self.nc_input.variables['lat'][::-1]
+        # lons_in = self.nc_input.variables['lon'][:]
+        # lats_in = self.nc_input.variables['lat'][::-1]
         lons_cl = climafile.variables['lon'][:]
         lats_cl = climafile.variables['lat'][:]
 
@@ -94,10 +100,13 @@ class QI_ADD():
             var_list = list(self.nc_input.variables.keys())
 
         qi_bands_done = []
-        print('-->',clim_bands)
+
+
         for vname in var_list:
-            if not vname.upper() in clim_bands:
-                print('=',vname, ' no tiene qui')
+            vname_clima = vname.upper()
+            if not vname_clima in clim_bands and vname.upper() in self.clima_name_equivalent:
+                vname_clima = self.clima_name_equivalent[vname.upper()]
+            if not vname_clima in clim_bands:
                 continue
             valid_min = self.nc_input.variables[vname].valid_min if hasattr(self.nc_input.variables[vname], 'valid_min') else None
             valid_max = self.nc_input.variables[vname].valid_max if hasattr(self.nc_input.variables[vname], 'valid_max') else None
@@ -111,8 +120,8 @@ class QI_ADD():
             if jday < first_day or jday > last_day:
                 qi_var[0, :, :] = np.ma.masked_all((ny, nx))
             else:
-                cvar_median_str = f'{vname.upper()}_median'
-                cvar_std_str = f'{vname.upper()}_median'
+                cvar_median_str = f'{vname_clima}_median'
+                cvar_std_str = f'{vname_clima}_std'
                 cvar_median = climafile.variables[cvar_median_str][jday - first_day, :, :]
                 cvar_std = climafile.variables[cvar_std_str][jday - first_day, :, :]
                 cvar_median_i = self.Interp(cvar_median, lons_cl, lats_cl, lons_sub, lats_sub)
