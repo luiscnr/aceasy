@@ -211,8 +211,7 @@ def launch_monthly_processing_impl(options, year, month):
                 #list_files[index_date] = file_in
                 n_processed = n_processed + 1
                 if dataset_w is None:
-                    dataset_w = start_output_dataset(file_in, file_out,
-                                                     [var_avg_name, var_avg_count_name, var_avg_error_name], options)
+                    dataset_w = start_output_dataset(file_in, file_out,[var_avg_name, var_avg_count_name, var_avg_error_name], options)
                     sarray = np.ma.zeros(array.shape)
                     xarray = np.ma.zeros(array.shape)
                     x2array = np.ma.zeros(array.shape)

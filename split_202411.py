@@ -113,6 +113,7 @@ class Splitter():
         if self.add_qi:
             qiadd  = QI_ADD(ncout,None,self.date_file)
             qibands = qiadd.add_qi_bal(var_list)
+            print('-->qibands to addd',qibands)
             if qibands is not None and self.mask_array is not None:
                 for qiband in qibands:
                     vin = ncout.variables[qiband]
