@@ -8,6 +8,7 @@ import numpy as np
 parser = argparse.ArgumentParser(description="QI processing launcher")
 
 parser.add_argument("-v", "--verbose", help="Verbose mode.", action="store_true")
+parser.add_argument("-m", "--mode", help="Mode.", choices=["make_pqd_2025","update_pqd_2025"])
 parser.add_argument("-r", "--region", help="Region")
 parser.add_argument('-sd', "--start_date", help="Start date (yyyy-mm-dd)")
 parser.add_argument('-ed', "--end_date", help="End date (yyyy-mm-dd")
@@ -48,61 +49,62 @@ def test():
     return True
 
 def make_pqd_2025():
-    dir_base = '/store2/OC/QualityIndex/PQ-D_2025'
-    #dir_base = '/mnt/c/DATA/TEMP'
+    #dir_base = '/store2/OC/QualityIndex/PQ-D_2025'
+    dir_base = '/mnt/c/DATA/TEMP'
 
-    #MED_MULTI
-    region = 'med'
-    product_id='009_141'
-    dataset_info = '20231101_99999999'
+    regions = ['med','blk']
+    products_id = {
+        'med': ['009_141']*8 + ['009_142'],
+        'blk': ['009_151']*8 + ['009_152'],
+    }
     start_date = dt(2023, 11, 15)
     end_date = dt(2025, 11, 15)
+    dataset_info = f'{start_date.strftime("%Y%m%d")}_99999999'
     dir_data = '/store3/OC/MULTI/daily_v202311_x'
-    variables = ['RRS412','RRS443','RRS490','RRS510','RRS555','RRS670','CHL','KD490','PP']
-    parameters = ['rrs-412','rrs-443','rrs-490','rrs-510','rrs-555','rrs-670','chlorophyll-a','transparency','primary_production']
-    metric_suffix = f'SURF-D-NC-SAT-VALID-{region.upper()}'
-    metrics = ['RRS-']*6 + ["CHL-","KD-","PP-"]
-    resolution = ['1km']*8 + ['4km']
+    variables = ['RRS412', 'RRS443', 'RRS490', 'RRS510', 'RRS555', 'RRS670', 'CHL', 'KD490', 'PP']
+    parameters = ['rrs-412', 'rrs-443', 'rrs-490', 'rrs-510', 'rrs-555', 'rrs-670', 'chlorophyll-a', 'transparency',
+                  'primary_production']
+    metrics = ['RRS-'] * 6 + ["CHL-", "KD-", "PP-"]
+    resolution = ['1km'] * 8 + ['4km']
     resolution_str = {
-        '1km':'hr',
-        '4km':'lr'
+        '1km': 'hr',
+        '4km': 'lr'
     }
-    for ivar,variable in enumerate(variables):
-        name_json = f'product_quality_nb-observations_{region}_{parameters[ivar]}_{product_id}_{resolution[ivar]}_{dataset_info}.json'
-        file_json = os.path.join(dir_base,name_json)
-        metric = f'{metrics[ivar]}{metric_suffix}'
-        res_dict = start_dict(region,metric)
-        print(file_json)
-        work_date = start_date
-        data = []
-        while work_date<=end_date:
-            yyyy = work_date.strftime('%Y')
-            jjj = work_date.strftime('%j')
-            file_nc = os.path.join(dir_data,f'{yyyy}',f'{jjj}',f'X{yyyy}{jjj}-{variable.lower()}-{region}-{resolution_str[resolution[ivar]]}.nc')
-            if os.path.exists(file_nc):
-                dset = Dataset(file_nc)
-                var_array = dset.variables[variable][:]
-                value = int(np.ma.count(var_array))
-                dset.close()
-            else:
-                value = -999
-            data.append([work_date.strftime('%Y-%m-%d'),value])
-            work_date = work_date+timedelta(hours=24)
-        res_dict[region]["all_sat_valid"]["data"] = data
-        with open(file_json, "w") as f:
-            json.dump(res_dict, f, indent=2)
+    for region in regions:
+        products_id_region = products_id[region]
+        metric_suffix = f'SURF-D-NC-SAT-VALID-{region.upper()}'
 
+        for ivar,variable in enumerate(variables):
+            name_json = f'product_quality_nb-observations_{region}_{parameters[ivar]}_{products_id_region[ivar]}_{resolution[ivar]}_{dataset_info}.json'
+            file_json = os.path.join(dir_base,name_json)
+            metric = f'{metrics[ivar]}{metric_suffix}'
+            res_dict = start_dict(region,metric)
+            print(file_json)
+            work_date = start_date
+            data = []
 
+            while work_date<=end_date:
+                yyyy = work_date.strftime('%Y')
+                jjj = work_date.strftime('%j')
+                file_nc = os.path.join(dir_data,f'{yyyy}',f'{jjj}',f'X{yyyy}{jjj}-{variable.lower()}-{region}-{resolution_str[resolution[ivar]]}.nc')
+                if os.path.exists(file_nc):
+                    dset = Dataset(file_nc)
+                    var_array = dset.variables[variable][:]
+                    value = int(np.ma.count(var_array))
+                    dset.close()
+                else:
+                    value = -999
+                data.append([work_date.strftime('%Y-%m-%d'),value])
+                work_date = work_date+timedelta(hours=24)
+            res_dict[region]["all_sat_valid"]["data"] = data
 
-    # res_412 = start_dict("med", "RRS-SURF-D-NC-SAT-VALID-MED")
-    # res_443 = start_dict("med", "RRS-SURF-D-NC-SAT-VALID-MED")
-    # res_490 = start_dict("med", "RRS-SURF-D-NC-SAT-VALID-MED")
-    # res_510 = start_dict("med", "RRS-SURF-D-NC-SAT-VALID-MED")
-    # res_555 = start_dict("med", "RRS-SURF-D-NC-SAT-VALID-MED")
-    # res_670 = start_dict("med", "RRS-SURF-D-NC-SAT-VALID-MED")
+            with open(file_json, "w") as f:
+                json.dump(res_dict, f, indent=2)
 
     return True
 
+def update_pqd_2025():
+    print('update')
 
 def start_dict(region,metric):
     res = {
@@ -116,8 +118,14 @@ def start_dict(region,metric):
     return res
 
 def main():
-    b = make_pqd_2025()
-    if b:
+    if args.mode is None:
+        return
+    if args.mode=='make_pqd_2025':
+        make_pqd_2025()
+        return
+
+    if args.mode=='update_pqd_2025':
+        update_pqd_2025()
         return
     # b = test()
     # if b:
