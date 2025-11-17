@@ -82,10 +82,10 @@ def make_pqd_2025():
             if os.path.exists(file_nc):
                 dset = Dataset(file_nc)
                 var_array = dset.variables[variable][:]
-                value = np.ma.count(var_array)
+                value = int(np.ma.count(var_array))
                 dset.close()
             else:
-                value = -999.0
+                value = -999
             data.append([work_date.strftime('%Y-%m-%d'),value])
             work_date = work_date+timedelta(hours=24)
         res_dict[region]["all_sat_valid"]["data"] = data
