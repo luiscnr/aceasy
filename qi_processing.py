@@ -104,7 +104,80 @@ def make_pqd_2025():
     return True
 
 def update_pqd_2025():
-    print('update')
+    dir_base = '/store2/OC/QualityIndex/PQ-D_2025'
+    #dir_base = '/mnt/c/DATA/TEMP'
+
+    regions = ['med', 'blk']
+    products_id = {
+        'med': ['009_141'] * 8 + ['009_142'],
+        'blk': ['009_151'] * 8 + ['009_152'],
+    }
+    start_date = dt(2023, 11, 15)
+    dataset_info = f'{start_date.strftime("%Y%m%d")}_99999999'
+    dir_data = '/store3/OC/MULTI/daily_v202311_x'
+    variables = ['RRS412', 'RRS443', 'RRS490', 'RRS510', 'RRS555', 'RRS670', 'CHL', 'KD490', 'PP']
+    parameters = ['rrs-412', 'rrs-443', 'rrs-490', 'rrs-510', 'rrs-555', 'rrs-670', 'chlorophyll-a', 'transparency',
+                  'primary_production']
+    metrics = ['RRS-'] * 6 + ["CHL-", "KD-", "PP-"]
+    resolution = ['1km'] * 8 + ['4km']
+    resolution_str = {
+        '1km': 'hr',
+        '4km': 'lr'
+    }
+    for region in regions:
+        products_id_region = products_id[region]
+        metric_suffix = f'SURF-D-NC-SAT-VALID-{region.upper()}'
+
+        for ivar, variable in enumerate(variables):
+            name_json = f'product_quality_nb-observations_{region}_{parameters[ivar]}_{products_id_region[ivar]}_{resolution[ivar]}_{dataset_info}.json'
+            file_json = os.path.join(dir_base, name_json)
+            if not os.path.exists(file_json):
+                print(f'[WARNING] {file_json} could not be found. Skipping...')
+                continue
+            print(file_json)
+            with open(file_json) as json_file:
+                res_dict = json.load(json_file)
+            data = res_dict[region]["all_sat_valid"]["data"]
+            work_date = dt.now()-timedelta(days=8)
+            n_dates = len(data)
+            index_ini = n_dates
+            print('n_dates: ',n_dates)
+            for idx in range(n_dates-1,-1,-1):
+                if data[idx][0]==work_date.strftime('%Y-%m-%d'):
+                    index_ini = idx
+                    break
+            index_end = index_ini+8
+            for idx in range(index_ini,index_end):
+                update_value = False
+                add_value = False
+                if idx<n_dates:
+                    if data[idx][0] == work_date.strftime('%Y-%m-%d'):
+                        update_value = True
+                    else:
+                        print(f'[WARNING] Inconsistency')
+                else:
+                    add_value = True
+                yyyy = work_date.strftime('%Y')
+                jjj = work_date.strftime('%j')
+                file_nc = os.path.join(dir_data, f'{yyyy}', f'{jjj}',f'X{yyyy}{jjj}-{variable.lower()}-{region}-{resolution_str[resolution[ivar]]}.nc')
+                if os.path.exists(file_nc):
+                    dset = Dataset(file_nc)
+                    var_array = dset.variables[variable][:]
+                    value = int(np.ma.count(var_array))
+                    dset.close()
+                else:
+                    value = -999
+                if update_value and value!=data[idx][1]:
+                    data[idx][1] = value
+                if add_value:
+                    data.append([work_date.strftime('%Y-%m-%d'), value])
+                work_date = work_date+timedelta(hours=24)
+
+            res_dict[region]["all_sat_valid"]["data"] = data
+
+            with open(file_json, "w") as f:
+                json.dump(res_dict, f, indent=2)
+
 
 def start_dict(region,metric):
     res = {
