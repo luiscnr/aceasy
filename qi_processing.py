@@ -49,8 +49,8 @@ def test():
     return True
 
 def make_pqd_2025():
-    #dir_base = '/store2/OC/QualityIndex/PQ-D_2025'
-    dir_base = '/mnt/c/DATA/TEMP'
+    dir_base = '/store2/OC/QualityIndex/PQ-D_2025'
+    #dir_base = '/mnt/c/DATA/TEMP'
 
     regions = ['med','blk']
     products_id = {
