@@ -71,8 +71,6 @@ def make_pqd_2025():
         '4km': 'lr'
     }
     for region in regions:
-        if region=='med':
-            continue
         region_file = 'bs' if region=='blk' else region
         products_id_region = products_id[region]
         metric_suffix = f'SURF-D-NC-SAT-VALID-{region.upper()}'
@@ -121,15 +119,16 @@ def update_pqd_2025():
     variables = ['RRS412', 'RRS443', 'RRS490', 'RRS510', 'RRS555', 'RRS670', 'CHL', 'KD490', 'PP']
     parameters = ['rrs-412', 'rrs-443', 'rrs-490', 'rrs-510', 'rrs-555', 'rrs-670', 'chlorophyll-a', 'transparency',
                   'primary_production']
-    metrics = ['RRS-'] * 6 + ["CHL-", "KD-", "PP-"]
+    #metrics = ['RRS-'] * 6 + ["CHL-", "KD-", "PP-"]
     resolution = ['1km'] * 8 + ['4km']
     resolution_str = {
         '1km': 'hr',
         '4km': 'lr'
     }
     for region in regions:
+        region_file = 'bs' if region == 'blk' else region
         products_id_region = products_id[region]
-        metric_suffix = f'SURF-D-NC-SAT-VALID-{region.upper()}'
+        #metric_suffix = f'SURF-D-NC-SAT-VALID-{region.upper()}'
 
         for ivar, variable in enumerate(variables):
             name_json = f'product_quality_nb-observations_{region}_{parameters[ivar]}_{products_id_region[ivar]}_{resolution[ivar]}_{dataset_info}.json'
@@ -162,7 +161,7 @@ def update_pqd_2025():
                     add_value = True
                 yyyy = work_date.strftime('%Y')
                 jjj = work_date.strftime('%j')
-                file_nc = os.path.join(dir_data, f'{yyyy}', f'{jjj}',f'X{yyyy}{jjj}-{variable.lower()}-{region}-{resolution_str[resolution[ivar]]}.nc')
+                file_nc = os.path.join(dir_data, f'{yyyy}', f'{jjj}',f'X{yyyy}{jjj}-{variable.lower()}-{region_file}-{resolution_str[resolution[ivar]]}.nc')
                 if os.path.exists(file_nc):
                     dset = Dataset(file_nc)
                     var_array = dset.variables[variable][:]
