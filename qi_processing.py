@@ -58,7 +58,7 @@ def make_pqd_2025():
         'blk': ['009_151']*8 + ['009_152'],
     }
     start_date = dt(2023, 11, 15)
-    end_date = dt(2025, 11, 15)
+    end_date = dt(2025, 11, 16)
     dataset_info = f'{start_date.strftime("%Y%m%d")}_99999999'
     dir_data = '/store3/OC/MULTI/daily_v202311_x'
     variables = ['RRS412', 'RRS443', 'RRS490', 'RRS510', 'RRS555', 'RRS670', 'CHL', 'KD490', 'PP']
@@ -71,6 +71,9 @@ def make_pqd_2025():
         '4km': 'lr'
     }
     for region in regions:
+        if region=='med':
+            continue
+        region_file = 'bs' if region=='blk' else region
         products_id_region = products_id[region]
         metric_suffix = f'SURF-D-NC-SAT-VALID-{region.upper()}'
 
@@ -86,7 +89,7 @@ def make_pqd_2025():
             while work_date<=end_date:
                 yyyy = work_date.strftime('%Y')
                 jjj = work_date.strftime('%j')
-                file_nc = os.path.join(dir_data,f'{yyyy}',f'{jjj}',f'X{yyyy}{jjj}-{variable.lower()}-{region}-{resolution_str[resolution[ivar]]}.nc')
+                file_nc = os.path.join(dir_data,f'{yyyy}',f'{jjj}',f'X{yyyy}{jjj}-{variable.lower()}-{region_file}-{resolution_str[resolution[ivar]]}.nc')
                 if os.path.exists(file_nc):
                     dset = Dataset(file_nc)
                     var_array = dset.variables[variable][:]
