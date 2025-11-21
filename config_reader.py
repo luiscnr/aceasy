@@ -18,6 +18,9 @@ class ConfigReader(object):
             return False
         return True
 
+    def get_sections(self):
+        return self.options.sections()
+
     def check_section(self,section):
         if not self.options.has_section(section):
             print(f'[ERROR] Section {section} is not available the configuration file')
