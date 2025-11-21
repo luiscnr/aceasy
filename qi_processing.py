@@ -102,6 +102,7 @@ def make_pqd_from_config_file(config_file):
         metric_base = options_here['metric']
         name_base = options_here['name_file_format']
         var_here = options_here['variable']
+        dir_data = options_here['dir_data']
         if not metric_base.endswith('-'):
             metric_base = f'{metric_base}-'
         metric = f'{metric_base}SURF-D-NC-SAT-VALID-{region.upper()}'
