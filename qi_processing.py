@@ -148,7 +148,7 @@ def update_pqd_from_config_file(config_file):
     dir_base = general_options['dir_base']
     if dir_base is None:
         return
-    if general_options['start_date'] is None or general_options['end_date'] is None:
+    if general_options['start_date'] is None:
         return
     try:
         start_date = dt.strptime(general_options['start_date'], '%Y-%m-%d')
