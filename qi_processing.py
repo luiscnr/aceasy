@@ -402,7 +402,11 @@ def main():
         return
 
     if args.mode=='update_pqd_2025':
-        update_pqd_2025()
+        #update_pqd_2025()
+        if not args.config_file:
+            print(f'[ERROR] config file -c (--config_file) is required')
+            return
+        update_pqd_from_config_file(args.config_file)
         return
     # b = test()
     # if b:
