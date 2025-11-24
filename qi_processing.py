@@ -210,7 +210,7 @@ def update_pqd_from_config_file(config_file):
             if data[idx][0] == work_date.strftime('%Y-%m-%d'):
                 index_ini = idx
                 break
-        index_end = index_ini + ref_date
+        index_end = index_ini + ref_days
 
         for idx in range(index_ini, index_end):
             update_value = False
