@@ -133,6 +133,119 @@ def make_pqd_from_config_file(config_file):
         with open(file_json, "w") as f:
             json.dump(res_dict, f, indent=2)
 
+
+def update_pqd_from_config_file(config_file):
+    from config_reader import ConfigReader
+    options = ConfigReader(config_file, None)
+    if not options.check_options():
+        return
+    required_general = {
+        'dir_base': {'type': 'directory'},
+        'start_date': {'type': 'str'},
+        'ref_days': {'type': 'int'}
+    }
+    general_options = options.retrieve_options('GENERAL', required_general, None)
+    dir_base = general_options['dir_base']
+    if dir_base is None:
+        return
+    if general_options['start_date'] is None or general_options['end_date'] is None:
+        return
+    try:
+        start_date = dt.strptime(general_options['start_date'], '%Y-%m-%d')
+    except:
+        print(
+            f'[ERROR] general/start_date value in the config file {general_options["start_date"]} is not in the valid format YYYY-mm-dd')
+        return
+    ref_days = general_options['ref_days']
+    if ref_days is None:
+        return
+    if ref_days<=0:
+        print(f'[ERROR] ref_days {ref_days} is not valid. This parameter indicates the number of days ago to start the update, and it should be greater than one')
+        return
+
+    required_parameters = {
+        'region': {'type': 'str'},
+        'product_id': {'type': 'str'},
+        'dir_data': {'type': 'directory_in'},
+        'parameter': {'type': 'str'},
+        'metric': {'type': 'str'},
+        'resolution': {'type': 'str'},
+        'variable': {'type': 'str'},
+        'name_file_format': {'type': 'str'}
+    }
+
+    for section in options.get_sections():
+        if section == 'GENERAL':
+            continue
+        options_here = options.retrieve_options(section, required_parameters, None)
+        for param in required_parameters:
+            if options_here[param] is None:
+                print(f'[ERROR] Parameter {param} is not available or valid for section {section}')
+                return
+        region = options_here['region']
+        parameter = options_here['parameter']
+        product_id = options_here['product_id']
+        resolution = options_here['resolution']
+        dataset_info = f'{start_date.strftime("%Y%m%d")}_99999999'
+        # metric_base = options_here['metric']
+        name_base = options_here['name_file_format']
+        var_here = options_here['variable']
+        dir_data = options_here['dir_data']
+        # if not metric_base.endswith('-'):
+        #     metric_base = f'{metric_base}-'
+        #metric = f'{metric_base}SURF-D-NC-SAT-VALID-{region.upper()}'
+        name_json = f'product_quality_nb-observations_{region}_{parameter}_{product_id}_{resolution}_{dataset_info}.json'
+        file_json = os.path.join(dir_base, name_json)
+        if not os.path.exists(file_json):
+            print(f'[WARNING] {file_json} could not be found. Skipping...')
+            continue
+        with open(file_json) as json_file:
+            res_dict = json.load(json_file)
+        data = res_dict[region]["all_sat_valid"]["data"]
+        work_date = dt.now() - timedelta(days=ref_days)
+        n_dates = len(data)
+        index_ini = n_dates
+        print(f'[INFO] Updating JSON file {json_file}')
+        for idx in range(n_dates - 1, -1, -1):
+            if data[idx][0] == work_date.strftime('%Y-%m-%d'):
+                index_ini = idx
+                break
+        index_end = index_ini + ref_date
+
+        for idx in range(index_ini, index_end):
+            update_value = False
+            add_value = False
+            if idx < n_dates:
+                if data[idx][0] == work_date.strftime('%Y-%m-%d'):
+                    update_value = True
+                else:
+                    print(f'[WARNING] Inconsistency')
+            else:
+                add_value = True
+            yyyy = work_date.strftime('%Y')
+            jjj = work_date.strftime('%j')
+            name_date = name_base.replace('$DATE$', f'{yyyy}{jjj}')
+            file_nc = os.path.join(dir_data, f'{yyyy}', f'{jjj}', name_date)
+
+            if os.path.exists(file_nc):
+                dset = Dataset(file_nc)
+                var_array = dset.variables[var_here][:]
+                value = int(np.ma.count(var_array))
+                dset.close()
+            else:
+                value = -999
+            if update_value and value != data[idx][1]:
+                data[idx][1] = value
+            if add_value:
+                data.append([work_date.strftime('%Y-%m-%d'), value])
+            work_date = work_date + timedelta(hours=24)
+
+        res_dict[region]["all_sat_valid"]["data"] = data
+
+        with open(file_json, "w") as f:
+            json.dump(res_dict, f, indent=2)
+
+
 def make_pqd_2025():
     dir_base = '/store2/OC/QualityIndex/PQ-D_2025'
     #dir_base = '/mnt/c/DATA/TEMP'
