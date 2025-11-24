@@ -205,7 +205,7 @@ def update_pqd_from_config_file(config_file):
         work_date = dt.now() - timedelta(days=ref_days)
         n_dates = len(data)
         index_ini = n_dates
-        print(f'[INFO] Updating JSON file {json_file}')
+        print(f'[INFO] Updating JSON file {file_json}')
         for idx in range(n_dates - 1, -1, -1):
             if data[idx][0] == work_date.strftime('%Y-%m-%d'):
                 index_ini = idx
