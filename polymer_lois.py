@@ -101,10 +101,10 @@ class POLYMER:
                 return None, None
 
         if self.product_type == 's2_msi':
-            # if self.version==5.0:
-            #     print(f'[ERROR] MSI products are not implemented for version 5')
-            #     return None,None
-            self.version = '5.0'
+            if self.version==5.0:
+                print(f'[ERROR] MSI products are not implemented for version 5')
+                return None,None
+
             if prod_name.startswith('S2') and prod_name.endswith('.SAFE') and os.path.isdir(prod_path):
                 if os.path.isdir(output_dir):
                     output_name = prod_name[0:-5] + '_POLYMER.nc'
@@ -226,12 +226,14 @@ class POLYMER:
                     return False
 
             else:
-                try:
-                    res = run_atm_corr(Level1(prod_path), Level2(filename=output_path, fmt='netcdf4'), **params)
-                except Exception as error:
-                    print(f'[ERROR] Polymer WAS NOT completed for product: {prod_name}. ')
-                    print(f'[ERROR] {error}')
-                    return False
+                print(params)
+                res = run_atm_corr(Level1(prod_path), Level2(filename=output_path, fmt='netcdf4'), **params)
+                # try:
+                #     res = run_atm_corr(Level1(prod_path), Level2(filename=output_path, fmt='netcdf4'), **params)
+                # except Exception as error:
+                #     print(f'[ERROR] Polymer WAS NOT completed for product: {prod_name}. ')
+                #     print(f'[ERROR] {error}')
+                #     return False
         # res = run_atm_corr(Level1(prod_path), Level2('memory'), **params)
 
         if self.version==5:
