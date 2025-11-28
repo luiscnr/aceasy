@@ -101,9 +101,10 @@ class POLYMER:
                 return None, None
 
         if self.product_type == 's2_msi':
-            if self.version==5.0:
-                print(f'[ERROR] MSI products are not implemented for version 5')
-                return None,None
+            # if self.version==5.0:
+            #     print(f'[ERROR] MSI products are not implemented for version 5')
+            #     return None,None
+            self.version = '5.0'
             if prod_name.startswith('S2') and prod_name.endswith('.SAFE') and os.path.isdir(prod_path):
                 if os.path.isdir(output_dir):
                     output_name = prod_name[0:-5] + '_POLYMER.nc'
@@ -140,7 +141,7 @@ class POLYMER:
         if output_path is None:##file error
             return False
         if os.path.exists(output_path):
-            print(f'[INFO] Output file {output_path} already exists. Skiping...')
+            print(f'[INFO] Output file {output_path} already exists. Skipping...')
             return True
         if self.verbose:
             print(f'[INFO] Input product: {prod_name}')
