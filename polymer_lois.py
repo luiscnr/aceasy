@@ -102,9 +102,9 @@ class POLYMER:
 
         if self.product_type == 's2_msi':
             if self.version==5.0:
-                print(f'[ERROR] MSIS products are not implemented for version 5')
+                print(f'[ERROR] MSI products are not implemented for version 5')
                 return None,None
-            if prod_name.startswith('s2_msi') and prod_name.endswith('.SAFE') and os.path.isdir(prod_path):
+            if prod_name.startswith('S2') and prod_name.endswith('.SAFE') and os.path.isdir(prod_path):
                 if os.path.isdir(output_dir):
                     output_name = prod_name[0:-5] + '_POLYMER.nc'
                     output_path = os.path.join(output_dir, output_name)
