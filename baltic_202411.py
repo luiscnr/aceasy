@@ -440,7 +440,7 @@ class BALTIC_202411_PROCESSOR():
 
         if self.product_type == 'cci':
             if ncinput.variables['time'].units=='days since 1970-01-01':
-                date_file = dt(1970, 1, 1) + timedelta(days=ncinput.variables['time'][0])
+                date_file = dt(1970, 1, 1) + timedelta(days=int(ncinput.variables['time'][0]))
             else:
                 date_file = dt.fromtimestamp(ncinput.variables['time'][0]).astimezone(pytz.UTC)
 
