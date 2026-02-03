@@ -438,8 +438,14 @@ class BALTIC_202411_PROCESSOR():
                         pass
 
         if self.product_type == 'cci':
-            #date_file = dt.utcfromtimestamp(ncinput.variables['time'][0]).replace(tzinfo=pytz.UTC)
-            date_file = dt.fromtimestamp(ncinput.variables['time'][0]).astimezone(pytz.UTC)
+            if ncinput.variables['time'][0]==0:##error in input varible, get the  data from file name
+                try:
+                    time_str = os.path.basename(prod_path)[1:8]
+                    date_file = dt.strptime(time_str,'%Y%j')
+                except:
+                    pass
+            else:
+                date_file = dt.fromtimestamp(ncinput.variables['time'][0]).astimezone(pytz.UTC)
 
         if date_file is None:
             print(f'[ERROR] Date file could not be set.')
