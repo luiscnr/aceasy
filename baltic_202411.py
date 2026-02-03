@@ -438,6 +438,10 @@ class BALTIC_202411_PROCESSOR():
                         pass
 
         if self.product_type == 'cci':
+            print('here...',ncinput.variables['time'][0])
+            print(prod_path)
+            time_str = os.path.basename(prod_path)[1:8]
+            print(time_str)
             if ncinput.variables['time'][0]==0:##error in input varible, get the  data from file name
                 try:
                     time_str = os.path.basename(prod_path)[1:8]
