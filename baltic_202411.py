@@ -8,6 +8,7 @@ import BSC_QAA.bsc_qaa_EUMETSAT as bsc_qaa
 from balticmlp import polymerflag
 from split_202411 import Splitter
 from datetime import datetime as dt
+from datetime import timedelta
 
 
 class BALTIC_202411_PROCESSOR():
@@ -438,16 +439,8 @@ class BALTIC_202411_PROCESSOR():
                         pass
 
         if self.product_type == 'cci':
-            print('here...',ncinput.variables['time'][0])
-            print(prod_path)
-            time_str = os.path.basename(prod_path)[1:8]
-            print(time_str)
-            if ncinput.variables['time'][0]==0:##error in input varible, get the  data from file name
-                try:
-                    time_str = os.path.basename(prod_path)[1:8]
-                    date_file = dt.strptime(time_str,'%Y%j')
-                except:
-                    pass
+            if ncinput.variables['time'].units=='days since 1970-01-01':
+                date_file = dt(1970, 1, 1) + timedelta(days=ncinput.variables['time'][0])
             else:
                 date_file = dt.fromtimestamp(ncinput.variables['time'][0]).astimezone(pytz.UTC)
 
