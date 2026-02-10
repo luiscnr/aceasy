@@ -958,6 +958,8 @@ if __name__ == '__main__':
                         if os.path.exists(prod_path):
                             params = [corrector, prod_path, output_path_jday, False, None, False]
                             param_list.append(params)
+                        else:
+                            print(f'[WARNING] Product {prod_path} is not available for BAL202411, type {corrector.product_type}')
 
                     #l3 oli data, prod_path is input_path_date
                     if args.atm_correction == 'BAL202411' and corrector.product_type.startswith('l3_olci_'):
