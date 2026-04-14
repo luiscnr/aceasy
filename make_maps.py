@@ -553,7 +553,7 @@ def plot_map_general(file_nc, file_out, variable, title, label, vmin, vmax):
 
 def compute_total_coverage_cci():
     print(f'COMPUTING TOTAL COVERAGE....')
-    dir_base = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/BAL_EVOLUTION_202411/CODE_AND_MAP_ANALYSIS_202411/COVERAGE_ENS_YEAR'
+    dir_base = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/BAL_EVOLUTION_202411/CODE_AND_MAP_ANALYSIS_202411/COVERAGE_ENS_YEAR_NEW'
     sum_variables = ['n_cdf_total','n_nocdf_total','n_total','weight_mlp3b_cdf','weight_mlp3b_total','weight_mlp4b_cdf','weight_mlp5b_cdf']
     coverage_variables = ['coverage_cdf','coverage_cdf_mlp_3','coverage_cdf_mlp_4','coverage_cdf_mlp_5','coverage_no_cdf','coverage_total_mlp3','coverage_total_mlp4','coverage_total_mlp5']
     file_out = os.path.join(dir_base,'COVERAGE_ENS_CDF_ALL_YEARS.nc')
@@ -582,7 +582,7 @@ def compute_total_coverage_cci():
         var = sum_variables[idx]
         print(f'[INFO] Variable {var} started...')
         array_sum = np.zeros((ntime, nlat, nlon))
-        for year in range(1997,2024):
+        for year in range(1997,2026):
             print(f'[INFO] -> {year}')
             file_year = os.path.join(dir_base,f'COVERAGE_ENSCDF_{year}.nc')
             dataset_y = Dataset(file_year)
@@ -1346,6 +1346,33 @@ def get_geo_limits(array_lat,array_lon,geo_limits):
 
     return r1, r2, c1, c2
 
+def count_images(year_ini,year_end):
+    dir_base = '/store3/OC/CCI_v2017/daily_v202411'
+    file_out = os.path.join(dir_base,'NImagesByYear.csv')
+    fw = open(file_out,'w')
+    fw.write('Year;NImages;NImagesWithData')
+    for year in range(year_ini,year_end+1):
+        work_date = dt(year,1,1)
+        end_date = dt(year,12,31)
+        nimages = 0
+        nimages_valid = 0
+        while work_date<=end_date:
+            yyyy = work_date.strftime('%Y')
+            jjj = work_date.strftime('%j')
+            file_in = os.path.join(dir_base,yyyy,jjj,f'C{yyyy}{jjj}-chl-bal-hr.nc')
+            if os.path.exists(file_in):
+                nimages = nimages+1
+                dset = Dataset(file_in)
+                chl = dset.variables['CHL'][:]
+                dset.close()
+                nchl = np.ma.count(chl)
+                if nchl>0:
+                    nimages_valid = nimages_valid + 1
+            work_date = work_date + timedelta(hours=24)
+        line = f'{year};{nimages}:{nimages_valid}'
+        fw.write('\n')
+        fw.write(line)
+    fw.close()
 def compute_old_mlp(year):
     #from baltic_mlp import BALTIC_MLP
     from balticmlp import balmlpensemble
@@ -1501,10 +1528,13 @@ def main():
     #   compute_year_coverage_cci(year)
 
     ##COMPUTE TOTAL RELATIVE DIFFERENCE - RUN ON HPC-SERVER
-    compute_total_relative_diff()
+    # compute_total_relative_diff()
 
     ##TOTAL CDF ENSEMBLE COVERAGE BASED ON YEAR COVERAGE FILES. IT INCLUCES TOTAL AND MONTHLY RESULTS - LOCAL RUN
+    ##DEPRECATED METHOD IN baltic202411_publication.ipynb IS MORE COMPLETE
     #compute_total_coverage_cci()
+
+    count_images(1997,2025)
 
 
     # file_check = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/BAL_EVOLUTION_202411/CYANOBLOOM_EVOLUTION/CYANOBLOOM_COVERAGE_2023.nc'
