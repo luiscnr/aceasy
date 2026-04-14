@@ -1343,6 +1343,91 @@ def get_geo_limits(array_lat,array_lon,geo_limits):
 
     return r1, r2, c1, c2
 
+def compute_old_mlp(year):
+    #from baltic_mlp import BALTIC_MLP
+    from balticmlp import balmlpensemble
+    balmlp = balmlpensemble.BalMLP(None)
+    dir_base = '/store3/OC/CCI_v2017/daily_v202411'
+    dir_out = '/store3/OC/CCI_v2017/daily_v202207'
+    # dir_base = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/BAL_EVOLUTION_202411/CODE_AND_MAP_ANALYSIS_202411'
+    # dir_out = dir_base
+
+    file_ref = os.path.join(dir_base,'2024/288/C2023288-chl-bal-hr.nc')
+    dref = Dataset(file_ref)
+    lat_array = dref.variables['lat'][:]
+    lon_array = dref.variables['lon'][:]
+    dref.close()
+
+    file_in_format = 'MDATE1.0000.bal.all_products.CCI.DATE20000.v0.DATE10000.data_BAL202411.nc'
+    if year==2025:
+        file_in_format = 'MDATE1.0000.bal.all_products.CCI.DATE20000.v0.DATE10000.cnr_BAL202411.nc'
+    format_date1 = '%Y%j'
+    format_date2 = '%d%b%y'
+
+    work_date = dt(year,1,1)
+    end_date = dt(year,12,31)
+    while work_date<=end_date:
+        yyyy = work_date.strftime('%Y')
+        jjj = work_date.strftime('%j')
+        date1_str = work_date.strftime(format_date1)
+        date2_str = work_date.strftime(format_date2)
+        name_file = file_in_format.replace('DATE1', date1_str)
+        name_file = name_file.replace('DATE2', date2_str)
+        file_in = os.path.join(dir_base, yyyy, jjj, name_file)
+        if not os.path.isfile(file_in):
+            work_date = work_date+timedelta(hours=24)
+            continue
+        dir_out_date = os.path.join(dir_out,yyyy,jjj)
+        if not os.path.isdir(dir_out_date):
+            os.makedirs(dir_out_date,exist_ok=True)
+
+        print(f'Working with date: {work_date.strftime("%Y-%m-%d")}')
+        ##rrs with 5 bands:443_490_510_555_670
+        dset = Dataset(file_in)
+        rrs_443 = dset.variables['RRS443'][:]
+        rrs_490 = dset.variables['RRS490'][:]
+        rrs_510 = dset.variables['RRS510'][:]
+        rrs_555 = dset.variables['RRS555'][:]
+        rrs_670 = dset.variables['RRS670'][:]
+        shape_orig = rrs_443.shape
+        dset.close()
+        indices = np.where((rrs_443.mask==False) & (rrs_490.mask==False) & (rrs_510.mask==False) & (rrs_555.mask==False) & (rrs_670.mask==False))
+        rrs_443 = rrs_443[indices].flatten()
+        rrs_490 = rrs_490[indices].flatten()
+        rrs_510 = rrs_510[indices].flatten()
+        rrs_555 = rrs_555[indices].flatten()
+        rrs_670 = rrs_670[indices].flatten()
+        ndata = rrs_443.shape[0]
+        rrs = np.zeros((ndata,5))
+        rrs[:, 0] = rrs_443
+        rrs[:, 1] = rrs_490
+        rrs[:, 2] = rrs_510
+        rrs[:, 3] = rrs_555
+        rrs[:, 4] = rrs_670
+        chl_fl = balmlp.compute_chla_ensemble_3bands(rrs)
+        chl_array = np.ma.masked_all(shape_orig)
+        chl_array[indices] = chl_fl
+
+
+        file_out = os.path.join(dir_out_date,f'C{yyyy}{jjj}-chl-bal-hr.nc')
+        ncout = Dataset(file_out,'w')
+        ncout.createDimension('time',1)
+        ncout.createDimension('lat',1147)
+        ncout.createDimension('lon',1185)
+        var_lat = ncout.createVariable('lat','f4',('lat',),zlib=True,complevel=6)
+        var_lon = ncout.createVariable('lon', 'f4', ('lon',), zlib=True, complevel=6)
+        var_time = ncout.createVariable('time', 'i4', ('time',), zlib=True, complevel=6)
+        var_chl = ncout.createVariable('CHL', 'f4', ('time','lat','lon'), zlib=True, complevel=6,fill_value=-999.0)
+        var_lat[:] = lat_array[:]
+        var_lon[:] = lon_array[:]
+        var_time[:] = int((work_date-dt(1981,1,1)).total_seconds())
+        var_chl[0,:,:] = chl_array[:,:]
+        ncout.close()
+
+        print('Completed')
+
+        work_date = work_date+timedelta(hours=24)
+
 def main():
     if args.config_path:
         if not os.path.isfile(args.config_path):
@@ -1402,9 +1487,15 @@ def main():
     #     file_out = os.path.join(os.path.dirname(file_nc), f'{variable}_{year}.tif')
     #     plot_map_general(file_nc,file_out,variable,title,label,vmin,vmax)
 
+
+    ##COMPUTE OLD VERSIONS FOR YEARS 2024 AND 2025 TO COMPLETE THE RELATIVE DIFFERENCE
+    compute_old_mlp(2024)
+    compute_old_mlp(2025)
+
+
     ##CDF ENSEMBLE COVERAGE FOR EACH YEAR (WITH TOTAL AND MONTHLY RESULTS) BASED ON CCI DAILY DATA1 - RUN ON HPC-SERVERS
-    for year in range(2025,2026):
-      compute_year_coverage_cci(year)
+    # for year in range(2025,2026):
+    #   compute_year_coverage_cci(year)
 
     ##COMPUTE TOTAL RELATIVE DIFFERENCE - RUN ON HPC-SERVER
     #compute_total_relative_diff()
