@@ -6,8 +6,9 @@ import os
 pd.set_option('display.precision', 4)
 
 
-class BalMLP():
+class BalMLP:
     def __init__(self, path_file):
+
 
         if path_file is None:
             path_file = os.path.dirname(__file__)
@@ -118,12 +119,17 @@ class BalMLP():
 
     ##rrs with 5 bands:443_490_510_555_670
     def compute_chla_ensemble_3bands(self, rrs):
+        print(f'[INFO] Computing MLP 5 bands...')
         self.chl_5_670, self.wgt_5_670 = self.mlp_5_bands_670(rrs[:, [0, 1, 2, 3, 4]])
+        print(f'[INFO] Computing MLP 4 bands...')
         self.chl_4, self.wgt_4 = self.mlp_4_bands(rrs[:, [1, 2, 3, 4]])
+        print(f'[INFO] Computing MLP 3 bands...')
         self.chl_3, self.wgt_3 = self.mlp_3_bands(rrs[:, [1, 2, 3]])
 
+        print(f'[INFO] Computing ensemble...')
         tmp = np.multiply(self.chl_5_670, self.wgt_5_670) + np.multiply(self.chl_4, self.wgt_4) + np.multiply(
             self.chl_3, self.wgt_3)
+
 
         self.ens3 = np.divide(tmp, self.wgt_5_670 + self.wgt_4 + self.wgt_3)
         return self.ens3

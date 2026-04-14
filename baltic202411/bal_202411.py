@@ -30,6 +30,9 @@ class BALTIC_202411:
         else:
             print(f'[ERROR] Error starting BALTIC_202411 algorithm. mlp_5 {par_file} file was not found')
 
+
+
+
     ##rrs_in: 490, 510, 555
     def mlp_three_bands(self, rrs_in):
         return bsc.mlp_chl(self.mlp_3, rrs_in) if self.VALID else None
@@ -48,15 +51,22 @@ class BALTIC_202411:
             return None
 
         # MLP 2018 Table4 uses 3 bands (490, 510, 555)
+        print(f'[INFO] Computing MLP 3 bands...')
         bsc_3 = bsc.mlp_chl(self.mlp_3, rrs_in[:, 1:4])
 
         # MLP 2018 Table3 uses 4 bands (490, 510, 555 and 670)
+        print(f'[INFO] Computing MPL 4 bands...')
         bsc_4 = bsc.mlp_chl(self.mlp_4, rrs_in[:, 1:5])
 
         # MLP 2018 5 bands (443, 490, 510, 555, 670)
+        print(f'[INFO] Computing MPL 5 bands...')
         bsc_5 = bsc.mlp_chl(self.mlp_5, rrs_in[:, 0:5])
 
+
+
+
         # Arrays with three ensembles
+        print(f'[INFO] Preparing ensemble...')
         chl = np.array([bsc_3['chl'], bsc_4['chl'], bsc_5['chl']]).transpose()
         cdf = np.array([bsc_3['cdf'], bsc_4['cdf'], bsc_5['cdf']]).transpose()
 
@@ -85,6 +95,7 @@ class BALTIC_202411:
         cdf_ens[cdf_ens.mask] = -999
 
         #flag_cdf
+        print(f'[INFO] CDF flagging...')
         cdf = np.ma.masked_where(cdf<0,cdf)
         cdf = np.ma.masked_invalid(cdf)
         cdf_mask_mlp3b = np.ma.where(cdf[:,0] >= 0.001,2,0)
@@ -101,6 +112,7 @@ class BALTIC_202411:
         weight_mlp3b = np.ma.divide(cdf_mlp3b, cdf_sum)
         weight_mlp4b = np.ma.divide(cdf_mlp4b, cdf_sum)
         weight_mlp5b = np.ma.divide(cdf_mlp5b, cdf_sum)
+
 
         res = {
             'chl': chl_cdf,

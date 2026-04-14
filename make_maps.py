@@ -747,12 +747,13 @@ def compute_total_relative_diff():
 
 
 def compute_year_coverage_cci(year):
-    print(f'COMPUTING COVERAGE FOR YEAR....')
+    print(f'COMPUTING COVERAGE FOR YEAR: {year}')
     from datetime import timedelta
     dir_base = '/store3/OC/CCI_v2017/daily_v202411'
     file_out = os.path.join(dir_base, f'COVERAGE_ENSCDF_{year}.nc')
 
-    file_in_format = 'MDATE1.0000.bal.all_products.CCI.DATE20000.v0.DATE10000.data_BAL202411.nc'
+    #file_in_format = 'MDATE1.0000.bal.all_products.CCI.DATE20000.v0.DATE10000.data_BAL202411.nc'
+    file_in_format = 'MDATE1.0000.bal.all_products.CCI.DATE20000.v0.DATE10000.cnr_BAL202411.nc'
     format_date1 = '%Y%j'
     format_date2 = '%d%b%y'
     nlat = 1147
@@ -1402,11 +1403,11 @@ def main():
     #     plot_map_general(file_nc,file_out,variable,title,label,vmin,vmax)
 
     ##CDF ENSEMBLE COVERAGE FOR EACH YEAR (WITH TOTAL AND MONTHLY RESULTS) BASED ON CCI DAILY DATA1 - RUN ON HPC-SERVERS
-    # for year in range(1997,2025):
-    #   compute_year_coverage_cci(year)
+    for year in range(2025,2026):
+      compute_year_coverage_cci(year)
 
     ##COMPUTE TOTAL RELATIVE DIFFERENCE - RUN ON HPC-SERVER
-    compute_total_relative_diff()
+    #compute_total_relative_diff()
 
     ##TOTAL CDF ENSEMBLE COVERAGE BASED ON YEAR COVERAGE FILES. IT INCLUCES TOTAL AND MONTHLY RESULTS - LOCAL RUN
     #compute_total_coverage_cci()

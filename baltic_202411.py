@@ -1,6 +1,7 @@
 import os,pytz,json
 from baltic202411.bal_202411 import BALTIC_202411
 from baltic_mlp import BALTIC_MLP
+from balticmlp.balmlpensemble import BalMLP
 from csv_lois import CSV_FILE
 from netCDF4 import Dataset
 import numpy as np
@@ -604,6 +605,42 @@ class BALTIC_202411_PROCESSOR():
     def allow_csv_test(self):
         return True
 
+    def run_from_mdb_file_202211(self,path_mdb,output_path):
+        try:
+            from balticmlp import balmlpensemble
+        except:
+            print(f'[ERROR] Baltic code could not be loaded. Check if exists file ../aceasy/balticmlp/balmlpensemble.py')
+            return
+        if not os.path.exists(path_mdb):  ##should be checked before
+            return
+        print(f'[INFO] Input MDB FILE: {path_mdb}')
+        bal_algo = balmlpensemble.BalMLP(None)
+        dataset_w = self.start_output_dataset(path_mdb, output_path, ['satellite_CHL_202211'])
+        rrs = dataset_w.variables['satellite_Rrs'][:]
+        wl_bands = dataset_w.variables['satellite_bands'][:]
+
+        n_mu = rrs.shape[0]
+        n_rows = rrs.shape[2]
+        n_cols = rrs.shape[3]
+        n_all = n_mu * n_rows * n_cols
+        print(f'[INFO] Number of match-ups: {n_mu} Total pixels: {n_all}')
+
+        spectra = self.get_rrs_spectra_from_mdb(rrs, wl_bands, dataset_w)
+        print(f'[INFO] Number of spectra: {spectra.shape[0]}')
+        indices_valid = np.where(np.ma.count(spectra, axis=1) > 0)
+        spectra_valid = spectra[indices_valid]
+        print(f'[INFO] Number of valid spectra: {spectra_valid.shape[0]}')
+
+
+        chla = bal_algo.compute_chla_ensemble_3bands(spectra_valid)
+        array = np.ma.masked_all((n_all,))
+        array[indices_valid] = chla
+        array = np.ma.reshape(array, (n_mu, n_rows, n_cols))
+        dataset_w['satellite_CHL_202211'][:, :, :] = array[:, :]
+
+        dataset_w.close()
+        print(f'[INFO] Completed')
+
     def run_from_mdb_file(self, path_mdb, output_path):
         if not self.check_runac():
             print(f'[ERROR] Error starting Baltic 202411 chl-a algorithm')
@@ -635,53 +672,133 @@ class BALTIC_202411_PROCESSOR():
         n_mu = rrs.shape[0]
         n_rows = rrs.shape[2]
         n_cols = rrs.shape[3]
-        print(f'[INFO] Number of match-ups: {n_mu}')
+        n_all  = n_mu * n_rows * n_cols
+        print(f'[INFO] Number of match-ups: {n_mu} Total pixels: {n_all}')
 
-        for imu in range(n_mu):
-            if imu==0 or imu%100==0:
-                print(f'[INFO] Processing data for match-up: {imu}')
+        spectra = self.get_rrs_spectra_from_mdb(rrs,wl_bands,dataset_w)
+        print(f'[INFO] Number of spectra: {spectra.shape[0]}')
+        indices_valid = np.where(np.ma.count(spectra,axis=1)>0)
+        spectra_valid = spectra[indices_valid]
+        print(f'[INFO] Number of valid spectra: {spectra_valid.shape[0]}')
+        res_all = self.bal_proc.compute_ensemble(spectra_valid)
+        for name_var in variables_bal202411:
+            key = variables_bal202411[name_var]
+            array = np.ma.masked_all((n_all,))
+            array_res = res_all[key]
+            array[indices_valid] = array_res
+            array = np.ma.reshape(array, (n_mu,n_rows, n_cols))
+            dataset_w[name_var][:, :, :] = array[:, :]
 
-            spectra = self.get_rrs_spectra_from_mdb(np.ma.squeeze(rrs[imu, :, :, :]), wl_bands)
-            res_all = self.bal_proc.compute_ensemble(spectra)
-            for name_var in variables_bal202411:
-                key = variables_bal202411[name_var]
-                array = res_all[key]
-                array = np.ma.reshape(array, (n_rows, n_cols))
-                dataset_w[name_var][imu, :, :] = array[:, :]
+        # for imu in range(n_mu):
+        #     if imu==0 or imu%100==0:
+        #         print(f'[INFO] Processing data for match-up: {imu}')
+        #
+        #     spectra = self.get_rrs_spectra_from_mdb(np.ma.squeeze(rrs[imu, :, :, :]), wl_bands)
+        #     res_all = self.bal_proc.compute_ensemble(spectra)
+        #     for name_var in variables_bal202411:
+        #         key = variables_bal202411[name_var]
+        #         array = res_all[key]
+        #         array = np.ma.reshape(array, (n_rows, n_cols))
+        #         dataset_w[name_var][imu, :, :] = array[:, :]
 
         dataset_w.close()
         print(f'[INFO] Completed')
 
     def start_output_dataset(self, input_file, output_file, new_variables):
-        print(f'[INFO] Making copy from {input_file} to {output_file}')
+
         input_dataset = Dataset(input_file)
-        ncout = Dataset(output_file, 'w', format='NETCDF4')
+        if os.path.exists(output_file):##copy manually made
+            print(f'[INFO] Overwritting {output_file}')
+            ncout = Dataset(output_file, 'a')
+        else:
+            print(f'[INFO] Making copy from {input_file} to {output_file}')
+            ncout = Dataset(output_file, 'w', format='NETCDF4')
 
-        # copy global attributes all at once via dictionary
-        ncout.setncatts(input_dataset.__dict__)
+            # copy global attributes all at once via dictionary
+            ncout.setncatts(input_dataset.__dict__)
 
-        # copy dimensions
-        for name, dimension in input_dataset.dimensions.items():
-            ncout.createDimension(
-                name, (len(dimension) if not dimension.isunlimited() else None))
+            # copy dimensions
+            for name, dimension in input_dataset.dimensions.items():
+                ncout.createDimension(name, (len(dimension) if not dimension.isunlimited() else None))
 
-        for name, variable in input_dataset.variables.items():
-            fill_value = None
-            if '_FillValue' in list(variable.ncattrs()):
-                fill_value = variable._FillValue
-            ncout.createVariable(name, variable.datatype, variable.dimensions, fill_value=fill_value, zlib=True,
-                                 complevel=6)
-            # copy variable attributes all at once via dictionary
-            ncout[name].setncatts(input_dataset[name].__dict__)
-            ncout[name][:] = input_dataset[name][:]
+            for name, variable in input_dataset.variables.items():
+                fill_value = None
+                if '_FillValue' in list(variable.ncattrs()):
+                    fill_value = variable._FillValue
+                ncout.createVariable(name, variable.datatype, variable.dimensions, fill_value=fill_value, zlib=True,complevel=6)
+                # copy variable attributes all at once via dictionary
+                ncout[name].setncatts(input_dataset[name].__dict__)
+                ncout[name][:] = input_dataset[name][:]
 
         for name in new_variables:
-            ncout.createVariable(name, 'f4', ('satellite_id', 'rows', 'columns'), fill_value=-999.0, zlib=True,
-                                 complevel=6)
+            ncout.createVariable(name, 'f4', ('satellite_id', 'rows', 'columns'), fill_value=-999.0, zlib=True,complevel=6)
 
         return ncout
 
-    def get_rrs_spectra_from_mdb(self, rrs, wl_bands):
+    def get_rrs_spectra_from_mdb(self,rrs, wl_bands, dataset_w):
+        print(f'[INFO] Getting rrs spectra')
+        n_all = rrs.shape[0] * rrs.shape[2] * rrs.shape[3]
+        all_spectra = np.moveaxis(rrs, 1, 3).reshape(n_all, rrs.shape[1])
+        wl_output = self.bal_proc.input_bands
+        n_output = len(wl_output)
+        out_spectra = np.ma.masked_all((n_all, n_output))
+
+        wl_bands_bs = wl_bands[np.logical_and(wl_bands>=wl_output[0]-5,wl_bands<=wl_output[-1])]
+        apply_band_shifting = 0
+        for iwl, wl in enumerate(wl_output):
+            wls = str(wl).replace('.','_')
+            name_band = f'satellite_RRS{wls}'
+            if name_band in dataset_w.variables:
+                continue
+            index_wl = np.argmin(np.abs(wl - wl_bands_bs))
+            diff_wl = abs(wl_bands_bs[index_wl] - wl)
+            if diff_wl == 0.0:
+                continue
+            elif diff_wl <=5.0:
+                apply_band_shifting = 1
+            else:
+                apply_band_shifting = -1
+
+        if apply_band_shifting==-1:
+            print(f'[ERROR] Required input bands are not available and band shifting (max diff. = 5 nm) can not be done')
+            print(f'[ERROR] -> Required bands: {wl_output}')
+            print(f'[ERROR] -> Input bands: {wl_bands_bs}')
+            return out_spectra
+
+        if apply_band_shifting==1:
+            wl_min_bs = wl_bands_bs[int(np.argmin(np.abs(wl_output[0]-wl_bands_bs)))]
+            wl_max_bs = wl_bands_bs[int(np.argmin(np.abs(wl_output[-1] - wl_bands_bs)))]
+            index_min_bs = int(np.argmin(np.abs(wl_min_bs-wl_bands)))
+            index_max_bs = int(np.argmin(np.abs(wl_max_bs-wl_bands)))+1
+            all_spectra_bs = all_spectra[:,index_min_bs:index_max_bs]
+            input_wl_bs = wl_bands[index_min_bs:index_max_bs]
+            print(f'[INFO] Applying band shifting: ')
+            print(f'[INFO] -> Input bands: {input_wl_bs}')
+            print(f'[INFO] -> Output bands: {wl_output}')
+            all_spectra_bs = all_spectra_bs.transpose()
+            out_spectra, iop = bsc_qaa.bsc_qaa(all_spectra_bs, input_wl_bs, wl_output)
+            out_spectra = out_spectra.transpose()
+            print(f'[INFO] Band shifting completed.')
+
+        if apply_band_shifting==0:
+            for iwl, wl in enumerate(wl_output):
+                wls = str(wl).replace('.','_')
+                name_band = f'satellite_RRS{wls}'
+                if name_band in dataset_w.variables:
+                    print(f'[INFO] Assigning band {wl} from variable {name_band}')
+                    rrsdata_out = dataset_w.variables[name_band][:].flatten()
+                    out_spectra[:, iwl] = np.squeeze(rrsdata_out)
+                    continue
+                index_wl = np.argmin(np.abs(wl - wl_bands))
+                diff_wl = abs(wl_bands[index_wl] - wl)
+                if diff_wl == 0.0:
+                    print(f'[INFO] Getting rrs data for band: {wl}')
+                    out_spectra[:, iwl] = all_spectra[:, index_wl]
+
+
+        return out_spectra
+
+    def get_rrs_spectra_from_mdb_deprecated(self, rrs, wl_bands):
         n_bands = rrs.shape[0]
         n_data = rrs.shape[1] * rrs.shape[2]
         all_spectra = np.transpose(np.ma.reshape(rrs, (n_bands, n_data)))

@@ -176,6 +176,7 @@ def qaa(rrs_in, band_in, g0=0.089, g1=0.1245):  # the qaa algorithm
 
 
 def bsc_qaa(rrs_in, band_in, band_out, g0=0.089, g1=0.1245):
+
     rrs_in = ma.array(rrs_in)
     band_in = ma.array(band_in)
     band_out = ma.array(band_out)

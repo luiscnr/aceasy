@@ -1142,9 +1142,36 @@ def test_chla_bal():
     print('Test chl-a bal algorithm')
     from baltic202411.bal_202411 import BALTIC_202411
     bm = BALTIC_202411()
+    ##rrs_in: [ndata x 5 bands] -> 443, 490, 510, 555,
+    res = bm.compute_ensemble([0.000462559,0.000540074,0.000864993,0.001462458,0.001733999,0.001489508,0.00407211])
+    ##output is a dictionary. for chla:
+    print(res['chl'])
 
-    res = bm.mlp_three_bands(np.array([0.001987597,0.00229291,0.002599203]))
-    print(res)
+    file_nc = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/BAL_EVOLUTION_202411/MATCH-UPS_ANALYSIS_2024/MDBsV3/MDB_CMEMS_OLCI_BAL_STATIONS_20160426_20241006.nc'
+    print(os.path.exists(file_nc))
+    dataset = Dataset(file_nc)
+    rrs = dataset.variables['satellite_Rrs'][0,:,0,0]
+    wl_array = dataset.variables['satellite_bands'][:]
+    chl = dataset.variables['satellite_CHL'][0,0,0]
+    dataset.close()
+
+    print(rrs)
+    print(wl_array)
+    print(chl)
+    from BSC_QAA import bsc_qaa_EUMETSAT as bsc_qaa
+
+    # rrs_new, iop = bsc_qaa.bsc_qaa(rrs,wl_array,[443,490,510,555,670])
+
+
+    rrs_new, iop = bsc_qaa.bsc_qaa(rrs[2:8],wl_array[2:8],[443,490,510,555,670])
+
+    print(rrs_new)
+    rrs_new = np.expand_dims(rrs_new,axis=0)
+
+    res = bm.compute_ensemble(rrs_new)
+    print('-->',res['chl'][0])
+    print('-->',res['chl_mlp3b'][0])
+
 
 
 
