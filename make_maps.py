@@ -662,8 +662,7 @@ def compute_total_relative_diff():
 
 
     file_in_format = 'MDATE1.0000.bal.all_products.CCI.DATE20000.v0.DATE10000.data_BAL202411.nc'
-    if year==2025:
-        file_in_format = 'MDATE1.0000.bal.all_products.CCI.DATE20000.v0.DATE10000.cnr_BAL202411.nc'
+
     format_date1 = '%Y%j'
     format_date2 = '%d%b%y'
     nlat = 1147
@@ -678,6 +677,8 @@ def compute_total_relative_diff():
     n_rpd = np.zeros((nlat,nlon))
     lat, lon  = None, None
     while date_here <= date_end:
+        if date_here.year==2025:
+            file_in_format = 'MDATE1.0000.bal.all_products.CCI.DATE20000.v0.DATE10000.cnr_BAL202411.nc'
         yyyy = date_here.strftime('%Y')
         jjj = date_here.strftime('%j')
         date1_str = date_here.strftime(format_date1)
