@@ -662,12 +662,14 @@ def compute_total_relative_diff():
 
 
     file_in_format = 'MDATE1.0000.bal.all_products.CCI.DATE20000.v0.DATE10000.data_BAL202411.nc'
+    if year==2025:
+        file_in_format = 'MDATE1.0000.bal.all_products.CCI.DATE20000.v0.DATE10000.cnr_BAL202411.nc'
     format_date1 = '%Y%j'
     format_date2 = '%d%b%y'
     nlat = 1147
     nlon = 1185
     date_here = dt(1997, 1, 1)
-    date_end = dt(2023, 12, 31)
+    date_end = dt(2025, 12, 31)
     ntotal_images = 0
     ndata_images = 0
 
@@ -1489,8 +1491,8 @@ def main():
 
 
     ##COMPUTE OLD VERSIONS FOR YEARS 2024 AND 2025 TO COMPLETE THE RELATIVE DIFFERENCE
-    compute_old_mlp(2024)
-    compute_old_mlp(2025)
+    # compute_old_mlp(2024)
+    # compute_old_mlp(2025)
 
 
     ##CDF ENSEMBLE COVERAGE FOR EACH YEAR (WITH TOTAL AND MONTHLY RESULTS) BASED ON CCI DAILY DATA1 - RUN ON HPC-SERVERS
@@ -1498,7 +1500,7 @@ def main():
     #   compute_year_coverage_cci(year)
 
     ##COMPUTE TOTAL RELATIVE DIFFERENCE - RUN ON HPC-SERVER
-    #compute_total_relative_diff()
+    compute_total_relative_diff()
 
     ##TOTAL CDF ENSEMBLE COVERAGE BASED ON YEAR COVERAGE FILES. IT INCLUCES TOTAL AND MONTHLY RESULTS - LOCAL RUN
     #compute_total_coverage_cci()
