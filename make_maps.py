@@ -1352,7 +1352,7 @@ def compute_old_mlp(year):
     # dir_base = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/BAL_EVOLUTION_202411/CODE_AND_MAP_ANALYSIS_202411'
     # dir_out = dir_base
 
-    file_ref = os.path.join(dir_base,'2024/288/C2023288-chl-bal-hr.nc')
+    file_ref = os.path.join(dir_base,'2024/288/C2024288-chl-bal-hr.nc')
     dref = Dataset(file_ref)
     lat_array = dref.variables['lat'][:]
     lon_array = dref.variables['lon'][:]
