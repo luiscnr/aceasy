@@ -1489,11 +1489,10 @@ def create_cyano_bloom_year(year):
         dset = Dataset(file_here)
         if ifile==0:
             ncout.setncatts(dset.__dict__)
-            var_lat[:] = dset.variables['lat'][:]
             var_lat.setncatts(dset.variables['lat'].__dict__)
-            var_lon[:] = dset.variables['lon'][:]
             var_lon.setncatts(dset.variables['lon'].__dict__)
-            var_time.setncatts(dset.variables['time'].__dict__)
+            var_lat[:] = dset.variables['lat'][:]
+            var_lon[:] = dset.variables['lon'][:]
             for at in dset.variables['CYANOBLOOM'].__dict__:
                 if at=='_FillValue':
                     continue
