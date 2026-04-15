@@ -693,7 +693,7 @@ def make_cyano_stats():
 
     dir_base = '/store3/OC/OLCI_BAL/dailyolci_202411'
     work_date = dt(2016, 4, 26)
-    end_date = dt(2024, 12, 31)
+    end_date = dt(2025, 12, 31)
 
     file_out = os.path.join(dir_base, f'CyanoOlci.csv')
     fw = open(file_out, 'w')

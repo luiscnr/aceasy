@@ -1458,6 +1458,51 @@ def compute_old_mlp(year):
 
         work_date = work_date+timedelta(hours=24)
 
+def create_cyano_bloom_year(year):
+    dir_base = '/store2/OC/CCI_v2017/daily_v202511'
+    list_files = []
+    work_date = dt(year,1,1)
+    end_date = dt(year,12,31)
+    while work_date<=end_date:
+        yyyy = work_date.strftime('%Y')
+        jjj = work_date.strftime('%j')
+        file_in  =os.path.join(dir_base,yyyy,jjj,f'C{yyyy}{jjj}-chl-bal-hr.nc')
+        if os.path.isfile(file_in):
+            list_files.append(file_in)
+        work_date = work_date + timedelta(hours=24)
+
+    ndata = len(list_files)
+    if ndata==0:
+        return
+    file_out = os.path.join('/store2/OC/CCI_v2017/daily_v202411',f'CYANOBLOOM_{year}.nc')
+    ncout = Dataset(file_out,'w')
+    ncout.createDimension('time',None)
+    ncout.createDimension('lat',1147)
+    ncout.createDimension('lon',1185)
+    var_time = ncout.createVariable('time','i4',('time',),complevel=6,zlib=True)
+    var_lat = ncout.createVariable('lat', 'f4', ('lat',), complevel=6, zlib=True)
+    var_lon = ncout.createVariable('lon', 'f4', ('lon',), complevel=6, zlib=True)
+    var_cyano = ncout.createVariable('time', 'i4', ('time','lat','lon'), complevel=6, zlib=True,fill_value=-999)
+
+    for ifile,file_here in enumerate(list_files):
+        print('Working with file: ',file_here)
+        dset = Dataset(file_here)
+        if ifile==0:
+            ncout.setncatts(dset.__dict__)
+            var_lat[:] = dset.variables['lat'][:]
+            var_lat.setncatts(dset.variables['lat'].__dict__)
+            var_lon[:] = dset.variables['lon'][:]
+            var_lon.setncatts(dset.variables['lon'].__dict__)
+            var_time.setncatts(dset.variables['time'].__dict__)
+            var_cyano.setncatts(dset.variables['CYANOBLOOM'].__dict__)
+        var_time[ifile] = dset.variables['time'][0]
+        var_cyano[ifile,:,:] = dset.variables['CYANOBLOOM'][0,:,:]
+        dset.close()
+
+        dset.close()
+    ncout.close()
+    print('DONE')
+
 def main():
     if args.config_path:
         if not os.path.isfile(args.config_path):
@@ -1534,8 +1579,11 @@ def main():
     ##DEPRECATED METHOD IN baltic202411_publication.ipynb IS MORE COMPLETE
     #compute_total_coverage_cci()
 
-    count_images(1997,2025)
+    ##Counting images with chl-a data
+    #count_images(1997,2025)
 
+    ##Create CYANOBLOOM_year.nc
+    create_cyano_bloom_year(2025)
 
     # file_check = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/BAL_EVOLUTION_202411/CYANOBLOOM_EVOLUTION/CYANOBLOOM_COVERAGE_2023.nc'
     # dataset = Dataset(file_check)
