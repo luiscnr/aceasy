@@ -1482,7 +1482,7 @@ def create_cyano_bloom_year(year):
     var_time = ncout.createVariable('time','i4',('time',),complevel=6,zlib=True)
     var_lat = ncout.createVariable('lat', 'f4', ('lat',), complevel=6, zlib=True)
     var_lon = ncout.createVariable('lon', 'f4', ('lon',), complevel=6, zlib=True)
-    var_cyano = ncout.createVariable('time', 'i4', ('time','lat','lon'), complevel=6, zlib=True,fill_value=-999)
+    var_cyano = ncout.createVariable('CYANOBLOOM', 'i4', ('time','lat','lon'), complevel=6, zlib=True,fill_value=-999)
 
     for ifile,file_here in enumerate(list_files):
         print('Working with file: ',file_here)
