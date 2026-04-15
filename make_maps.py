@@ -1500,8 +1500,6 @@ def create_cyano_bloom_year(year):
         var_time[ifile] = dset.variables['time'][0]
         var_cyano[ifile,:,:] = dset.variables['CYANOBLOOM'][0,:,:]
         dset.close()
-
-        dset.close()
     ncout.close()
     print('DONE')
 
