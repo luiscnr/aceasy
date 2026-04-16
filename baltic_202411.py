@@ -1167,11 +1167,14 @@ class BALTIC_202411_PROCESSOR():
         # latitude, longitude
         if self.verbose:
             print(f'[INFO]    Adding latitude/longitude...')
-        var_lat_name, var_lon_name = self.get_var_lat_lon_names(ncinput)
+
         if self.product_type.startswith('l3_olci_'):
             var_lat_name = 'lat'
             var_lon_name = 'lon'
             ncinput = Dataset(list(self.central_wavelength.keys())[0])
+        else:
+            var_lat_name, var_lon_name = self.get_var_lat_lon_names(ncinput)
+
         if len(ncinput.variables[var_lat_name].dimensions) == 2:
             array_lat = np.array(ncinput.variables[var_lat_name][yini:yend, xini:xend])
         elif len(ncinput.variables[var_lat_name].dimensions) == 1:

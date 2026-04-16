@@ -824,7 +824,6 @@ def plot_cyano():
     ## -- Saving output file
     plt.savefig(file_out, dpi=300)
 
-
 def plot_cyano_kk():
     from matplotlib import pyplot as plt
     import matplotlib.pyplot as plt

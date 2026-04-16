@@ -1012,6 +1012,7 @@ def compute_year_cyano(dir_base,year,period,file_mask):
 
     mask = None
     if os.path.exists(file_mask):
+        print(f'MASK FILE: {file_mask}')
         dmask = Dataset(file_mask)
         mask = dmask.variables['Land_Mask'][:]
         dmask.close()
@@ -1528,27 +1529,27 @@ def main():
     ##CREATE FILES CYANOBLOOM_COVERAGE
     # dir_base = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/BAL_EVOLUTION_202411/CYANOBLOOM_EVOLUTION'
     # file_mask = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/BAL_EVOLUTION_202411/MASKS/BAL_Land_Mask_hr.nc'
-    # for year in range(1997,2025):
+    # for year in range(2025,2026):
     #     compute_year_cyano(dir_base,year,'cyano',file_mask)
 
 
 
-    ##CREATE CSV FILE FOR CYANO YEAR FILES
-    # dir_base = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/BAL_EVOLUTION_202411/CYANOBLOOM_EVOLUTION'
-    # fcsv_out = os.path.join(dir_base, 'CyanoEvolution_CyanoPeriod.csv')
-    # fw = open(fcsv_out, 'w')
-    # started = False
-    # for year in range(1997,2025):
-    #     line_start,line = get_lines_cyano_csv_from_year_files(dir_base,year)
-    #     if not started:
-    #         fw.write(line_start)
-    #         fw.write('\n')
-    #         fw.write(line)
-    #         started = True
-    #     else:
-    #         fw.write('\n')
-    #         fw.write(line)
-    # fw.close()
+    ##CREATE CSV FILE FROM CYANO YEAR FILES
+    dir_base = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/BAL_EVOLUTION_202411/CYANOBLOOM_EVOLUTION'
+    fcsv_out = os.path.join(dir_base, 'CyanoEvolution_CyanoPeriod.csv')
+    fw = open(fcsv_out, 'w')
+    started = False
+    for year in range(1997,2026):
+        line_start,line = get_lines_cyano_csv_from_year_files(dir_base,year)
+        if not started:
+            fw.write(line_start)
+            fw.write('\n')
+            fw.write(line)
+            started = True
+        else:
+            fw.write('\n')
+            fw.write(line)
+    fw.close()
 
     ##CREATE MAPS CYANOBLOOM_COVERAGE
     # dir_base = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/BAL_EVOLUTION_202411/CYANOBLOOM_EVOLUTION'
@@ -1583,7 +1584,7 @@ def main():
     #count_images(1997,2025)
 
     ##Create CYANOBLOOM_year.nc
-    create_cyano_bloom_year(2025)
+    #create_cyano_bloom_year(2025)
 
     # file_check = '/mnt/c/Users/LuisGonzalez/OneDrive - NOLOGIN OCEANIC WEATHER SYSTEMS S.L.U/CNR/OCTAC_WORK/BAL_EVOLUTION_202411/CYANOBLOOM_EVOLUTION/CYANOBLOOM_COVERAGE_2023.nc'
     # dataset = Dataset(file_check)
