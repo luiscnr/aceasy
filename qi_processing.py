@@ -8,7 +8,7 @@ import numpy as np
 parser = argparse.ArgumentParser(description="QI processing launcher")
 
 parser.add_argument("-v", "--verbose", help="Verbose mode.", action="store_true")
-parser.add_argument("-m", "--mode", help="Mode.", choices=["make_pqd_2025","update_pqd_2025"])
+parser.add_argument("-m", "--mode", help="Mode.", choices=["make_pqd_2025","update_pqd_2025","test"])
 parser.add_argument("-r", "--region", help="Region")
 parser.add_argument('-sd', "--start_date", help="Start date (yyyy-mm-dd)")
 parser.add_argument('-ed', "--end_date", help="End date (yyyy-mm-dd")
@@ -20,31 +20,85 @@ args = parser.parse_args()
 
 
 def test():
-    file_json = '/mnt/c/DATA_LUIS/OCTAC_WORK/QI/COPY_NEW/product_quality_nb-observations_Plankton_chl-sat_OCEANCOLOUR_BLK_BGC_L3_NRT_009_151_19970916-99999999.json'
-    # file_json = '/mnt/c/DATA_LUIS/OCTAC_WORK/QI/COPY_NEW/product_quality_nb-observations_Plankton_chl-sat_OCEANCOLOUR_BLK_BGC_L3_NRT_009_151_19970916-99999999.json.bkp'
-    import json
-    print(os.path.exists(file_json))
-    # js = json.loads(file_json)
+    dir_base = '/mnt/c/DATA/PQD'
+    names = [
+        'product_quality_nb-observations_med_rrs-412.5_009_141_0.3km_20231115_99999999.json',
+        'product_quality_nb-observations_med_rrs-442.5_009_141_0.3km_20231115_99999999.json',
+        'product_quality_nb-observations_med_rrs-490_009_141_0.3km_20231115_99999999.json',
+        'product_quality_nb-observations_med_rrs-510_009_141_0.3km_20231115_99999999.json',
+        'product_quality_nb-observations_med_rrs-560_009_141_0.3km_20231115_99999999.json',
+        'product_quality_nb-observations_med_rrs-620_009_141_0.3km_20231115_99999999.json',
+        'product_quality_nb-observations_med_rrs-665_009_141_0.3km_20231115_99999999.json',
+        'product_quality_nb-observations_med_rrs-673.75_009_141_0.3km_20231115_99999999.json',
+        'product_quality_nb-observations_med_rrs-681.25_009_141_0.3km_20231115_99999999.json',
+        'product_quality_nb-observations_med_rrs-708.75_009_141_0.3km_20231115_99999999.json',
+        'product_quality_nb-observations_med_rrs-753.75_009_141_0.3km_20231115_99999999.json',
+        'product_quality_nb-observations_med_rrs-865_009_141_0.3km_20231115_99999999.json',
+        'product_quality_nb-observations_med_chlorophyll-a_009_141_0.3km_20231115_99999999.json',
+        'product_quality_nb-observations_med_kd-490_009_141_0.3km_20231115_99999999.json',
+        'product_quality_nb-observations_blk_rrs-400_009_151_0.3km_20231115_99999999.json',
+        'product_quality_nb-observations_blk_rrs-412.5_009_151_0.3km_20231115_99999999.json',
+        'product_quality_nb-observations_blk_rrs-442.5_009_151_0.3km_20231115_99999999.json',
+        'product_quality_nb-observations_blk_rrs-490_009_151_0.3km_20231115_99999999.json'
+        'product_quality_nb-observations_blk_rrs-510_009_151_0.3km_20231115_99999999.json',
+        'product_quality_nb-observations_blk_rrs-560_009_151_0.3km_20231115_99999999.json',
+        'product_quality_nb-observations_blk_rrs-620_009_151_0.3km_20231115_99999999.json',
+        'product_quality_nb-observations_blk_rrs-665_009_151_0.3km_20231115_99999999.json',
+        'product_quality_nb-observations_blk_rrs-673.75_009_151_0.3km_20231115_99999999.json',
+        'product_quality_nb-observations_blk_rrs-681.25_009_151_0.3km_20231115_99999999.json',
+        'product_quality_nb-observations_blk_rrs-708.75_009_151_0.3km_20231115_99999999.json',
+        'product_quality_nb-observations_blk_rrs-753.75_009_151_0.3km_20231115_99999999.json',
+        'product_quality_nb-observations_blk_rrs-865_009_151_0.3km_20231115_99999999.json',
+        'product_quality_nb-observations_blk_chlorophyll-a_009_151_0.3km_20231115_99999999.json',
+        'product_quality_nb-observations_blk_kd-490_009_151_0.3km_20231115_99999999.json'
+    ]
+    for name in names:
+        region = name.split('_')[3]
+        file_json = os.path.join(dir_base,name)
+        import json
+        with open(file_json) as json_file:
+            res_dict = json.load(json_file)
+        data = res_dict[region]["all_sat_valid"]["data"]
+        work_date = dt(2026,2,21)
+        n_dates = len(data)
+        index_ini = n_dates
+        print('n_dates: ', n_dates)
+        for idx in range(n_dates - 1, -1, -1):
+            if data[idx][0] == work_date.strftime('%Y-%m-%d'):
+                index_ini = idx
+                break
+        index_end = index_ini + 4
+        for idx in range(index_ini, index_end):
+            data[idx][1]=0
+        res_dict[region]["all_sat_valid"]["data"] = data
+        with open(file_json, "w") as f:
+            json.dump(res_dict, f, indent=2)
+
+    # file_json = '/mnt/c/DATA_LUIS/OCTAC_WORK/QI/COPY_NEW/product_quality_nb-observations_Plankton_chl-sat_OCEANCOLOUR_BLK_BGC_L3_NRT_009_151_19970916-99999999.json'
+    # # file_json = '/mnt/c/DATA_LUIS/OCTAC_WORK/QI/COPY_NEW/product_quality_nb-observations_Plankton_chl-sat_OCEANCOLOUR_BLK_BGC_L3_NRT_009_151_19970916-99999999.json.bkp'
+    # import json
+    # print(os.path.exists(file_json))
+    # # js = json.loads(file_json)
+    # # print(type(js))
+    # with open(file_json, 'r') as j:
+    #     js = json.loads(j.read())
+    #
     # print(type(js))
-    with open(file_json, 'r') as j:
-        js = json.loads(j.read())
-
-    print(type(js))
-    alldata = js['Blacksea']['all_sat']['data']
-    for ad in alldata:
-        print(ad)
-
-    file_nc = '/mnt/c/DATA_LUIS/OCTAC_WORK/QI/2023/193/X2023193-chl-bs-hr.nc'
-    from netCDF4 import Dataset
-    import numpy as np
-    dataset = Dataset(file_nc)
-    varsm = 'SENSORMASK'
-    smask = np.array(dataset.variables[varsm])
-    fillvalue = dataset.variables[varsm].getncattr('_FillValue')
-    arraysm = np.array(dataset.variables[varsm])
-    arraysm = arraysm[arraysm != fillvalue]
-
-    dataset.close()
+    # alldata = js['Blacksea']['all_sat']['data']
+    # for ad in alldata:
+    #     print(ad)
+    #
+    # file_nc = '/mnt/c/DATA_LUIS/OCTAC_WORK/QI/2023/193/X2023193-chl-bs-hr.nc'
+    # from netCDF4 import Dataset
+    # import numpy as np
+    # dataset = Dataset(file_nc)
+    # varsm = 'SENSORMASK'
+    # smask = np.array(dataset.variables[varsm])
+    # fillvalue = dataset.variables[varsm].getncattr('_FillValue')
+    # arraysm = np.array(dataset.variables[varsm])
+    # arraysm = arraysm[arraysm != fillvalue]
+    #
+    # dataset.close()
 
     return True
 
@@ -144,7 +198,11 @@ def update_pqd_from_config_file(config_file):
         'start_date': {'type': 'str'},
         'ref_days': {'type': 'int'}
     }
-    general_options = options.retrieve_options('GENERAL', required_general, None)
+    other = {
+        'start_date_work':{'type':'str'},
+        'end_date_work':{'type':'str'}
+    }
+    general_options = options.retrieve_options('GENERAL', required_general, other)
     dir_base = general_options['dir_base']
     if dir_base is None:
         return
@@ -162,6 +220,23 @@ def update_pqd_from_config_file(config_file):
     if ref_days<=0:
         print(f'[ERROR] ref_days {ref_days} is not valid. This parameter indicates the number of days ago to start the update, and it should be greater than one')
         return
+    start_date_work = None
+    end_date_work = None
+    if 'start_date_work' in general_options and 'end_date_work' in general_options:
+        start_date_work = general_options['start_date_work']
+        end_date_work = general_options['end_date_work']
+        try:
+            start_date_work = dt.strptime(general_options['start_date_work'], '%Y-%m-%d')
+            end_date_work = dt.strptime(general_options['end_date_work'], '%Y-%m-%d')
+        except:
+            print(
+                f'[ERROR] general/start_date_work ({general_options["start_date_work"]}) and/or end_date_work ({general_options["end_date_work"]}) values in the config file  are not in the valid format YYYY-mm-dd')
+            return
+        if start_date_work>end_date_work:
+            print(f'[ERROR] start_date_work {start_date_work.strftime("%Y-%m-%d")} must be before (or the same date) than end_date_work {end_date_work.strftime("%Y-%m-%d")}')
+            return
+
+
 
     required_parameters = {
         'region': {'type': 'str'},
@@ -202,15 +277,24 @@ def update_pqd_from_config_file(config_file):
         with open(file_json) as json_file:
             res_dict = json.load(json_file)
         data = res_dict[region]["all_sat_valid"]["data"]
-        work_date = dt.now() - timedelta(days=ref_days)
         n_dates = len(data)
-        index_ini = n_dates
         print(f'[INFO] Updating JSON file {file_json}')
-        for idx in range(n_dates - 1, -1, -1):
-            if data[idx][0] == work_date.strftime('%Y-%m-%d'):
-                index_ini = idx
-                break
-        index_end = index_ini + ref_days
+        if start_date_work is not None and end_date_work is not None:
+            for idx in range(n_dates - 1, -1, -1):
+                if data[idx][0] == end_date_work.strftime('%Y-%m-%d'):
+                    index_end = idx+1
+                if data[idx][0] == start_date_work.strftime('%Y-%m-%d'):
+                    index_ini = idx
+                    break
+            work_date = start_date_work
+        else:
+            work_date = dt.now() - timedelta(days=ref_days)
+            index_ini = n_dates
+            for idx in range(n_dates - 1, -1, -1):
+                if data[idx][0] == work_date.strftime('%Y-%m-%d'):
+                    index_ini = idx
+                    break
+            index_end = index_ini + ref_days
 
         for idx in range(index_ini, index_end):
             update_value = False
@@ -392,6 +476,9 @@ def start_dict(region,metric):
 
 def main():
     if args.mode is None:
+        return
+    if args.mode=='test':
+        test()
         return
     if args.mode=='make_pqd_2025':
         #make_pqd_2025()

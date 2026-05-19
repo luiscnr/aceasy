@@ -56,7 +56,7 @@ class ConfigReader(object):
 
         for op in other_options:
             if self.check_option(section,op):
-                type, default, potential_values = self.check_option_obj(compulsory_options[op])
+                type, default, potential_values = self.check_option_obj(other_options[op])
                 if type is not None:
                     opt_dict[op] = self.get_value_param(section, op, default, type, potential_values)
 

@@ -149,7 +149,7 @@ class QI_ADD():
         """
            Interpolates a 2D array onto a new grid (only works for linear grids),
            with the Lat/Lon inputs of the old and new grid. Can perfom nearest
-           neighbour interpolation or bilinear interpolation (of order 1)'
+           neighbour interpolation or bilinear interpolation (of order 1)
 
            This is an extract from the basemap module (truncated)
         """
